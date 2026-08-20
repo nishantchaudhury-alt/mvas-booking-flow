@@ -501,9 +501,18 @@ function filterSailings(state) {
     if (state.selectedHomePorts && state.selectedHomePorts.length > 0) {
       if (!state.selectedHomePorts.includes(sail.homePort)) return false;
     }
-    if (state.selectedMonth && state.selectedMonth.month) {
+    const selectedMonths = state.selectedMonth
+      ? (Array.isArray(state.selectedMonth.months)
+          ? state.selectedMonth.months
+          : state.selectedMonth.month ? [state.selectedMonth.month] : [])
+      : [];
+    if (selectedMonths.length > 0) {
       const sailMonth = sail.depart.split(' ')[0];
-      if (sailMonth !== state.selectedMonth.month) return false;
+      if (!selectedMonths.includes(sailMonth)) return false;
+    }
+    if (state.selectedMonth && state.selectedMonth.year) {
+      const sailYear = (sail.depart.match(/\b(\d{4})$/) || [])[1];
+      if (sailYear && sailYear !== state.selectedMonth.year) return false;
     }
     return true;
   });

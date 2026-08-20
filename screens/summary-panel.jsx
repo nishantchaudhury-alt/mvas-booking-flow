@@ -238,9 +238,8 @@ function spAllocate(total, weights) {
 
 // ── Cabin-wise breakdown ────────────────────────────────────────────────────
 // Splits the booking into the per-stateroom view an agent reads back to a
-// guest: each room's fare (rate × its occupants), the supplements charged to
-// it — cabin-level ones once per room, guest-level ones for the guests
-// allocated to that room, package-covered ones at $0 — and its occupancy
+// guest: each room's fare (rate × its occupants), the guest-level supplements
+// assigned to travellers in that room, and its occupancy
 // share of the flat taxes & fees figure. Guest→cabin allocation comes from
 // the same buildCabinGuestMap Step 1's assignment flow uses, so this view
 // can't disagree with the screens that wrote the data.
@@ -251,55 +250,27 @@ function spCabinBreakdown(b, p) {
 
   const SUPP = (typeof S2_SUPP !== 'undefined' && S2_SUPP) || [];
   const suppById = (id) => SUPP.find((s) => s.id === id) || null;
-  const pkgSuppIds = new Set();
-  (p.pkgs || []).forEach((pk) => (pk.includedSupps || []).forEach((id) => pkgSuppIds.add(id)));
   const guestToCabin = buildCabinGuestMap(b.guests, cabins);
   const assign = b.suppAssignments || {};
 
-  // A package bills per person, so each room carries pkgPP × its occupants —
-  // summed across rooms that is exactly computeBookingPricing's packageTotal,
-  // so the room subtotals keep re-adding to the booking total.
-  const pkgDefs = (p.pkgs || []).map((pk) => ({
-    id: pk.id,
-    name: pk.name,
-    emoji: pk.emoji || '📦',
-    pp: (pk.includedSupps || []).reduce((t, id) => t + (suppById(id)?.pricePP || 0), 0),
-  }));
-
-  // Supplement + package lines for one set of assignment keys (a room's cabin
-  // key + its guest keys, or the unassigned guests' keys). `headCount` is how
-  // many travellers the group holds — what a per-person package bills against.
-  const linesFor = (keys, headCount) => {
+  // Supplement lines for one set of guest assignment keys.
+  const linesFor = (keys) => {
     const lines = [];
     let total = 0;
     Object.entries(assign).forEach(([suppId, byKey]) => {
       const su = suppById(suppId);
       if (!su || !byKey) return;
-      const inPkg = pkgSuppIds.has(suppId);
       let guestQty = 0;
-      let cabinHit = false;
       Object.entries(byKey).forEach(([k, v]) => {
         if (!(v > 0) || !keys.has(k)) return;
-        if (isCabinSuppKey(k)) cabinHit = true; else guestQty += v;
+        if (!isCabinSuppKey(k)) guestQty += v;
       });
-      if (cabinHit) {
-        const amount = inPkg ? 0 : su.pricePP;
-        total += amount;
-        lines.push({ id: `${suppId}:cabin`, name: su.name, emoji: su.emoji, qty: 1, amount, scope: 'cabin', inPkg });
-      }
       if (guestQty > 0) {
-        const amount = inPkg ? 0 : su.pricePP * guestQty;
+        const amount = su.pricePP * guestQty;
         total += amount;
-        lines.push({ id: `${suppId}:guest`, name: su.name, emoji: su.emoji, qty: guestQty, amount, scope: 'guest', inPkg });
+        lines.push({ id: `${suppId}:guest`, name: su.name, emoji: su.emoji, qty: guestQty, amount, scope: 'guest', inPkg: false });
       }
     });
-    if (headCount > 0) {
-      pkgDefs.forEach((pk) => {
-        const amount = r2(pk.pp * headCount);
-        total += amount;
-        lines.push({ id: `pkg:${pk.id}`, name: `${pk.name} package`, emoji: pk.emoji, qty: headCount, amount, scope: 'pkg', inPkg: false });
-      });
-    }
     return { lines, total: r2(total) };
   };
 
@@ -345,7 +316,7 @@ function spCabinBreakdown(b, p) {
     assignedGuests += occupants;
     const keys = new Set([ck]);
     Object.keys(guestToCabin).forEach((gk) => { if (guestToCabin[gk] === ck) keys.add(gk); });
-    const { lines, total: suppTotal } = linesFor(keys, occupants);
+    const { lines, total: suppTotal } = linesFor(keys);
     const fare = r2(p.cabinFarePP * occupants);
     const taxes = totalGuests > 0 ? r2(p.gratuities * occupants / totalGuests) : 0;
     taxAllocated += taxes;
@@ -387,7 +358,7 @@ function spCabinBreakdown(b, p) {
       if (!guestToCabin[gk]) unKeys.add(gk);
     }
   });
-  const un = unKeys.size > 0 ? linesFor(unKeys, unKeys.size) : null;
+  const un = unKeys.size > 0 ? linesFor(unKeys) : null;
   const unassigned = un && un.lines.length > 0
     ? { count: unKeys.size, lines: un.lines, suppTotal: un.total }
     : null;
@@ -574,7 +545,6 @@ function SPCabinDetails({ b, p }) {
 function BookingSummaryPanel({
   booking, update, step,
   continueEnabled, ctaLabel, onContinue, onBlocked,
-  pkgPreviewId, onConfirmPkg, onClearPkg,
   notice,
 }) {
   const b = booking || {};
@@ -585,12 +555,6 @@ function BookingSummaryPanel({
   const [selectionView, setSelectionView] = React.useState('Global Details');
 
   const p = computeBookingPricing(b);
-  // Package preview prices the *same* booking with the package applied, so the
-  // before/after on every row comes from one function rather than a parallel
-  // calculation that could drift from the real one.
-  const previewPkg = pkgPreviewId ? (S2_PKG || []).find((x) => x.id === pkgPreviewId) : null;
-  const pv = previewPkg ? computeBookingPricing({ ...b, selectedPackages: [pkgPreviewId] }) : null;
-
   const g = b.guests || {};
   const guestStr = p.guestCount > 0
     ? `${g.adults || 0}A · ${g.youngAdults || 0}YA · ${g.children || 0}C · ${g.infants || 0}I`
@@ -607,10 +571,15 @@ function BookingSummaryPanel({
   const durationStr = (b.selectedDuration || [])
     .map((id) => { const band = getDurationBand(id); return band ? band.short : id; })
     .join(', ');
-  const monthStr = b.selectedMonth && b.selectedMonth.month
-    ? `${b.selectedMonth.month} ${b.selectedMonth.year || ''}`.trim() : '';
+  const selectedMonths = b.selectedMonth
+    ? (Array.isArray(b.selectedMonth.months)
+        ? b.selectedMonth.months
+        : b.selectedMonth.month ? [b.selectedMonth.month] : [])
+    : [];
+  const monthStr = selectedMonths.length
+    ? `${selectedMonths.join(', ')} ${b.selectedMonth.year || ''}`.trim()
+    : (b.selectedMonth && b.selectedMonth.year) || '';
   const intentEmoji = { Relaxation: '🏖️', Adventure: '⛺', Anniversary: '💑', Family: '🎁' }[b.selectedIntent] || '✈️';
-  const pkgNames = (p.pkgs || []).map((x) => x.name).join(', ');
   const roomStr = b.selectedCabinNum
     ? `#${b.selectedCabinNum}${b.selectedCabinDeck ? ` · Deck ${b.selectedCabinDeck}` : ''}`
     : b.assignmentMethod === 'auto' ? 'Auto-assign' : '';
@@ -748,57 +717,24 @@ function BookingSummaryPanel({
                 <SPPriceRow
                   label="Cabin fare"
                   sub={p.guestCount > 0 ? `${money(p.cabinFarePP)} pp × ${p.guestCount}` : null}
-                  amount={p.cabinFareTotal}
-                  preview={pv?.cabinFareTotal} />
-                <SPPriceRow label="Gratuities" amount={p.gratuities} preview={pv?.gratuities} />
+                  amount={p.cabinFareTotal} />
+                <SPPriceRow label="Gratuities" amount={p.gratuities} />
               </SPGroup>
 
               {/* Add-ons — what the agent chose to put on top. */}
               <SPGroup label="Add-ons">
-                <SPPriceRow label="Supplements" amount={p.suppTotal} preview={pv?.suppTotal} accent={p.suppTotal > 0 ? SP_ACCENT : null} />
-                <SPPriceRow label="Trip protection" amount={p.protectionTotal} preview={pv?.protectionTotal} />
+                <SPPriceRow label="Supplements" amount={p.suppTotal} accent={p.suppTotal > 0 ? SP_ACCENT : null} />
+                <SPPriceRow label="Trip protection" amount={p.protectionTotal} />
               </SPGroup>
 
               {p.couponDisc !== 0 && (
                 <SPGroup label="Discounts">
-                  <SPPriceRow label={`Coupon · ${b.appliedCoupon}`} amount={p.couponDisc} preview={pv?.couponDisc} accent="#059669" />
+                  <SPPriceRow label={`Coupon · ${b.appliedCoupon}`} amount={p.couponDisc} />
                 </SPGroup>
               )}
             </>
           )}
         </SPSection>
-
-        {/* ── Package preview: inline delta + commit controls ── */}
-        {previewPkg && pv && (
-          <SPSection title={`${previewPkg.name} package`}>
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '8px 11px', borderRadius: 8, background: '#EEF2FF', border: '1px solid #C7D2FE', marginBottom: 9,
-            }}>
-              <div style={{ fontSize: 11.5, fontWeight: 600, color: '#3730A3' }}>Price change</div>
-              <div style={{ fontSize: 12.5, fontWeight: 700, color: '#3730A3', fontFamily: 'ui-monospace, monospace' }}>
-                {pv.total - p.total >= 0 ? '+' : '−'}{money(Math.abs(pv.total - p.total))}
-              </div>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 3, marginBottom: 10 }}>
-              {(previewPkg.items || []).map((item) => (
-                <div key={item} style={{ display: 'flex', gap: 6, fontSize: 11, color: WF.inkSoft }}>
-                  <span style={{ color: SP_ACCENT, fontWeight: 700 }}>✓</span>{item}
-                </div>
-              ))}
-            </div>
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button onClick={() => onConfirmPkg && onConfirmPkg(pkgPreviewId)} style={{
-                flex: 1, padding: '8px 10px', fontSize: 12, fontWeight: 700, border: 'none',
-                borderRadius: 7, background: WF.accent, color: '#fff', cursor: 'pointer', fontFamily: 'inherit',
-              }}>Add package</button>
-              <button onClick={() => onClearPkg && onClearPkg()} style={{
-                padding: '8px 12px', fontSize: 12, fontWeight: 600, border: `1px solid ${WF.line}`,
-                borderRadius: 7, background: '#fff', color: WF.ink, cursor: 'pointer', fontFamily: 'inherit',
-              }}>Cancel</button>
-            </div>
-          </SPSection>
-        )}
 
         {/* ── Promotions, trip protection, hold policy, payment terms ──
             These only apply at checkout, so they only show on Review & confirm —
@@ -908,16 +844,8 @@ function BookingSummaryPanel({
                 Amount due now
               </div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' }}>
-                {pv && pv.amountDue !== p.amountDue && (
-                  <>
-                    <span style={{ fontSize: 12, color: WF.inkSoft, fontFamily: 'ui-monospace, monospace', textDecoration: 'line-through' }}>
-                      {money(p.amountDue)}
-                    </span>
-                    <span style={{ fontSize: 11, color: WF.inkSoft }}>→</span>
-                  </>
-                )}
                 <div style={{ fontSize: 22, fontWeight: 800, color: WF.ink, fontFamily: 'ui-monospace, monospace', lineHeight: 1 }}>
-                  {money(pv ? pv.amountDue : p.amountDue)}
+                  {money(p.amountDue)}
                 </div>
               </div>
 
@@ -932,23 +860,15 @@ function BookingSummaryPanel({
                     {p.status === 'partial' ? 'Provisional total' : 'Booking total'}
                   </span>
                   <span style={{ display: 'flex', alignItems: 'baseline', gap: 5 }}>
-                    {pv && pv.total !== p.total && (
-                      <>
-                        <span style={{ fontSize: 11, color: WF.inkSoft, fontFamily: 'ui-monospace, monospace', textDecoration: 'line-through' }}>
-                          {money(p.total)}
-                        </span>
-                        <span style={{ fontSize: 10, color: WF.inkSoft }}>→</span>
-                      </>
-                    )}
                     <span style={{ fontSize: 13, fontWeight: 700, color: WF.ink, fontFamily: 'ui-monospace, monospace' }}>
-                      {money(pv ? pv.total : p.total)}
+                      {money(p.total)}
                     </span>
                   </span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
                   <span style={{ fontSize: 11.5, fontWeight: 500, color: WF.inkSoft }}>Remaining</span>
                   <span style={{ fontSize: 12.5, fontWeight: 700, color: WF.inkSoft, fontFamily: 'ui-monospace, monospace' }}>
-                    {money(pv ? pv.remaining : p.remaining)}
+                    {money(p.remaining)}
                   </span>
                 </div>
               </div>

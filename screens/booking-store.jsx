@@ -53,7 +53,9 @@ const BOOKING_DEFAULTS = {
   // Multi-select facet. Keep this an array in every state so toggle updates
   // never have to switch between null and collection semantics.
   selectedDuration: [],
-  selectedMonth: { month: null, year: null },
+  // Departure months are multi-select within the chosen year. Keep the
+  // collection in state so successive checkbox toggles remain additive.
+  selectedMonth: { months: [], year: null },
   selectedIntent: null,
 
   // Step 2 — sailing, cabin, fare, extras
@@ -90,7 +92,17 @@ function normalizeBooking(raw) {
   const b = { ...BOOKING_DEFAULTS, ...r };
   b.guests = { ...BOOKING_DEFAULTS.guests, ...(r.guests || {}) };
   b.guestAges = { ...BOOKING_DEFAULTS.guestAges, ...(r.guestAges || {}) };
-  b.selectedMonth = { ...BOOKING_DEFAULTS.selectedMonth, ...(r.selectedMonth || {}) };
+  // Lift the former single `month` value into the multi-select collection so
+  // bookings saved before the picker changed keep their departure date.
+  const rawMonth = r.selectedMonth && typeof r.selectedMonth === 'object' ? r.selectedMonth : {};
+  const rawMonths = Array.isArray(rawMonth.months)
+    ? rawMonth.months
+    : rawMonth.month ? [rawMonth.month] : [];
+  const validMonths = new Set(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']);
+  b.selectedMonth = {
+    months: [...new Set(rawMonths.filter((m) => validMonths.has(m)))],
+    year: rawMonth.year || null,
+  };
   b.guestData = r.guestData && typeof r.guestData === 'object' ? r.guestData : {};
   // Per-cabin supplement assignment has been retired. Keep only guest keys
   // and rebuild totals from those visible assignments so a saved `cabin:`
@@ -180,16 +192,11 @@ const round2 = (n) => Math.round(n * 100) / 100;
 // deposit to whole dollars while Step 3 rounded to cents, and Step 4 ignored
 // `fc.deposit` entirely and hardcoded 25% — so an EARLY-IS booking (20%) showed
 // three different deposits across three consecutive screens.
-//
-// Package rule: a package's price is its included supplements at pricePP ×
-// guests, and those supplements are then not charged again individually. That
-// is the same per-person rule everything else uses.
 function computeBookingPricing(booking) {
   const b = booking || {};
   const CAB = typeof S2_CAB !== 'undefined' ? S2_CAB : [];
   const FC = typeof S2_FC !== 'undefined' ? S2_FC : [];
   const SUPP = typeof S2_SUPP !== 'undefined' ? S2_SUPP : [];
-  const PKG = typeof S2_PKG !== 'undefined' ? S2_PKG : [];
   const IDX = typeof BASE_FARE_IDX !== 'undefined' ? BASE_FARE_IDX : 1.15;
   const suppById = (id) => SUPP.find((s) => s.id === id) || null;
 
@@ -210,16 +217,12 @@ function computeBookingPricing(booking) {
   const cabinFareTotal = cabinFarePP * guestCount;
   const gratuities = status === 'empty' ? 0 : GRATUITIES;
 
-  const pkgs = (b.selectedPackages || []).map((id) => PKG.find((p) => p.id === id)).filter(Boolean);
-  const pkgSuppIds = new Set();
-  pkgs.forEach((p) => (p.includedSupps || []).forEach((id) => pkgSuppIds.add(id)));
-  const packageTotal = pkgs.reduce((sum, p) => {
-    const pp = (p.includedSupps || []).reduce((t, id) => t + (suppById(id)?.pricePP || 0), 0);
-    return sum + pp * guestCount;
-  }, 0);
+  // Kept as zero-value compatibility fields for older readers. Packages are
+  // retired and never participate in current booking state or pricing.
+  const pkgs = [];
+  const packageTotal = 0;
 
-  // Supplement lines: charged ones first, then package-covered ones at $0 so
-  // the agent can still see everything the guest is getting.
+  // Every selected supplement is charged directly to its assigned guests.
   const qtys = b.selectedSupps && !Array.isArray(b.selectedSupps) ? b.selectedSupps : {};
   const suppLines = [];
   let suppTotal = 0;
@@ -227,15 +230,9 @@ function computeBookingPricing(booking) {
     const su = suppById(id);
     const qty = qtys[id];
     if (!su || !(qty > 0)) return;
-    const inPkg = pkgSuppIds.has(id);
-    const amount = inPkg ? 0 : su.pricePP * qty;
+    const amount = su.pricePP * qty;
     suppTotal += amount;
-    suppLines.push({ id, name: su.name, emoji: su.emoji, qty, amount, inPkg });
-  });
-  pkgSuppIds.forEach((id) => {
-    if (qtys[id] > 0) return;
-    const su = suppById(id);
-    if (su) suppLines.push({ id, name: su.name, emoji: su.emoji, qty: 1, amount: 0, inPkg: true });
+    suppLines.push({ id, name: su.name, emoji: su.emoji, qty, amount, inPkg: false });
   });
   suppTotal = round2(suppTotal);
 
@@ -248,7 +245,7 @@ function computeBookingPricing(booking) {
   const couponDisc = status === 'empty' ? 0 : round2(-baseFare * couponPct);
   const couponIsCustom = b.appliedCoupon !== 'None' && COUPONS[b.appliedCoupon] === undefined;
 
-  const total = round2(cabinFareTotal + gratuities + suppTotal + packageTotal + protectionTotal + couponDisc);
+  const total = round2(cabinFareTotal + gratuities + suppTotal + protectionTotal + couponDisc);
   const depositRate = fcForMath ? fcForMath.deposit || 0.25 : 0.25;
   const payFull = b.paymentMode === 'Pay Full Balance';
   const deposit = round2(total * depositRate);

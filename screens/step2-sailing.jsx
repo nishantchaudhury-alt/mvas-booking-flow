@@ -1,5 +1,5 @@
 // Step 2 · Sailing cards — expanded card redesign
-// Sections: Upgrade Packages (multi-select) · Cabin Category · Farecodes & Promotions · Supplements chips
+// Sections: Cabin Category · Farecodes & Promotions · Individual Supplements
 // ───────────────────────────────────────────────────────────────────────────
 
 // ── Helpers ──
@@ -24,40 +24,7 @@ function availabilityOf(sailing) {
   return { label: 'Available', kind: 'active' };
 }
 
-// ── Package comparison data ──
-// These are reference values for 4 guests, IS cabin, NR-SAVER farecode
-const PKG_COMPARE = {
-  relaxation: { baseSupplements: 1044, gratuities: 270 },
-  adventure: { baseSupplements: 864, gratuities: 270 },
-  anniversary: { baseSupplements: 1164, gratuities: 270 },
-  family: { baseSupplements: 744, gratuities: 270 }
-};
-const BASE_COMPARE = { total: 3020, cabinPP: 825, taxes: 300 };
-
 // ── Step-2 data ──
-const S2_PKG = [
-{ id: 'relaxation', emoji: '🧖', name: 'Relaxation',
-  tagline: 'Spa day passes, thermal access & slow mornings.',
-  items: ['Spa Day Pass Window', 'Aromatherapy Tier Access', 'Thermal Suite Pass Included', 'Beach Club Allocation'],
-  includedSupps: ['aroma', 'thermal', 'dining', 'fitness'],
-  rate: 18 },
-{ id: 'adventure', emoji: '🎿', name: 'Adventure',
-  tagline: 'Reef snorkelling, zip-lines & excursions.',
-  items: ['Snorkelling Excursion', 'Zip-Line Canopy Entry', 'Watersports Equipment', 'ATV Safari Slot'],
-  includedSupps: ['shore', 'wifi', 'photo', 'theater'],
-  rate: 16 },
-{ id: 'anniversary', emoji: '💍', name: 'Anniversary',
-  tagline: 'Champagne, couples massage & private dinners.',
-  items: ['Champagne Welcome Kit', 'Couples Massage Session', 'Private Veranda Dinner', 'Sunset Helicopter Flight'],
-  includedSupps: ['drinks', 'dining', 'wine', 'heli'],
-  rate: 20 },
-{ id: 'family', emoji: '👨‍👩‍👧‍👦', name: 'Family',
-  tagline: 'Kids club access, photo packages & events.',
-  items: ['Unlimited Kids Club Pass', 'Family Photo Album', 'Nature Wildlife Tour', 'Kids Dining Premium Pkg'],
-  includedSupps: ['photo', 'fitness', 'arcade', 'laundry'],
-  rate: 14 }];
-
-
 const S2_CAB = [
 { id: 'IS', name: 'Interior', blurb: 'Cozy inside cabin, no window', deltaPP: 0 },
 { id: 'OV', name: 'Oceanview', blurb: 'Picture window, sea views', deltaPP: 218 },
@@ -107,114 +74,6 @@ function S2Label({ children }) {
       fontSize: 10, fontWeight: 700, letterSpacing: 0.9,
       color: '#6B7280', textTransform: 'uppercase', marginBottom: 8
     }}>{children}</div>);
-
-}
-
-// ───────────────────────────────────────────────────────────────────────────
-// 1. Package card (multi-select toggle)
-// ───────────────────────────────────────────────────────────────────────────
-// `bundleTotalOverride` exists because this card's own `rate × guests × nights`
-// is not what computeBookingPricing actually bills (Σ includedSupps.pricePP ×
-// guests, with no nights factor). Anywhere the real charge is shown alongside
-// it — Step 3's picker puts a live "Price change" in the same dialog — the two
-// numbers would contradict each other, so that caller passes the real one.
-function PackageCard({ pkg, selected, previewing, onClick, totalGuests, nights, bundleTotalOverride }) {
-  const bundleTotal = bundleTotalOverride != null ? bundleTotalOverride : pkg.rate * totalGuests * nights;
-  const highlighted = selected || previewing;
-  return (
-    <div
-      onClick={onClick}
-      style={{
-        display: 'flex', flexDirection: 'column', padding: 16,
-        borderRadius: 10, cursor: 'pointer', position: 'relative',
-        transition: 'border-color 0.12s, box-shadow 0.12s',
-        border: `1.5px solid ${highlighted ? S2_TEAL : WF.line}`,
-        background: highlighted ? S2_TEAL_TINT : WF.panel,
-        boxShadow: highlighted ? `0 0 0 3px ${S2_TEAL_TINT}` : '0 1px 3px rgba(15,23,42,0.04)'
-      }}
-      onMouseEnter={(e) => {if (!highlighted) e.currentTarget.style.borderColor = '#9CA3AF';}}
-      onMouseLeave={(e) => {if (!highlighted) e.currentTarget.style.borderColor = WF.line;}}>
-      
-      {/* top-right circle checkbox */}
-      <div style={{
-        position: 'absolute', top: 12, right: 12,
-        width: 20, height: 20, borderRadius: 10,
-        border: `1.5px solid ${highlighted ? S2_TEAL : '#D1D5DB'}`,
-        background: highlighted ? S2_TEAL : 'transparent',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        transition: 'all 0.12s', flexShrink: 0
-      }}>
-        {highlighted && <span style={{ color: '#fff', fontSize: 11, fontWeight: 700, lineHeight: 1 }}>✓</span>}
-      </div>
-
-      {/* header: emoji + name */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, paddingRight: 28 }}>
-        <span style={{ fontSize: 18, lineHeight: 1 }}>{pkg.emoji}</span>
-        <span style={{ fontSize: 14, fontWeight: 700, color: WF.ink }}>{pkg.name}</span>
-      </div>
-
-      {/* tagline */}
-      <div style={{ fontSize: 12, color: '#6B7280', lineHeight: 1.45, marginBottom: 14 }}>
-        {pkg.tagline}
-      </div>
-
-      {/* checklist */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 7, marginBottom: 16 }}>
-        {pkg.items.map((item, i) =>
-        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12.5, color: WF.inkSoft }}>
-            <span style={{ color: highlighted ? S2_TEAL : '#9CA3AF', fontWeight: 700, fontSize: 12, lineHeight: 1 }}>✓</span>
-            <span>{item}</span>
-          </div>
-        )}
-      </div>
-
-      {/* footer pricing. The nightly-rate row is dropped when the total is
-          overridden — `pkg.rate` does not multiply out to the real charge, so
-          printing both would show a sum that doesn't add up. */}
-      <div style={{ borderTop: `1px solid ${highlighted ? '#B2E0E0' : WF.lineSoft}`, paddingTop: 12 }}>
-        {bundleTotalOverride == null && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 }}>
-            <span style={{ fontSize: 11.5, color: '#9CA3AF' }}>Per guest / night</span>
-            <span style={{ fontSize: 13, fontWeight: 700, color: WF.ink, fontFamily: 'ui-monospace, monospace' }}>
-              +${pkg.rate.toFixed(2)}
-            </span>
-          </div>
-        )}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-          <span style={{ fontSize: 11.5, color: WF.inkSoft, fontWeight: 600 }}>
-            {bundleTotalOverride == null ? 'Total Bundle' : `Total · ${totalGuests} guest${totalGuests === 1 ? '' : 's'}`}
-          </span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: WF.ink, fontFamily: 'ui-monospace, monospace' }}>
-            +${bundleTotal.toFixed(2)}
-          </span>
-        </div>
-      </div>
-    </div>);
-
-}
-
-function UpgradePackagesSection({ selectedPackages, onToggle, previewPkgId, onPkgPreview, guests, nights }) {
-  const totalGuests = guests.adults + (guests.youngAdults || 0) + guests.children + guests.infants;
-  return (
-    <div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-        {S2_PKG.map((pkg) =>
-        <PackageCard
-          key={pkg.id} pkg={pkg} totalGuests={totalGuests} nights={nights}
-          selected={(selectedPackages || []).includes(pkg.id)}
-          previewing={previewPkgId === pkg.id}
-          onClick={() => {
-            // Toggle: if already selected, deselect; otherwise preview it
-            if ((selectedPackages || []).includes(pkg.id)) {
-              onToggle(pkg.id); // deselect
-            } else {
-              if (onPkgPreview) onPkgPreview(pkg.id); // preview
-            }
-          }} />
-
-        )}
-      </div>
-    </div>);
 
 }
 
@@ -409,7 +268,7 @@ function FarecodesSection2({ farecodeId, onSelect }) {
 
 }
 
-// ── Guest roster helper — flattens party guests into an assignable list ──
+// ── Guest roster helper ──────────────────────────────────────────────────
 // Age is no longer captured per-guest; each of the 4 guest-count categories
 // already implies an age band, so eligibility is derived from `minAge` here.
 const SUPP_GUEST_CATS = [
@@ -419,15 +278,75 @@ const SUPP_GUEST_CATS = [
   { key: 'infants', heading: 'INFANTS', prefix: 'Infant', minAge: 0, ageLabel: '0-3' }
 ];
 
-function buildGuestRoster(guests) {
+function buildGuestList(guests) {
   const g = guests || {};
-  return SUPP_GUEST_CATS.map(({ key, heading, prefix, minAge, ageLabel }) => {
+  return SUPP_GUEST_CATS.reduce((list, { key, prefix, minAge, ageLabel }) => {
     const count = g[key] || 0;
-    const list = Array.from({ length: count }, (_, i) => (
-      { guestKey: `${key}-${i}`, label: `${prefix} ${i + 1}`, minAge, ageLabel }
-    ));
-    return { key, heading, count, list };
-  }).filter((cat) => cat.count > 0);
+    return list.concat(Array.from({ length: count }, (_, i) => ({
+      guestKey: `${key}-${i}`,
+      categoryKey: key,
+      label: `${prefix} ${i + 1}`,
+      minAge,
+      ageLabel
+    })));
+  }, []);
+}
+
+// Supplement quantities remain assigned to individual guest keys. Cabins only
+// provide the visual grouping and ordering requested for this screen.
+function buildCabinGuestRoster(guests, cabins) {
+  const allGuests = buildGuestList(guests);
+  const cabinList = Array.isArray(cabins) ? cabins : [];
+
+  // Until rooms are confirmed there is no honest cabin grouping to show. Keep
+  // the guests together under a neutral pending header rather than falling back
+  // to the retired age-category sections.
+  if (cabinList.length === 0) {
+    return allGuests.length > 0 ? [{
+      key: 'unassigned',
+      heading: 'CABIN ASSIGNMENT PENDING',
+      count: allGuests.length,
+      list: allGuests
+    }] : [];
+  }
+
+  const byCategory = {};
+  SUPP_GUEST_CATS.forEach(({ key }) => {
+    byCategory[key] = allGuests.filter((guest) => guest.categoryKey === key);
+  });
+  const cursor = Object.fromEntries(SUPP_GUEST_CATS.map(({ key }) => [key, 0]));
+
+  const groups = cabinList.map((cabin, cabinIndex) => {
+    const list = [];
+    SUPP_GUEST_CATS.forEach(({ key }) => {
+      const count = (cabin && cabin.guests && cabin.guests[key]) || 0;
+      const start = cursor[key];
+      list.push(...byCategory[key].slice(start, start + count));
+      cursor[key] += count;
+    });
+    return {
+      key: cabin.id || `cabin-${cabinIndex}`,
+      heading: `CABIN ${cabinIndex + 1} · ROOM ${cabin.num || '—'}`,
+      count: list.length,
+      list
+    };
+  }).filter((group) => group.count > 0);
+
+  // A partially distributed party can exist while the room matrix is still
+  // being edited. Keep those guests visible and assignable without pretending
+  // they belong to a confirmed room.
+  const distributed = new Set(groups.flatMap((group) => group.list.map((guest) => guest.guestKey)));
+  const unassigned = allGuests.filter((guest) => !distributed.has(guest.guestKey));
+  if (unassigned.length > 0) {
+    groups.push({
+      key: 'unassigned',
+      heading: 'CABIN ASSIGNMENT PENDING',
+      count: unassigned.length,
+      list: unassigned
+    });
+  }
+
+  return groups;
 }
 
 // ── Compact per-guest quantity stepper (flat, screenshot style) ──
@@ -457,159 +376,50 @@ function GuestSupplyStepper({ value, onChange, disabled }) {
   );
 }
 
-// ── Human-readable occupancy for a cabin, e.g. "2 Adults · 1 Child" ──
-const CABIN_OCC_LABELS = [
-  { key: 'adults', one: 'Adult', many: 'Adults' },
-  { key: 'youngAdults', one: 'Young Adult', many: 'Young Adults' },
-  { key: 'children', one: 'Child', many: 'Children' },
-  { key: 'infants', one: 'Infant', many: 'Infants' }
-];
-
-function cabinOccupancyText(guests) {
-  const g = guests || {};
-  const parts = CABIN_OCC_LABELS.
-    filter(({ key }) => (g[key] || 0) > 0).
-    map(({ key, one, many }) => `${g[key]} ${g[key] === 1 ? one : many}`);
-  return parts.length > 0 ? parts.join(' · ') : 'No guests assigned';
-}
-
-// ── Assignment mode pills — "per guest" vs "per cabin", shown only inside
-// the expanded supplement panel ──
-function AssignModePills({ mode, onMode }) {
-  const opts = [{ id: 'guest', label: 'Assign per guest' }, { id: 'cabin', label: 'Assign per cabin' }];
-  return (
-    <div style={{ marginBottom: 12 }}>
-      <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.6, color: WF.inkLabel, textTransform: 'uppercase', marginBottom: 7 }}>
-        Assignment
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-        {opts.map((o) => {
-          const on = mode === o.id;
-          return (
-            <button
-              key={o.id}
-              onClick={() => onMode(o.id)}
-              style={{
-                padding: '5px 11px', borderRadius: 20, fontSize: 11.5, fontWeight: on ? 700 : 500,
-                border: `1.5px solid ${on ? '#1B2434' : WF.line}`,
-                background: on ? '#1B2434' : WF.panel,
-                color: on ? '#fff' : WF.ink,
-                cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.12s'
-              }}>
-              {o.label}
-            </button>);
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ── Per-cabin assignment list — one row per confirmed cabin, charged flat
-// once per cabin. Age restrictions do not apply to cabin-level items. ──
-function AssignCabinsList({ sup, cabins, assignment, onGuestQty, onGoToCabins, locked }) {
-  if (!cabins || cabins.length === 0) {
-    return (
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px',
-        background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 8,
-        fontSize: 12, color: '#92400E', fontWeight: 500
-      }}>
-        <span>⚠</span>
-        <span>
-          No cabins confirmed yet — assign staterooms on the Stateroom Assignment tab to charge this supplement per cabin.
-          {onGoToCabins && (
-            <button
-              onClick={onGoToCabins}
-              style={{
-                marginLeft: 8, padding: 0, border: 'none', background: 'none',
-                color: '#92400E', fontWeight: 700, fontSize: 12, textDecoration: 'underline',
-                cursor: 'pointer', fontFamily: 'inherit'
-              }}>
-              Go to Stateroom Assignment
-            </button>
-          )}
-        </span>
-      </div>
-    );
-  }
-
-  return (
-    <div style={{ border: `1px solid ${WF.line}`, borderRadius: 8, overflow: 'hidden' }}>
-      {cabins.map((cab, i) => {
-        const added = (assignment[cabinSuppKey(cab.id)] || 0) > 0;
-        return (
-          <div key={cab.id} style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-            padding: '10px 14px', background: added ? S2_TEAL_TINT : '#fff',
-            borderBottom: i < cabins.length - 1 ? `1px solid ${WF.lineSoft}` : 'none'
-          }}>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: WF.ink }}>Cabin {i + 1}</span>
-                <span style={{
-                  fontSize: 10.5, fontWeight: 600, color: WF.inkSoft, background: '#F1F5F9',
-                  borderRadius: 4, padding: '2px 7px', whiteSpace: 'nowrap'
-                }}>{cab.label} · Room {cab.num}</span>
-              </div>
-              <div style={{ fontSize: 11, color: WF.inkSoft }}>{cabinOccupancyText(cab.guests)}</div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-              <span style={{
-                fontSize: 12, fontWeight: 700, color: locked ? WF.inkFaint : (added ? S2_TEAL : WF.inkSoft),
-                fontFamily: 'ui-monospace, monospace', textDecoration: locked ? 'line-through' : 'none'
-              }}>
-                +${sup.pricePP.toFixed(2)}
-              </span>
-              <button
-                onClick={() => !locked && onGuestQty(cabinSuppKey(cab.id), added ? 0 : 1)}
-                disabled={locked}
-                title={locked ? 'Included in your package' : undefined}
-                style={{
-                  padding: '6px 14px', fontSize: 11.5, fontWeight: 700, borderRadius: 6,
-                  border: `1.5px solid ${added ? S2_TEAL : WF.line}`,
-                  background: added ? S2_TEAL : '#fff',
-                  color: added ? '#fff' : WF.ink,
-                  cursor: locked ? 'not-allowed' : 'pointer', fontFamily: 'inherit', transition: 'all 0.12s', whiteSpace: 'nowrap',
-                  opacity: locked ? 0.85 : 1
-                }}>
-                {added ? '✓ Added' : 'Add to cabin'}
-              </button>
-            </div>
-          </div>
-        );
-      })}
-      <div style={{ padding: '8px 14px', background: '#F8FAFC', borderTop: `1px solid ${WF.lineSoft}`, fontSize: 11, color: WF.inkSoft }}>
-        {locked
-          ? 'Included in your package — assigned to every cabin at no extra charge.'
-          : 'Charged once per cabin, regardless of how many guests are in the room.'}
-      </div>
-    </div>
-  );
-}
-
-// ── Per-guest assignment panel — appears under a supplement once "Assign supplements" is clicked ──
-function AssignGuestsPanel({ sup, roster, assignment, onGuestQty, onDone }) {
+// ── Per-guest assignment panel, visually grouped by cabin ──
+function AssignGuestsPanel({ sup, roster, assignment, onGuestQty, onClearCabin, onDone }) {
   return (
     <div style={{ padding: '4px 16px 16px', background: '#fff' }}>
-      <div style={{ border: `1px solid ${WF.line}`, borderRadius: 8, overflow: 'hidden' }}>
-        {roster.map((cat, ci) => (
-          <div key={cat.key}>
+      {/* Cabin cards use a two-column grid instead of one long vertical roster.
+          Each card remains a per-guest assignment surface; the grid only
+          changes how the cabin groups are presented. */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10, alignItems: 'start' }}>
+        {roster.map((cabin) => {
+          const cabinQty = cabin.list.reduce((sum, guest) => sum + (assignment[guest.guestKey] || 0), 0);
+          return (
+          <div key={cabin.key} style={{ border: `1px solid ${WF.line}`, borderRadius: 8, overflow: 'hidden', minWidth: 0 }}>
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '8px 14px', background: '#F8FAFC',
-              borderTop: ci > 0 ? `1px solid ${WF.lineSoft}` : 'none',
+              gap: 8, padding: '7px 10px 7px 14px', background: '#F8FAFC',
               borderBottom: `1px solid ${WF.lineSoft}`
             }}>
-              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.6, color: WF.inkLabel, textTransform: 'uppercase' }}>{cat.heading}</span>
-              <span style={{ fontSize: 11, color: WF.inkSoft }}>{cat.count} guest{cat.count === 1 ? '' : 's'}</span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0, whiteSpace: 'nowrap' }}>
+                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.6, color: WF.inkLabel, textTransform: 'uppercase' }}>{cabin.heading}</span>
+                <span style={{ fontSize: 10.5, color: WF.inkSoft }}>· {cabin.count} guest{cabin.count === 1 ? '' : 's'}</span>
+              </span>
+              <button
+                type="button"
+                disabled={cabinQty === 0}
+                onClick={() => onClearCabin(cabin.list.map((guest) => guest.guestKey))}
+                aria-label={`Remove ${sup.name} from all guests in ${cabin.heading}`}
+                title={cabinQty > 0 ? `Remove ${sup.name} from every guest in this cabin` : `No ${sup.name} assigned in this cabin`}
+                style={{
+                  padding: '4px 7px', borderRadius: 5, fontFamily: 'inherit',
+                  border: `1px solid ${cabinQty > 0 ? '#FCA5A5' : WF.line}`,
+                  background: cabinQty > 0 ? '#FEF2F2' : '#fff',
+                  fontSize: 10, fontWeight: 700, color: cabinQty > 0 ? '#B91C1C' : WF.inkFaint,
+                  cursor: cabinQty > 0 ? 'pointer' : 'default', whiteSpace: 'nowrap', flexShrink: 0
+                }}>
+                Remove all
+              </button>
             </div>
-            {cat.list.map((guest, gi) => {
+            {cabin.list.map((guest, gi) => {
               const restricted = sup.minAge != null && guest.minAge < sup.minAge;
               const qty = (assignment[guest.guestKey]) || 0;
               return (
                 <div key={guest.guestKey} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-                  padding: '10px 14px', borderBottom: gi < cat.list.length - 1 ? `1px solid ${WF.lineSoft}` : 'none'
+                  padding: '10px 14px', borderBottom: gi < cabin.list.length - 1 ? `1px solid ${WF.lineSoft}` : 'none'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
                     <span style={{ fontSize: 13, fontWeight: 700, color: WF.ink }}>{guest.label}</span>
@@ -631,7 +441,8 @@ function AssignGuestsPanel({ sup, roster, assignment, onGuestQty, onDone }) {
               );
             })}
           </div>
-        ))}
+          );
+        })}
       </div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
         <button
@@ -649,14 +460,14 @@ function AssignGuestsPanel({ sup, roster, assignment, onGuestQty, onDone }) {
 // ───────────────────────────────────────────────────────────────────────────
 // 4. Supplements cards (multi-select grid)
 // ───────────────────────────────────────────────────────────────────────────
-function SupplementsSection({ selectedSupps, guests, suppAssignments, onToggle }) {
+function SupplementsSection({ selectedSupps, guests, cabins, suppAssignments, onToggle }) {
   const suppQtys = selectedSupps || {}; // { suppId: totalQty, ... }
   const assignments = suppAssignments || {}; // { suppId: { guestKey → qty } }
   const [catFilter, setCatFilter] = React.useState(null);
   const [searchTerm, setSearchTerm] = React.useState('');
   const [expandedSuppId, setExpandedSuppId] = React.useState(null);
 
-  const roster = buildGuestRoster(guests);
+  const roster = buildCabinGuestRoster(guests, cabins);
   const hasGuests = roster.length > 0;
 
   // Filter the individual supplement catalog by category and search.
@@ -672,6 +483,16 @@ function SupplementsSection({ selectedSupps, guests, suppAssignments, onToggle }
   const setGuestQty = (suppId, guestKey, qty) => {
     const suppAssign = { ...(assignments[suppId] || {}) };
     if (qty <= 0) delete suppAssign[guestKey]; else suppAssign[guestKey] = qty;
+    commitSuppAssignment(suppId, suppAssign);
+  };
+
+  const clearCabinQty = (suppId, guestKeys) => {
+    const suppAssign = { ...(assignments[suppId] || {}) };
+    guestKeys.forEach((guestKey) => delete suppAssign[guestKey]);
+    commitSuppAssignment(suppId, suppAssign);
+  };
+
+  const commitSuppAssignment = (suppId, suppAssign) => {
     const nextAssignments = { ...assignments };
     if (Object.keys(suppAssign).length === 0) delete nextAssignments[suppId]; else nextAssignments[suppId] = suppAssign;
     const totalQty = Object.values(suppAssign).reduce((a, b) => a + b, 0);
@@ -822,6 +643,7 @@ function SupplementsSection({ selectedSupps, guests, suppAssignments, onToggle }
                       roster={roster}
                       assignment={suppAssign}
                       onGuestQty={(guestKey, v) => setGuestQty(sup.id, guestKey, v)}
+                      onClearCabin={(guestKeys) => clearCabinQty(sup.id, guestKeys)}
                       onDone={() => setExpandedSuppId(null)} />
                 )}
               </div>);
@@ -888,7 +710,7 @@ function DisclosureSection({ label, badge, badgeColor, children }) {
 // ───────────────────────────────────────────────────────────────────────────
 // Sailing card — collapsed header + expandable body
 // ───────────────────────────────────────────────────────────────────────────
-function SailingCard({ s, update, sailing, expanded, onToggle, previewPkgId, onPkgPreview }) {
+function SailingCard({ s, update, sailing, expanded, onToggle }) {
   const g = s.guests;
   const DeckMap = window.CabinDeckMapSection;
   const avail = availabilityOf(sailing);
@@ -918,14 +740,13 @@ function SailingCard({ s, update, sailing, expanded, onToggle, previewPkgId, onP
   const handleToggle = () => {
     // Only clear the downstream selections when the sailing actually changes.
     // Re-opening the sailing you already picked used to wipe cabin, farecode,
-    // packages and supplements — and left suppAssignments/cabins pointing at
+    // supplements — and left suppAssignments/cabins pointing at
     // rooms that no longer had a cabinId.
     if (sailing.code !== s.selectedSailingCode) {
       update({
         selectedSailingCode: sailing.code,
         cabinId: null,
         farecodeId: null,
-        selectedPackages: [],
         selectedSupps: {},
         suppAssignments: {},
         cabins: [],
@@ -935,11 +756,6 @@ function SailingCard({ s, update, sailing, expanded, onToggle, previewPkgId, onP
       });
     }
     onToggle();
-  };
-
-  const togglePkg = (id) => {
-    const curr = s.selectedPackages || [];
-    update({ selectedPackages: curr.includes(id) ? curr.filter((x) => x !== id) : [...curr, id] });
   };
 
   const toggleSupp = (qtyObj, assignments) => {
@@ -1087,30 +903,13 @@ function SailingCard({ s, update, sailing, expanded, onToggle, previewPkgId, onP
 
           <div style={{ height: 1, background: WF.lineSoft, margin: '14px 0' }} />
 
-          {/* 3. Upgrade packages — progressive disclosure */}
-          <DisclosureSection
-          label="Upgrade Packages"
-          badge={s.selectedPackages?.length > 0 ? `${s.selectedPackages.length} selected` : 'Optional'}
-          badgeColor={s.selectedPackages?.length > 0 ? S2_TEAL : null}>
-            <UpgradePackagesSection
-            selectedPackages={s.selectedPackages}
-            onToggle={togglePkg}
-            previewPkgId={previewPkgId}
-            onPkgPreview={onPkgPreview}
-            guests={g}
-            nights={nights} />
-          </DisclosureSection>
-
-          <div style={{ height: 1, background: WF.lineSoft, margin: '14px 0' }} />
-
-          {/* 4. Supplements — progressive disclosure */}
+          {/* 3. Individual supplements — progressive disclosure */}
           <DisclosureSection
           label="Supplements"
           badge={Object.keys(s.selectedSupps || {}).length > 0 ? `${Object.keys(s.selectedSupps || {}).length} added` : 'Optional'}
           badgeColor={Object.keys(s.selectedSupps || {}).length > 0 ? S2_TEAL : null}>
             <SupplementsSection
             selectedSupps={s.selectedSupps}
-            selectedPackages={s.selectedPackages}
             guests={s.guests}
             cabins={s.cabins}
             suppAssignments={s.suppAssignments}
@@ -1222,7 +1021,6 @@ function Step2App({ booking, update, navigate }) {
   // Step2App (e.g. bouncing back from Step 4) drops the user back on the coarse
   // sailing list, making a fully-configured booking look like it needs redoing.
   const [expandedCard, setExpandedCard] = React.useState(() => state.selectedSailingCode || null);
-  const [previewPkgId, setPreviewPkgId] = React.useState(null);
   const [selectedBookingWindow] = React.useState(null);
   const [showItinerary, setShowItinerary] = React.useState(false);
 
@@ -1250,18 +1048,6 @@ function Step2App({ booking, update, navigate }) {
     );
   };
 
-  const handleConfirmPkg = (pkgId) => {
-    // Route through handleUpdate (not a raw setState) so the selection is
-    // persisted immediately — otherwise it only survives until the user
-    // clicks "Continue to guests" and any earlier navigation loses it.
-    handleUpdate({ selectedPackages: [pkgId] });
-    setPreviewPkgId(null);
-  };
-
-  const handleClearPkg = () => {
-    setPreviewPkgId(null);
-  };
-
   // Continue only enabled once sailing, cabin and farecode are all chosen.
   const continueEnabled = !!(state.selectedSailingCode && state.cabinId && state.farecodeId);
 
@@ -1281,10 +1067,7 @@ function Step2App({ booking, update, navigate }) {
           continueEnabled={continueEnabled}
           ctaLabel="Continue to guests →"
           onContinue={handleContinue}
-          onBlocked={handleBlocked}
-          pkgPreviewId={previewPkgId}
-          onConfirmPkg={handleConfirmPkg}
-          onClearPkg={handleClearPkg} />
+          onBlocked={handleBlocked} />
         }
         progressBar={<StepProgress2 current={1} />}>
 
@@ -1352,8 +1135,6 @@ function Step2App({ booking, update, navigate }) {
                   sailing={sail}
                   s={state}
                   update={handleUpdate}
-                  previewPkgId={previewPkgId}
-                  onPkgPreview={setPreviewPkgId}
                   onContinue={handleContinue} /> :
 
                 <SailingCard
@@ -1362,9 +1143,7 @@ function Step2App({ booking, update, navigate }) {
                   update={handleUpdate}
                   sailing={sail}
                   expanded={true}
-                  onToggle={() => {}}
-                  previewPkgId={previewPkgId}
-                  onPkgPreview={setPreviewPkgId} />;
+                  onToggle={() => {}} />;
 
               })}
                 </div>
@@ -1390,9 +1169,7 @@ function Step2App({ booking, update, navigate }) {
                   }}
                   sailing={sail}
                   expanded={false}
-                  onToggle={() => setExpandedCard(sail.code)}
-                  previewPkgId={previewPkgId}
-                  onPkgPreview={setPreviewPkgId} />
+                  onToggle={() => setExpandedCard(sail.code)} />
                     </React.Fragment>
               )}
                 </div>

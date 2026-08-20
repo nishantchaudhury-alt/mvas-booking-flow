@@ -1367,7 +1367,7 @@ function StateRoomMatrix({ update, s, onConfirmRooms }) {
     setConfirmedRooms(r => ({ ...r, [row.id]: roomNums }));
     setOpenPanel(null);
     // Persist the full per-cabin record (rooms + guest split) so the
-    // supplements step can offer per-cabin assignment. cabinId /
+    // supplements step can group its per-guest assignments by room. cabinId /
     // selectedCabinNum / selectedRoomCount keep their existing single-category
     // behaviour for the base fare.
     writeCabins(

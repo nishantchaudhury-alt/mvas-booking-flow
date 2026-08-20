@@ -38,6 +38,12 @@ const FP_YEARS = ['2026', '2027'];
 // HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
 
+function fpSelectedMonths(selectedMonth) {
+  if (!selectedMonth) return [];
+  if (Array.isArray(selectedMonth.months)) return selectedMonth.months;
+  return selectedMonth.month ? [selectedMonth.month] : [];
+}
+
 function fpBuildChips(selectedDestinations, selectedPorts, selectedHomePorts, selectedDuration, selectedMonth, selectedIntent) {
   const chips = [];
   (selectedHomePorts || []).forEach((id) => {
@@ -54,9 +60,9 @@ function fpBuildChips(selectedDestinations, selectedPorts, selectedHomePorts, se
     const band = getDurationBand(bandId);
     chips.push({ icon: '🗓', label: band ? band.label : bandId });
   });
-  if (selectedMonth && selectedMonth.month && selectedMonth.year) {
-    chips.push({ icon: '📅', label: `${selectedMonth.month} ${selectedMonth.year}` });
-  }
+  fpSelectedMonths(selectedMonth).forEach((month) => {
+    chips.push({ icon: '📅', label: `${month}${selectedMonth.year ? ` ${selectedMonth.year}` : ''}` });
+  });
   if (selectedIntent) {
     const i = FP_INTENTS.find((x) => x.name === selectedIntent);
     if (i) chips.push({ icon: i.emoji, label: selectedIntent });
@@ -71,9 +77,10 @@ function fpBuildChips(selectedDestinations, selectedPorts, selectedHomePorts, se
 // searchable/counted port popover: simpler to scan, and it scales the same
 // way whether a facet has 3 options or 22 — a plain list inside a popover,
 // no search box, no live counts. Two flavours of content:
-//   - single-select rows auto-apply and close on click (Departing From,
-//     Travel Intent, and each half of Departure Dates)
-//   - multi-select rows need an explicit Done (Destination(s), Duration),
+//   - single-select rows auto-apply and close on click (Departing From and
+//     Travel Intent)
+//   - multi-select rows need an explicit Done (Departure Dates,
+//     Destination(s), Duration),
 //     with a Clear alongside for backing out entirely
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -300,6 +307,7 @@ function SearchFilterPanel({ state, onUpdate }) {
   const homePorts = selectedHomePorts || [];
   const ports = selectedPorts || [];
   const durations = selectedDuration || [];
+  const selectedMonths = fpSelectedMonths(selectedMonth);
 
   // Track if user has made any selections in this session
   const [hasEverInteracted, setHasEverInteracted] = React.useState(false);
@@ -362,7 +370,21 @@ function SearchFilterPanel({ state, onUpdate }) {
 
   const setMonthField = (field, val) => {
     setHasEverInteracted(true);
-    onUpdate({ selectedMonth: { ...selectedMonth, [field]: val || null } });
+    onUpdate((current) => ({
+      selectedMonth: { ...(current.selectedMonth || {}), [field]: val || null }
+    }));
+  };
+
+  const toggleMonth = (month) => {
+    setHasEverInteracted(true);
+    onUpdate((current) => {
+      const currentMonth = current.selectedMonth || {};
+      const months = fpSelectedMonths(currentMonth);
+      const next = months.includes(month)
+        ? months.filter((m) => m !== month)
+        : [...months, month];
+      return { selectedMonth: { ...currentMonth, month: null, months: next } };
+    });
   };
 
   const setIntent = (val) => {
@@ -375,8 +397,11 @@ function SearchFilterPanel({ state, onUpdate }) {
 
   // Trigger labels — state its contents when something is picked, the facet
   // name otherwise.
-  const dateLabel = selectedMonth.month && selectedMonth.year
-    ? `${selectedMonth.month} ${selectedMonth.year}` : 'Departure Dates';
+  const dateLabel = selectedMonths.length === 0
+    ? (selectedMonth.year || 'Departure Dates')
+    : selectedMonths.length <= 2
+      ? `${selectedMonths.join(', ')}${selectedMonth.year ? ` ${selectedMonth.year}` : ''}`
+      : `${selectedMonths.length} months${selectedMonth.year ? ` · ${selectedMonth.year}` : ''}`;
   const homeLabel = homePorts.length ? mvasHomePortName(homePorts[0]) : 'Departing From';
   const destCount = selectedDestinations.length + ports.length;
   const destLabel = destCount === 0 ? 'Destination(s)'
@@ -497,7 +522,13 @@ function SearchFilterPanel({ state, onUpdate }) {
             open={openKey === 'dates'}
             onToggle={() => setOpenKey((k) => (k === 'dates' ? null : 'dates'))}
             onClose={closeDropdown}
-            width={320}>
+            width={320}
+            footer={
+              <FPDropdownFooter
+                clearDisabled={selectedMonths.length === 0 && !selectedMonth.year}
+                onClear={() => onUpdate({ selectedMonth: { months: [], year: null } })}
+                onDone={closeDropdown} />
+            }>
             <div style={{ display: 'flex', gap: 6, padding: '6px 14px 8px' }}>
               {FP_YEARS.map((y) => {
                 const on = selectedMonth.year === y;
@@ -506,7 +537,7 @@ function SearchFilterPanel({ state, onUpdate }) {
                     key={y}
                     type="button"
                     aria-pressed={on}
-                    onClick={() => setMonthField('year', on ? null : y)}
+                    onClick={() => setMonthField('year', y)}
                     style={{
                       flex: 1, padding: '7px 0', borderRadius: 6,
                       border: `1.5px solid ${on ? FP_NAVY : FP_BORDER}`,
@@ -524,8 +555,9 @@ function SearchFilterPanel({ state, onUpdate }) {
                 <FPListRow
                   key={m}
                   label={m}
-                  selected={selectedMonth.month === m}
-                  onClick={() => { setMonthField('month', selectedMonth.month === m ? null : m); closeDropdown(); }} />
+                  selected={selectedMonths.includes(m)}
+                  multiSelect
+                  onClick={() => toggleMonth(m)} />
               ))}
             </div>
           </FPDropdown>

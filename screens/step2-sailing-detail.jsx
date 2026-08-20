@@ -274,8 +274,8 @@ function SailingDetailView({ sailing, s, update, previewPkgId, onPkgPreview, onC
   const canContinue = !!(s.selectedSailingCode && s.cabinId && s.farecodeId);
 
   const toggleSupp = (qtyObj, assignments) => {
-    // qtyObj is { suppId: qty, ... }; assignments is
-    // { suppId: { guestKey|cabin:id: qty } }.
+    // qtyObj is { suppId: qty, ... }; assignments remains guest-level even
+    // though the panel visually groups those guests by cabin.
     update({
       selectedSupps: qtyObj,
       suppAssignments: assignments !== undefined ? assignments : s.suppAssignments
@@ -426,6 +426,7 @@ function SailingDetailView({ sailing, s, update, previewPkgId, onPkgPreview, onC
             <SupplementsSection
               selectedSupps={s.selectedSupps}
               guests={s.guests}
+              cabins={s.cabins}
               suppAssignments={s.suppAssignments}
               onToggle={toggleSupp} />
           </div>
