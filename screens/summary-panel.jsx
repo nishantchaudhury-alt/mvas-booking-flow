@@ -580,9 +580,17 @@ function BookingSummaryPanel({
     ? `${selectedMonths.join(', ')} ${b.selectedMonth.year || ''}`.trim()
     : (b.selectedMonth && b.selectedMonth.year) || '';
   const intentEmoji = { Relaxation: '🏖️', Adventure: '⛺', Anniversary: '💑', Family: '🎁' }[b.selectedIntent] || '✈️';
-  const roomStr = b.selectedCabinNum
-    ? `#${b.selectedCabinNum}${b.selectedCabinDeck ? ` · Deck ${b.selectedCabinDeck}` : ''}`
-    : b.assignmentMethod === 'auto' ? 'Auto-assign' : '';
+  // The stateroom matrix persists every confirmed room in `cabins`; the legacy
+  // selectedCabinNum field only stores the first room for base-fare
+  // compatibility. Build the visible summary from the complete cabin record so
+  // a multi-room booking never looks like a single-room booking in the rail.
+  const selectedRoomNums = [...new Set((b.cabins || []).map((cabin) => cabin && cabin.num).filter(Boolean))];
+  const roomStr = selectedRoomNums.length > 0
+    ? selectedRoomNums.map((num) => `#${num}`).join(', ')
+    : b.selectedCabinNum
+      ? `#${b.selectedCabinNum}${b.selectedCabinDeck ? ` · Deck ${b.selectedCabinDeck}` : ''}`
+      : b.assignmentMethod === 'auto' ? 'Auto-assign' : '';
+  const roomLabel = selectedRoomNums.length > 1 ? 'Rooms' : 'Room';
 
   // Shown on the collapsed heading so the section still says something useful.
   const selectionSummary = [
@@ -655,7 +663,7 @@ function BookingSummaryPanel({
               label="Cabin delta"
               value={p.cabin ? (p.cabinDeltaPP > 0 ? `+$${p.cabinDeltaPP}pp` : 'Included') : SP_DASH}
               dim={!p.cabin} mono={!!p.cabin} />
-            <SPRow label="Room" value={roomStr || SP_DASH} dim={!roomStr} />
+            <SPRow label={roomLabel} value={roomStr || SP_DASH} dim={!roomStr} />
             <SPRow
               label="Assignment"
               value={b.cabinId ? (b.assignmentMethod === 'auto' ? 'Auto-assign' : 'Manual select') : SP_DASH}
