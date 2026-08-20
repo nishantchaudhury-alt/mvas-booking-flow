@@ -1,0 +1,1737 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>FARECODE · Unified Booking Flow</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; background: #F1F5F9; font-family: "Inter", system-ui, sans-serif; color: #0F172A; }
+  * { box-sizing: border-box; }
+  #root { height: 100vh; }
+  button { font-family: inherit; }
+  /* Hide scrollbars globally while preserving scroll */
+  * { scrollbar-width: none; -ms-overflow-style: none; }
+  *::-webkit-scrollbar { width: 0; height: 0; display: none; }
+</style>
+
+<!-- Navigation is handled directly via window.__bookingNavigate in each step component -->
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<template id="__bundler_thumbnail" data-bg-color="#1B2434">
+  <svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+    <rect width="1200" height="800" fill="#1B2434"/>
+    <!-- Step dots -->
+    <circle cx="340" cy="400" r="28" fill="#334155"/>
+    <line x1="368" y1="400" x2="432" y2="400" stroke="#334155" stroke-width="4"/>
+    <circle cx="460" cy="400" r="28" fill="#334155"/>
+    <line x1="488" y1="400" x2="552" y2="400" stroke="#475569" stroke-width="4"/>
+    <circle cx="580" cy="400" r="28" fill="#2B3B50" stroke="#7DD3FC" stroke-width="3"/>
+    <line x1="608" y1="400" x2="672" y2="400" stroke="#475569" stroke-width="4"/>
+    <circle cx="700" cy="400" r="28" fill="#2B3B50" stroke="#475569" stroke-width="3"/>
+    <!-- Check marks in first two -->
+    <text x="340" y="407" fill="#fff" font-family="monospace" font-size="26" font-weight="700" text-anchor="middle">✓</text>
+    <text x="460" y="407" fill="#fff" font-family="monospace" font-size="26" font-weight="700" text-anchor="middle">✓</text>
+    <text x="580" y="407" fill="#7DD3FC" font-family="monospace" font-size="22" font-weight="700" text-anchor="middle">3</text>
+    <text x="700" y="407" fill="#64748B" font-family="monospace" font-size="22" font-weight="700" text-anchor="middle">4</text>
+    <text x="600" y="680" fill="#94A3B8" font-family="monospace" font-size="30" font-weight="700" text-anchor="middle" letter-spacing="6">FARECODE</text>
+  </svg>
+</template>
+</head>
+<body>
+<div id="root"></div>
+
+<!-- 1 · WF design tokens, primitives, WFAppShell ──────────────────────── -->
+<script type="text/babel" src="wireframe-primitives.jsx?v=121"></script>
+
+<!-- 2 · Data model: SAILINGS, INTENTS, priceQuote, getSailing, money… ─── -->
+<script type="text/babel" src="screens/intent-data.jsx?v=121"></script>
+
+<!-- 2b · Booking store: one state shape, one storage key, one pricing fn ── -->
+<script type="text/babel" src="screens/booking-store.jsx?v=121"></script>
+
+<!-- 2c · The single right-rail summary panel shared by all four steps ───── -->
+<script type="text/babel" src="screens/summary-panel.jsx?v=121"></script>
+
+<!-- 3 · Shared Step-2 atoms: FLOW4, StepProgress2, SourcePill2, ContextBar -->
+<script type="text/babel" src="screens/step2-common.jsx?v=121"></script>
+
+<script type="text/babel">
+// MiniStep — proper +/- stepper control
+function MiniStep({ value, min, onChange }) {
+  const atMin = value <= min;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 2, border: `1px solid ${WF.line}`, borderRadius: 6, padding: 2, background: '#fff' }}>
+      <button
+        type="button"
+        onClick={() => onChange(Math.max(min, value - 1))}
+        disabled={atMin}
+        style={{
+          width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          borderRadius: 4, border: 'none', background: 'transparent',
+          cursor: atMin ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 600,
+          color: atMin ? WF.inkFaint : WF.inkSoft, fontFamily: 'inherit', lineHeight: 1,
+        }}
+      >−</button>
+      <span style={{ fontSize: 12, fontWeight: 700, color: WF.ink, minWidth: 16, textAlign: 'center' }}>{value}</span>
+      <button
+        type="button"
+        onClick={() => onChange(value + 1)}
+        style={{
+          width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          borderRadius: 4, border: 'none', background: 'transparent',
+          cursor: 'pointer', fontSize: 13, fontWeight: 600, color: WF.inkSoft, fontFamily: 'inherit', lineHeight: 1,
+        }}
+      >+</button>
+    </div>
+  );
+}
+window.MiniStep = MiniStep;
+</script>
+
+<!-- 4 · Search filter panel — exports SearchFilterPanel + FPInventorySection,
+     both consumed by Step 1 below. Not a step of its own any more.  ───────  -->
+<script type="text/babel" src="screens/where-when-step1.jsx?v=121"></script>
+
+<!-- 5 · Step 1 — Sailing, fare & cabin (defines Step2App globally) ──────  -->
+<script type="text/babel" src="screens/step2-sailing.jsx?v=121"></script>
+
+<!-- 5b · Step 2 Deck Map — ship orientation + structural deck picker ─────  -->
+<script type="text/babel" src="screens/step2-deck-map.jsx?v=121"></script>
+
+<!-- 5c · Step 2 Sailing Detail — redesigned detail view with tabs ────── -->
+<script type="text/babel" src="screens/step2-sailing-detail.jsx?v=121"></script>
+
+<!-- 5d · Step 2 Stateroom Matrix — availability table + room panel ──────  -->
+<script type="text/babel" src="screens/step2-stateroom-matrix.jsx?v=121"></script>
+
+<!-- 6 · Step 2 — Add guests (exports window.Step3App) ───────────────────  -->
+<!-- Note: duplicate S2_CAB / S2_FC / FLOW4 consts removed from this file   -->
+<script type="text/babel" src="screens/step3-guests.jsx?v=121"></script>
+
+<!-- 7 · Step 3 — Review & confirm ───────────────────────────────────────  -->
+<!-- Extracted from Review & Confirm - Step 4.html; self-contained below.    -->
+
+<!-- Step-3 control styles. Real CSS rather than the inline onMouseEnter /
+     onMouseLeave pairs this screen used to carry: those repaint a border on
+     hover and do nothing at all on keyboard focus, so a tab-driven agent had
+     no visible focus anywhere on the screen. A stylesheet gets :hover and
+     :focus-visible for the same code, and states live in one place instead of
+     being restated at a dozen call sites. -->
+<style>
+  .s4-btn { font-family: inherit; cursor: pointer; transition: background-color .12s, border-color .12s, color .12s; }
+  .s4-btn:focus-visible, .s4-x:focus-visible { outline: 2px solid #1B2434; outline-offset: 2px; }
+
+  /* Row-level action. Resting state is bare text on purpose: ten of these
+     stacked down a guest list read as ten teal pills racing the names beside
+     them for attention. The label stays fully legible at rest — this hides
+     decoration, never the affordance — and the box arrives on hover/focus. */
+  /* Colours here are the WF accent family by value — plain CSS can't read the
+     JS tokens. accentInk #1B2434 (same navy as accentOn) / accentTint #EFF6FF
+     / accentLine #DBEAFE. Keep them in step with wireframe-primitives.jsx. */
+  .s4-edit { border: 1px solid transparent; background: transparent; color: #1B2434; }
+  .s4-edit:hover { background: #EFF6FF; border-color: #DBEAFE; }
+
+  .s4-ghost { border: 1px solid #E2E8F0; background: #fff; color: #1B2434; }
+  .s4-ghost:hover { border-color: #1B2434; background: #EFF6FF; }
+
+  .s4-primary { border: none; background: #1B2434; color: #fff; box-shadow: 0 1px 2px rgba(27,36,52,.28); }
+  .s4-primary:hover:not(:disabled) { background: #2B3B50; }
+  .s4-primary:disabled { background: #E2E8F0; color: #64748B; cursor: not-allowed; box-shadow: none; }
+
+  .s4-secondary { border: 1px solid #CBD5E1; background: #fff; color: #0F172A; }
+  .s4-secondary:hover { border-color: #94A3B8; background: #F8FAFC; }
+
+  /* Discard is destructive and reversible only by redoing the booking, so it
+     rests as plain text — present, but not competing with the two actions that
+     move the booking forward. Red is held back until intent is shown. */
+  .s4-quiet { border: 1px solid transparent; background: transparent; color: #475569; }
+  .s4-quiet:hover { color: #B91C1C; background: #FEF2F2; }
+
+  .s4-x { cursor: pointer; color: #475569; border-radius: 3px; }
+  .s4-x:hover { color: #B91C1C; }
+</style>
+
+<script type="text/babel">
+
+// ── Builds the real traveler roster for Step 4 from guests + ages (Step 2)
+// and guest names (Step 3), mapping each traveler's supplements from the
+// same suppAssignments map Step 2's "Assign supplements" flow writes to. ──
+function s4BuildPassengers(guests, guestAges, guestData, suppAssignments, cabins, selectedPackages) {
+  const CATS = [
+    { key: 'adults', code: 'A', type: 'Adult' },
+    { key: 'youngAdults', code: 'YA', type: 'Young Adult' },
+    { key: 'children', code: 'C', type: 'Child' },
+    { key: 'infants', code: 'I', type: 'Infant' }
+  ];
+  const g = guests || {};
+  const ages = guestAges || {};
+  const gd = guestData || {};
+  const assign = suppAssignments || {};
+  // guestKey → cabin key, so a cabin-level supplement can be shown against
+  // every traveller in that room. Kept separate from `supps` below because
+  // it is charged once per cabin, not once per person.
+  const cabinOf = buildCabinGuestMap(g, cabins);
+  // Supplements bundled into a selected package apply to the whole party —
+  // every passenger gets the same set, at no incremental charge (the
+  // package's own rate already covers them), so this stays out of `supps`
+  // and `suppAssignments` entirely rather than being priced per guest/cabin.
+  const pkgSuppIds = new Set();
+  ((selectedPackages || [])).forEach((pkgId) => {
+    const pkg = (S2_PKG || []).find((p) => p.id === pkgId);
+    pkg?.includedSupps?.forEach((sid) => pkgSuppIds.add(sid));
+  });
+  const list = [];
+  CATS.forEach(({ key, code, type }) => {
+    const count = g[key] || 0;
+    const ageArr = ages[key] || [];
+    for (let i = 0; i < count; i++) {
+      const guestKey = `${key}-${i}`;
+      const passCode = `${code}${i + 1}`;
+      // Prefer an explicit age if one was ever captured; otherwise fall back to
+      // the band implied by the guest type, which is how ages are collected now.
+      const rawAge = ageArr[i];
+      const age = rawAge !== undefined && rawAge !== null && rawAge !== '' && !isNaN(parseInt(rawAge, 10)) ? parseInt(rawAge, 10) : null;
+      const ageBand = GUEST_BANDS[key];
+      const rec = gd[passCode];
+      const supps = {};
+      Object.entries(assign).forEach(([suppId, byGuest]) => {
+        if (byGuest && byGuest[guestKey] > 0) supps[suppId] = byGuest[guestKey];
+      });
+      // Cabin-level items stay OUT of `supps` on purpose: the Add/Edit modal
+      // copies `supps` into a draft and writes every entry back per-guest, so
+      // merging them here would bill the cabin charge once per occupant.
+      const cabinSupps = {};
+      const ck = cabinOf[guestKey];
+      if (ck) {
+        Object.entries(assign).forEach(([suppId, byKey]) => {
+          if (byKey && byKey[ck] > 0) cabinSupps[suppId] = 1;
+        });
+      }
+      const pkgSupps = {};
+      pkgSuppIds.forEach((suppId) => { pkgSupps[suppId] = 1; });
+      list.push({
+        code: passCode,
+        guestKey,
+        // The cabin this traveller sits in, as a suppAssignments key. Needed so
+        // a cabin-level chip can be removed from the review screen — the chip is
+        // rendered per-occupant but the underlying entry is keyed by cabin.
+        cabinKey: ck || null,
+        name: rec && rec.name ? rec.name : `${type} ${i + 1}`,
+        type,
+        note: key === 'adults' ? (i === 0 ? 'Primary' : 'Companion') :
+              key === 'youngAdults' ? ((g.adults || 0) === 0 && i === 0 ? 'Primary' : 'Companion') : 'Dependent',
+        age,
+        ageBand,
+        isTemp: !!(rec && rec.name && rec.name.startsWith('Temp')),
+        email: null,
+        supps,
+        cabinSupps,
+        pkgSupps
+      });
+    }
+  });
+  return list;
+}
+
+// ── Step-progress bar (Step 4 variant — all prior steps clickable) ──
+function S4StepProgress({ onBack }) {
+  const steps = [
+    { n: 1, label: 'Sailing, fare & cabin' },
+    { n: 2, label: 'Add guests' },
+    { n: 3, label: 'Review & confirm' }
+  ];
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', background: WF.panel, border: `1px solid ${WF.line}`, borderRadius: 8, padding: '6px 8px', marginBottom: 20 }}>
+      {steps.map((st, i) => {
+        const s = st.n < 3 ? 'done' : 'current';
+        return (
+          <React.Fragment key={st.n}>
+            <button onClick={() => st.n < 3 && onBack(st.n)} style={{ display: 'flex', alignItems: 'center', gap: 8, border: 'none', padding: '6px 10px', borderRadius: 6, fontFamily: 'inherit', background: s === 'current' ? WF.fill : 'transparent', cursor: st.n < 3 ? 'pointer' : 'default' }}>
+              {/* See step2-common.jsx — current gets the halo, done the bare fill. */}
+              <div style={{ width: 18, height: 18, borderRadius: 9, flexShrink: 0, background: WF.accent, boxShadow: s === 'current' ? `0 0 0 3px ${WF.accentLine}` : 'none', color: '#fff', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{s === 'done' ? '✓' : 3}</div>
+              <div style={{ fontSize: 12, fontWeight: s === 'current' ? 600 : 500, color: WF.ink, whiteSpace: 'nowrap' }}>{st.label}</div>
+            </button>
+            {i < steps.length - 1 && <div style={{ flex: 1, height: 1, minWidth: 8, background: st.n < 3 ? WF.accentOn : WF.line, opacity: st.n < 3 ? 0.4 : 1 }} />}
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Supplement teal accent + Manage Supplements modal ──
+// Aliases of the shared accent family, not a palette of their own. These were
+// a teal (#0F766E / #E6F4F1) that existed nowhere else in the design system,
+// which is how this screen ended up running a different accent from the totals
+// panel sitting inside it. Renamed from S4_TEAL/S4_TEAL_TINT — the old names
+// would have gone stale the moment the value stopped being teal.
+const S4_ACCENT = WF.accentInk;
+const S4_ACCENT_TINT = WF.accentTint;
+
+// ── Line-weight system for this screen ─────────────────────────────────────
+// Now that the whole review sits on ONE bordered surface instead of three
+// stacked cards, the card borders no longer do the dividing — so the rules
+// inside have to. Two weights, two meanings:
+//
+//   1 · the container's own solid border  → "this is the surface"
+//   2 · S4_RULE, solid, one shade darker → separates SECTIONS and the peer
+//       groups inside them (snapshot ┊ guests ┊ summary, fare / add-ons / taxes)
+//   3 · WF.line, solid hairline           → structure WITHIN a group (guest
+//       rows, snapshot cells, cabin boxes)
+//
+// S4_RULE is darker than WF.line to create distinction without visual weight —
+// it groups rather than subdivides. Solid throughout keeps the read clean.
+const S4_RULE_COLOR = '#CBD5E1';
+const S4_RULE = `1px solid ${S4_RULE_COLOR}`;
+
+const S4_EMPTY_GUEST_DRAFT = { firstName: '', lastName: '', dob: '', phone: '', email: '', directoryId: null };
+
+// `guestData` stores one `name` string (that is what Step 2 writes and what
+// every reader renders), while the form edits first and last separately — so
+// the split happens here, on the way in.
+//
+// A placeholder ("Temp Adult 1") comes back as two empty fields rather than
+// being parsed into First="Temp" / Last="Adult 1": the agent opening this form
+// is there to replace the placeholder, and pre-filling it with the fake name
+// makes them clear two fields before they can type.
+function s4SplitGuestName(name) {
+  if (!name || /^Temp\b/.test(name)) return { firstName: '', lastName: '' };
+  const parts = String(name).trim().split(/\s+/);
+  return { firstName: parts[0] || '', lastName: parts.slice(1).join(' ') };
+}
+
+// ── One row of the guest-details form. Mirrors the field set Step 2's manual
+// entry collects (first / last / dob / phone / email) rather than inventing a
+// second, wider shape — both write the same `guestData[code]` record, so a name
+// typed here is the same name Step 2 would have written. ──
+function S4Field({ label, type, value, placeholder, onChange, span }) {
+  return (
+    <div style={span ? { gridColumn: '1 / -1' } : undefined}>
+      <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: WF.inkSoft, marginBottom: 5 }}>{label}</label>
+      <input
+        type={type || 'text'}
+        value={value}
+        placeholder={placeholder}
+        onChange={(e) => onChange(e.target.value)}
+        style={{
+          width: '100%', padding: '9px 12px', fontSize: 13, border: `1px solid ${WF.line}`,
+          borderRadius: 7, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
+          background: '#fff', color: type === 'date' && !value ? WF.inkFaint : WF.ink,
+        }} />
+    </div>
+  );
+}
+
+// One modal, two scopes and — for a guest — two jobs.
+//
+// `target` is `{ kind: 'guest' | 'cabin', key, title, code, guest }` where `key`
+// is the exact `suppAssignments` key being edited: a guest key (`adults-0`) or a
+// cabin key (`cabin:I6-0`). Cabin scope charges once per room, so its rows are a
+// binary add/remove rather than a quantity stepper; a stepper would break the
+// qty-always-1 invariant the `pricePP × qty` rollup depends on.
+//
+// A guest row's Edit button used to lead only here, to supplements — so fixing a
+// placeholder name meant walking back to Step 2, even though this screen is
+// exactly where the placeholder gets noticed (the warning banner names it). The
+// two jobs an agent has on a guest at review time are "who is this person" and
+// "what are they carrying", so the modal now carries both as tabs. Guest details
+// leads because a nameless traveller blocks ticketing while a missing spa pass
+// does not.
+//
+// Cabin scope gets no tab strip: a room has no name, dob or email, so a
+// disabled-looking second tab would only advertise something that can't exist.
+function S4EditModal({ target, draftSupps, setDraftQty, draftGuest, setDraftGuestField, onPickDirectory, onSave, onCancel, pkgSuppIds, otherScopeCount }) {
+  const [search, setSearch] = React.useState('');
+  const [cat, setCat] = React.useState(null);
+  const isCabin = target.kind === 'cabin';
+  const [tab, setTab] = React.useState(isCabin ? 'Supplements' : 'Guest details');
+  const onSupps = isCabin || tab === 'Supplements';
+
+  // Customer-index search. Local to the modal — a lookup the agent is doing, not
+  // a value the booking stores. `pickedId` only drives the "✓ Added" affordance
+  // and the divider caption; the profile's data is already in `draftGuest`, so
+  // losing this on remount costs nothing.
+  // Seeded from the record so a traveller already linked to a customer reopens
+  // saying so, rather than claiming their details were typed by hand. Safe as an
+  // initialiser because the modal is remounted per target (`key` at the call
+  // site), so this re-reads for each guest instead of going stale.
+  const [dirQuery, setDirQuery] = React.useState('');
+  const [pickedId, setPickedId] = React.useState(draftGuest.directoryId || null);
+  const dirResults = searchGuestDirectory(dirQuery, 6);
+
+  const categories = ['All', ...new Set((S2_SUPP || []).map((s) => s.category))];
+  const supps = (S2_SUPP || []).filter((su) => {
+    if (cat && su.category !== cat) return false;
+    if (search && !su.name.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  });
+
+  // How many of this guest's own items are already on, shown on the Supplements
+  // tab label. Without it, switching tabs is the only way to find out whether
+  // the tab you're not looking at has anything in it.
+  const suppOnCount = Object.keys(draftSupps).filter((id) => draftSupps[id] > 0).length;
+  const g = target.guest;
+
+  return (
+    <div onClick={onCancel} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.45)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 640, maxHeight: '86vh', background: '#fff', borderRadius: 14, display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 24px 60px rgba(15,23,42,0.28)' }}>
+
+        {/* Header */}
+        <div style={{ padding: '20px 24px 16px', borderBottom: `1px solid ${WF.line}`, background: '#F8FAFC' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: 19, fontWeight: 800, color: WF.ink, letterSpacing: -0.3 }}>
+                {isCabin ? 'Cabin supplements' : `Edit ${target.title}`}
+              </div>
+              <div style={{ fontSize: 13, color: WF.inkSoft, marginTop: 3 }}>
+                {isCabin
+                  ? `Charged once for ${target.title}, regardless of how many guests are in the room.`
+                  : 'Guest record and the supplements charged to them.'}
+              </div>
+            </div>
+            <button onClick={onCancel} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, color: WF.inkSoft, lineHeight: 1, padding: 0, marginTop: 2 }}>×</button>
+          </div>
+        </div>
+
+        {/* Tab strip. Same SPSegmented control the rails and Order summary use, so
+            this is the one toggle idiom in the product rather than a third. It
+            sits on white, not on the header's tint — the control's own track is
+            WF.fill, which IS the header colour, so on the header the inactive
+            half would have dissolved into the background. */}
+        {!isCabin && (
+          <div style={{ padding: '12px 24px', borderBottom: `1px solid ${WF.line}`, background: '#fff' }}>
+            <div style={{ maxWidth: 340 }}>
+              <SPSegmented
+                options={['Guest details', `Supplements${suppOnCount > 0 ? ` · ${suppOnCount}` : ''}`]}
+                value={onSupps ? `Supplements${suppOnCount > 0 ? ` · ${suppOnCount}` : ''}` : 'Guest details'}
+                onChange={(v) => setTab(v.indexOf('Supplements') === 0 ? 'Supplements' : 'Guest details')} />
+            </div>
+          </div>
+        )}
+
+        {/* ── Guest details ── */}
+        {!onSupps && (
+          <div style={{ flex: 1, overflowY: 'auto', padding: '16px 24px 20px' }}>
+            {/* What Step 1 decided and this form cannot change: the traveller's
+                category, their age band, and which room they sit in. Stated as
+                read-only context so the form isn't mistaken for the place to
+                move someone between cabins. */}
+            {g && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 14, paddingBottom: 12, borderBottom: `1px solid ${WF.line}` }}>
+                <span style={{ fontSize: 9.5, fontWeight: 700, color: WF.inkSoft, background: WF.fill, border: `1px solid ${WF.line}`, borderRadius: 4, padding: '2px 6px' }}>{g.code}</span>
+                <span style={{ fontSize: 11.5, color: WF.inkSoft }}>{g.type} · {g.age != null ? `Age ${g.age}` : g.ageBand} · {g.note}</span>
+                {g.isTemp && <span style={{ background: '#FEF3C7', color: '#92400E', padding: '1px 5px', borderRadius: 3, fontSize: 9, fontWeight: 700 }}>TEMP</span>}
+                <span style={{ fontSize: 10.5, color: WF.inkFaint, marginLeft: 'auto' }}>Set on Sailing, fare &amp; cabin</span>
+              </div>
+            )}
+
+            {/* ── Customer index ──
+                A returning traveller is already on file, so the first question
+                on this tab is "have we met them" — retyping five fields you
+                already hold is how a duplicate profile and a misspelled name get
+                created. Picking a result FILLS the form rather than saving
+                outright: the agent still gets to correct a stale phone number,
+                and the one Save Changes below stays the only commit path, so
+                this can't half-write a guest. */}
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.5, color: WF.inkLabel, textTransform: 'uppercase', marginBottom: 7 }}>Search customer index</div>
+              <div style={{ position: 'relative' }}>
+                <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: WF.inkFaint, fontSize: 14 }}>🔍</span>
+                <input
+                  type="text"
+                  placeholder="Search by name, email, phone or customer ID…"
+                  value={dirQuery}
+                  onChange={(e) => setDirQuery(e.target.value)}
+                  style={{ width: '100%', padding: '9px 12px 9px 36px', fontSize: 13, border: `1px solid ${WF.line}`, borderRadius: 7, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
+                {dirQuery && (
+                  <button
+                    onClick={() => setDirQuery('')}
+                    title="Clear search"
+                    style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: WF.inkFaint, lineHeight: 1, padding: 0 }}>×</button>
+                )}
+              </div>
+
+              {dirQuery.trim().length > 0 && dirQuery.trim().length < 2 && (
+                <div style={{ fontSize: 11, color: WF.inkFaint, marginTop: 6 }}>Type at least 2 characters to search.</div>
+              )}
+
+              {dirQuery.trim().length >= 2 && (
+                dirResults.length > 0 ? (
+                  <div style={{ marginTop: 8, border: `1px solid ${WF.line}`, borderRadius: 8, overflow: 'hidden', maxHeight: 188, overflowY: 'auto' }}>
+                    {dirResults.map((p, i) => {
+                      const picked = pickedId === p.id;
+                      return (
+                        <div
+                          key={p.id}
+                          onClick={() => { onPickDirectory(p); setPickedId(p.id); }}
+                          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 11px', cursor: 'pointer', background: picked ? S4_ACCENT_TINT : '#fff', borderTop: i === 0 ? 'none' : `1px solid ${WF.lineSoft}` }}
+                          onMouseEnter={(e) => { if (!picked) e.currentTarget.style.background = WF.fill; }}
+                          onMouseLeave={(e) => { if (!picked) e.currentTarget.style.background = '#fff'; }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                              <span style={{ fontSize: 12.5, fontWeight: 700, color: WF.ink }}>{directoryFullName(p)}</span>
+                              {p.tier && (
+                                <span style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: 0.4, color: '#92400E', background: '#FEF3C7', borderRadius: 3, padding: '1px 5px' }}>{p.tier.toUpperCase()}</span>
+                              )}
+                              <span style={{ fontSize: 9.5, color: WF.inkFaint, fontFamily: 'ui-monospace, monospace' }}>{p.id}</span>
+                            </div>
+                            <div style={{ fontSize: 10.5, color: WF.inkSoft, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {p.email} · {p.phone} · {p.city} · {p.bookings} past booking{p.bookings === 1 ? '' : 's'}
+                            </div>
+                          </div>
+                          <span style={{ fontSize: 10.5, fontWeight: 700, color: picked ? S4_ACCENT : WF.inkSoft, flexShrink: 0 }}>
+                            {picked ? '✓ Added' : 'Add'}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 11.5, color: WF.inkSoft, marginTop: 8, padding: '9px 11px', background: WF.fill, border: `1px solid ${WF.line}`, borderRadius: 7 }}>
+                    No match in the customer index — enter their details below to create a new record.
+                  </div>
+                )
+              )}
+            </div>
+
+            {/* The divider earns its keep once search exists: without it the form
+                below reads as part of the result list rather than as the other
+                way to get the same job done. */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <div style={{ flex: 1, height: 1, background: WF.lineSoft }} />
+              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.5, color: WF.inkFaint, textTransform: 'uppercase' }}>
+                {pickedId ? 'From customer index · editable' : 'Or enter manually'}
+              </span>
+              <div style={{ flex: 1, height: 1, background: WF.lineSoft }} />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              {/* Typing over the name breaks the customer link, not just the
+                  caption: the identity is the name, so a hand-edited one must
+                  not keep claiming to be CX-whatever. Contact fields don't do
+                  this — correcting a stale phone number on a known customer is
+                  the normal case, and it's still the same person. */}
+              <S4Field label="First name" value={draftGuest.firstName} placeholder="e.g. Maria" onChange={(v) => { setPickedId(null); setDraftGuestField('directoryId', null); setDraftGuestField('firstName', v); }} />
+              <S4Field label="Last name" value={draftGuest.lastName} placeholder="e.g. Alvarez" onChange={(v) => { setPickedId(null); setDraftGuestField('directoryId', null); setDraftGuestField('lastName', v); }} />
+              <S4Field label="Date of birth" type="date" value={draftGuest.dob} onChange={(v) => setDraftGuestField('dob', v)} />
+              <S4Field label="Phone number" type="tel" value={draftGuest.phone} placeholder="e.g. (555) 123-4567" onChange={(v) => setDraftGuestField('phone', v)} />
+              <S4Field label="Email address" type="email" span value={draftGuest.email} placeholder="e.g. maria.alvarez@email.com" onChange={(v) => setDraftGuestField('email', v)} />
+            </div>
+
+            {/* Leaving both name fields empty is a legitimate way to change only
+                the supplements on a still-unnamed traveller, so it doesn't block
+                the save — it just keeps whatever name the record already had. */}
+            {g && g.isTemp && !draftGuest.firstName && !draftGuest.lastName && (
+              <div style={{ fontSize: 11, color: '#B45309', marginTop: 12 }}>
+                This traveller keeps the placeholder name until a first or last name is entered.
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Search + category filters */}
+        {onSupps && (
+        <div style={{ padding: '16px 24px 12px', borderBottom: `1px solid ${WF.line}` }}>
+          <div style={{ position: 'relative', marginBottom: 12 }}>
+            <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: WF.inkFaint, fontSize: 15 }}>🔍</span>
+            <input type="text" placeholder="Search supplements…" value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: '100%', padding: '11px 14px 11px 42px', fontSize: 13, border: `1px solid ${WF.line}`, borderRadius: 8, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
+          </div>
+          <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
+            {categories.map((c) => {
+              const on = (c === 'All' && cat === null) || cat === c;
+              return (
+                <button key={c} onClick={() => setCat(c === 'All' ? null : c)} style={{ padding: '6px 14px', fontSize: 12, fontWeight: on ? 700 : 500, border: 'none', borderRadius: 20, background: on ? '#1B2434' : '#EEF2F6', color: on ? '#fff' : WF.ink, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.12s' }}>
+                  {c}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        )}
+
+        {/* Supplement list */}
+        {onSupps && (
+        <div style={{ flex: 1, overflowY: 'auto', padding: '14px 24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {supps.length > 0 ? supps.map((su) => {
+            const qty = draftSupps[su.id] || 0;
+            const on = qty > 0;
+            const lineTotal = su.pricePP * qty;
+            // A package's rate already covers its included supplements, so
+            // computeBookingPricing zeroes them. Without this the row would
+            // promise a charge the total never applies.
+            const inPkg = pkgSuppIds.has(su.id);
+            // Guest keys and cabin keys are mutually exclusive per supplement —
+            // holding both would bill twice with half of it invisible, and Step 1
+            // drops the abandoned side on sight. Saying so on the row means the
+            // move is a choice rather than something the agent discovers later.
+            const moving = !on && !inPkg && otherScopeCount(su.id) > 0;
+            return (
+              <div key={su.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, padding: '14px 16px', border: `1.5px solid ${inPkg ? WF.line : (on ? S4_ACCENT : WF.line)}`, borderRadius: 10, background: inPkg ? WF.fill : '#fff', transition: 'border-color 0.12s' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
+                  <span style={{ fontSize: 22, flexShrink: 0, opacity: inPkg ? 0.55 : 1 }}>{su.emoji}</span>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: inPkg ? WF.inkSoft : WF.ink, lineHeight: 1.2 }}>{su.name}</div>
+                      {inPkg && (
+                        <span style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: 0.4, color: '#6D28D9', background: '#F5F3FF', borderRadius: 3, padding: '1px 5px' }}>IN PKG</span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 12, color: WF.inkSoft, marginTop: 2, textDecoration: inPkg ? 'line-through' : 'none' }}>${su.pricePP.toFixed(2)} pp</div>
+                    {moving && (
+                      <div style={{ fontSize: 10.5, color: '#B45309', marginTop: 3 }}>
+                        {isCabin
+                          ? `Assigned to ${otherScopeCount(su.id)} guest${otherScopeCount(su.id) === 1 ? '' : 's'} · adding here moves it to the cabin`
+                          : `Assigned to ${otherScopeCount(su.id)} cabin${otherScopeCount(su.id) === 1 ? '' : 's'} · adding here moves it to guests`}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: inPkg ? WF.inkFaint : (on ? S4_ACCENT : WF.inkFaint), fontFamily: 'ui-monospace, monospace', minWidth: 64, textAlign: 'right' }}>
+                    {inPkg ? 'Included' : `+$${lineTotal.toFixed(2)}`}
+                  </div>
+                  {inPkg ? (
+                    <div style={{ fontSize: 11, color: WF.inkFaint, width: 100, textAlign: 'center' }}>Covered by package</div>
+                  ) : isCabin ? (
+                    <button
+                      onClick={() => setDraftQty(su.id, on ? 0 : 1)}
+                      style={{ width: 100, padding: '7px 0', fontSize: 11.5, fontWeight: 700, borderRadius: 6, border: `1.5px solid ${on ? WF.accentOn : WF.line}`, background: on ? WF.accentOn : '#fff', color: on ? '#fff' : WF.ink, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.12s' }}>
+                      {on ? '✓ Added' : 'Add to cabin'}
+                    </button>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <button onClick={() => setDraftQty(su.id, qty - 1)} disabled={qty === 0} style={{ width: 30, height: 30, border: `1px solid ${WF.line}`, borderRadius: '6px 0 0 6px', background: qty === 0 ? WF.fill : '#fff', color: qty === 0 ? WF.inkFaint : WF.ink, cursor: qty === 0 ? 'default' : 'pointer', fontFamily: 'inherit', fontSize: 17, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>−</button>
+                      <div style={{ width: 40, height: 30, border: `1px solid ${WF.line}`, borderLeft: 'none', borderRight: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: WF.ink, background: '#fff' }}>{qty}</div>
+                      <button onClick={() => setDraftQty(su.id, qty + 1)} style={{ width: 30, height: 30, border: `1px solid ${WF.line}`, borderRadius: '0 6px 6px 0', background: '#fff', color: WF.ink, cursor: 'pointer', fontFamily: 'inherit', fontSize: 17, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>+</button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          }) : (
+            <div style={{ fontSize: 13, color: WF.inkFaint, textAlign: 'center', padding: '24px 0' }}>No supplements match your search.</div>
+          )}
+        </div>
+        )}
+
+        {/* Footer. One Save for both tabs: the two drafts are edits to one
+            traveller, so committing them separately would let an agent save a
+            name and silently lose a supplement change made a moment earlier on
+            the other tab. */}
+        <div style={{ padding: '14px 24px', borderTop: `1px solid ${WF.line}`, display: 'flex', justifyContent: 'flex-end', gap: 10, background: '#fff' }}>
+          <button onClick={onCancel} style={{ padding: '10px 22px', fontSize: 13, fontWeight: 600, border: `1px solid ${WF.line}`, borderRadius: 8, background: '#fff', color: WF.ink, cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
+          <button onClick={onSave} style={{ padding: '10px 22px', fontSize: 13, fontWeight: 700, border: 'none', borderRadius: 8, background: WF.accentOn, color: '#fff', cursor: 'pointer', fontFamily: 'inherit' }}>Save Changes</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Package picker. Step 1's only add path is click-card → preview → confirm
+// in the right rail, which this step doesn't have — so removing a package here
+// used to be a one-way door. This is the return trip: a draft list committed on
+// save, priced by the same computeBookingPricing every other number on the page
+// comes from, so the delta shown can't drift from the delta applied. ──
+function S4PackagePickerModal({ booking, current, baseTotal, onSave, onCancel }) {
+  const [draft, setDraft] = React.useState(current || []);
+  const guestCount = bookingGuestCount(booking);
+  const pv = computeBookingPricing({ ...booking, selectedPackages: draft });
+  const delta = pv.total - baseTotal;
+
+  const toggle = (id) => setDraft((d) => (d.includes(id) ? d.filter((x) => x !== id) : [...d, id]));
+
+  // What the booking is actually billed for a package — its included
+  // supplements at pricePP × guests. PackageCard's own footer multiplies
+  // pkg.rate by nights instead, which lands on a different number.
+  const realTotal = (pkg) =>
+    (pkg.includedSupps || []).reduce((t, id) => t + ((S2_SUPP || []).find((s) => s.id === id)?.pricePP || 0), 0) * guestCount;
+
+  return (
+    <div onClick={onCancel} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.45)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 760, maxHeight: '86vh', background: '#fff', borderRadius: 14, display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 24px 60px rgba(15,23,42,0.28)' }}>
+
+        <div style={{ padding: '20px 24px 16px', borderBottom: `1px solid ${WF.line}`, background: '#F8FAFC' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontSize: 19, fontWeight: 800, color: WF.ink, letterSpacing: -0.3 }}>Upgrade packages</div>
+              <div style={{ fontSize: 13, color: WF.inkSoft, marginTop: 3 }}>
+                Everything in a package applies to all {guestCount} guest{guestCount === 1 ? '' : 's'}.
+              </div>
+            </div>
+            <button onClick={onCancel} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, color: WF.inkSoft, lineHeight: 1, padding: 0, marginTop: 2 }}>×</button>
+          </div>
+        </div>
+
+        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 24px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12 }}>
+            {(S2_PKG || []).map((pkg) => (
+              <PackageCard
+                key={pkg.id}
+                pkg={pkg}
+                totalGuests={guestCount}
+                selected={draft.includes(pkg.id)}
+                bundleTotalOverride={realTotal(pkg)}
+                onClick={() => toggle(pkg.id)} />
+            ))}
+          </div>
+        </div>
+
+        <div style={{ padding: '14px 24px', borderTop: `1px solid ${WF.line}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, background: '#fff' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, minWidth: 0 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.5, color: WF.inkLabel, textTransform: 'uppercase' }}>Price change</span>
+            <span style={{ fontSize: 15, fontWeight: 800, color: delta === 0 ? WF.inkFaint : (delta > 0 ? WF.ink : '#059669'), fontFamily: 'ui-monospace, monospace' }}>
+              {delta === 0 ? '—' : `${delta > 0 ? '+' : '−'}${money(Math.abs(delta))}`}
+            </span>
+          </div>
+          <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
+            <button onClick={onCancel} style={{ padding: '10px 22px', fontSize: 13, fontWeight: 600, border: `1px solid ${WF.line}`, borderRadius: 8, background: '#fff', color: WF.ink, cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
+            <button onClick={() => onSave(draft)} style={{ padding: '10px 22px', fontSize: 13, fontWeight: 700, border: 'none', borderRadius: 8, background: WF.accentOn, color: '#fff', cursor: 'pointer', fontFamily: 'inherit' }}>Save Changes</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── One section inside the unified review surface. Borderless and unpadded on
+// purpose: the screen has exactly one bordered surface now (the container), and
+// re-boxing every section inside it stacked three levels of rounded rectangle —
+// container ▸ card ▸ cabin group ▸ package panel — which is what made the old
+// layout read as clutter rather than as a document. The zone's own dotted rule
+// and this label carry the separation instead.
+//
+// No `icon`: the two section labels used to open with 👥 and 💵, which added a
+// colour and a shape to a line whose whole job was to be a quiet signpost, and
+// gave two sections a visual prominence the other two (snapshot, decisions)
+// never had. An uppercase label alone is the consistent treatment.
+//
+// The label sits on `alignItems: 'baseline'` with its `meta` so a count or a
+// subtotal on the right sits on the same typographic line as the title, not
+// centred against its box. ──
+function S4Section({ title, meta, children }) {
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, color: WF.inkLabel, textTransform: 'uppercase' }}>{title}</div>
+        {meta && <div style={{ fontSize: 11, fontWeight: 500, color: WF.inkSoft }}>{meta}</div>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+// ── One decision inside the Checkout options card. Deliberately borderless:
+// it already sits inside a bordered card, and boxing each one again turned a
+// short checklist into four competing panels. The micro-label carries the
+// separation instead. ──
+function S4Option({ label, divider, children, style = {} }) {
+  return (
+    <div style={{ ...(divider ? { paddingTop: 12, borderTop: S4_RULE } : {}), ...style }}>
+      <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: 0.5, color: WF.inkLabel, textTransform: 'uppercase', marginBottom: 5 }}>{label}</div>
+      {children}
+    </div>
+  );
+}
+
+// ── A denser stand-in for summary-panel.jsx's SPPriceRow, scoped to this
+// screen only. SPPriceRow is shared with the step 1/2 rail, so tightening it
+// there would change screens nobody asked to change; this gives Order
+// summary its own density without touching that shared component. ──
+// Amounts are never `WF.inkFaint`. It measures 2.56:1 against this card's
+// white — under half WCAG AA's 4.5:1 floor — and it was being used for the
+// sub-amounts, which made the itemised figures an agent is here to check the
+// least legible text on the page. `WF.inkSoft` is 7.58:1 and still reads as
+// subordinate to the bold `WF.ink` subtotal beside it: the hierarchy was
+// always carried by weight and size, so nothing is lost by fixing the colour.
+function S4Row({ label, sub, amount, accent, strong }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, padding: '2.5px 0' }}>
+      <div style={{ fontSize: strong ? 12.5 : 12, fontWeight: strong ? 700 : 500, color: strong ? WF.ink : WF.inkSoft, minWidth: 0 }}>
+        {label}
+        {sub && <div style={{ fontSize: 10.5, color: WF.inkSoft, marginTop: 1 }}>{sub}</div>}
+      </div>
+      <span style={{ fontSize: strong ? 13 : 12, fontWeight: strong ? 700 : 500, color: accent || (strong ? WF.ink : WF.inkSoft), fontFamily: 'ui-monospace, monospace', fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{spMoney(amount)}</span>
+    </div>
+  );
+}
+
+// ── The due-now / total / remaining stats. Stacked top-to-bottom rather than
+// one wrapping row: at this column's width, four stat blocks plus two buttons
+// on shared flex lines wrapped unpredictably and buttons ended up floating
+// away from the numbers that justify them. A vertical read — the number that
+// matters most (due now) first, booking total on its own row underneath
+// (it's the actual contract value, so it gets real weight, not a footnote
+// treatment), remaining and terms last — has one obvious order regardless of
+// width. Every label/muted string here uses WF.inkSoft, not WF.inkFaint —
+// inkFaint is ~2:1 contrast against this panel's light-blue tint, well under
+// WCAG AA's 4.5:1 floor for text this size; inkSoft clears ~5.7:1. ──
+function S4TotalsStats({ q }) {
+  if (q.status === 'empty') {
+    return <div style={{ fontSize: 12, color: WF.inkSoft, fontStyle: 'italic' }}>Total appears once a sailing and cabin are chosen.</div>;
+  }
+  return (
+    <div>
+      <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.7, color: WF.accentInk, textTransform: 'uppercase', marginBottom: 2 }}>Amount due now</div>
+      <div style={{ fontSize: 20, fontWeight: 800, color: WF.ink, fontFamily: 'ui-monospace, monospace', lineHeight: 1 }}>{money(q.amountDue)}</div>
+
+      <div style={{ marginTop: 8 }}>
+        <span style={{ fontSize: 10, fontWeight: 700, color: WF.inkSoft, textTransform: 'uppercase' }}>
+          {q.status === 'partial' ? 'Provisional total' : 'Booking total'}
+        </span>
+        <span style={{ fontSize: 13, fontWeight: 800, color: WF.ink, fontFamily: 'ui-monospace, monospace', marginLeft: 7 }}>{money(q.total)}</span>
+      </div>
+
+      <div style={{ marginTop: 3 }}>
+        <span style={{ fontSize: 10, fontWeight: 600, color: WF.inkSoft, textTransform: 'uppercase' }}>Remaining</span>
+        <span style={{ fontSize: 11.5, fontWeight: 700, color: WF.inkSoft, fontFamily: 'ui-monospace, monospace', marginLeft: 7 }}>{money(q.remaining)}</span>
+      </div>
+
+      <div style={{ fontSize: 10.5, color: WF.inkSoft, marginTop: 5 }}>
+        {q.payFull
+          ? 'Paid in full · nothing due later'
+          : `${Math.round(q.depositRate * 100)}% deposit${q.status === 'partial' ? ' · select a fare to confirm' : ' · balance due at 45 days'}`}
+      </div>
+    </div>
+  );
+}
+
+// ── One guest row. Single line whenever possible — name, badges, role and the
+// edit action all share it — with a chip line only for what's actually theirs
+// (per-guest items). Cabin-level and package items are drawn once per cabin /
+// once for the party elsewhere, never repeated here. ──
+function S4GuestRow({ guest, onOpenManage, onRemoveSupp, last }) {
+  const suppIds = Object.keys(guest.supps || {}).filter((id) => guest.supps[id] > 0);
+  return (
+    <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '7px 0', borderBottom: last ? 'none' : `1px solid ${WF.line}` }}>
+      <div style={{ width: 24, height: 24, borderRadius: 4, background: WF.fill, border: `1px solid ${WF.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 9.5, fontWeight: 700, color: WF.inkSoft }}>{guest.code}</div>
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', flexWrap: 'wrap', rowGap: 4, columnGap: 6 }}>
+        <span style={{ fontSize: 12.5, fontWeight: 600, color: WF.ink }}>{guest.name}</span>
+        {guest.isTemp && <span style={{ background: '#FEF3C7', color: '#92400E', padding: '1px 5px', borderRadius: 3, fontSize: 9, fontWeight: 700, flexShrink: 0 }}>TEMP</span>}
+        <span style={{ fontSize: 10.5, color: WF.inkSoft, flexShrink: 0 }}>{guest.age != null ? `Age ${guest.age}` : guest.ageBand} · {guest.note}</span>
+        {suppIds.length > 0 && (
+          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+            {suppIds.map((id) => {
+              const su = (S2_SUPP || []).find((s) => s.id === id);
+              if (!su) return null;
+              return (
+                <span key={id} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, borderRadius: 4, border: `1px solid ${WF.line}`, background: WF.fill, fontSize: 10, fontWeight: 500, color: WF.ink, padding: '2px 6px', whiteSpace: 'nowrap' }}>
+                  {su.name}{guest.supps[id] > 1 ? ` ×${guest.supps[id]}` : ''}
+                  <button type="button" className="s4-x" onClick={() => onRemoveSupp(guest.guestKey, id)} title={`Remove ${su.name} from ${guest.name}`} style={{ border: 'none', background: 'none', padding: 0, font: 'inherit', lineHeight: 1 }}>×</button>
+                </span>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      {/* The leading "+" is gone: it promised "add something" when the button now
+          opens a traveller's record first and supplements second. The bare verb
+          covers both jobs; the tooltip names them.
+
+          Styling moved to `.s4-edit`, which rests as bare teal text. A bordered
+          pill per row meant a ten-guest party drew ten boxed buttons in a column
+          down the right edge, and that repeated chrome — identical on every row,
+          so carrying no information — was reading louder than the names. */}
+      <button onClick={onOpenManage} className="s4-btn s4-edit" title={`Edit ${guest.name} — guest details or supplements`} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, padding: '4px 9px', fontSize: 10.5, fontWeight: 700, borderRadius: 5, flexShrink: 0 }}>
+        Edit
+      </button>
+    </div>
+  );
+}
+
+// ── Step 4 App ──
+function Step4App({ booking, update }) {
+  // Bound to the router's booking — no local copy, no storage writes, no
+  // hardcoded fallback booking. `setSt` keeps the functional-updater shape the
+  // call sites below already use.
+  const st = booking;
+  const setSt = update;
+
+  // Manage-supplements modal state. `manageTarget` is the assignment scope being
+  // edited — `{ kind, key, title }` — rather than an index into `passengers`, so
+  // the same modal serves a guest row and a cabin header.
+  const [manageTarget, setManageTarget] = React.useState(null);
+  const [draftSupps, setDraftSupps] = React.useState({});
+  // The guest-details half of the same modal. Separate draft from `draftSupps`
+  // because the two write to different slices of the booking (`guestData` vs
+  // `suppAssignments`), but both commit on one Save.
+  const [draftGuest, setDraftGuest] = React.useState(S4_EMPTY_GUEST_DRAFT);
+  const [pkgPickerOpen, setPkgPickerOpen] = React.useState(false);
+  const [showHoldMenu, setShowHoldMenu] = React.useState(false);
+
+  // Which lens Order summary shows: the whole-booking ledger, or the same money
+  // re-cut per stateroom. Local state — a view of the receipt, not booking data.
+  // Same two labels and same segmented control as the Step 1 rail, so the toggle
+  // is recognised as the one pattern rather than learned twice.
+  const [summaryView, setSummaryView] = React.useState('Global Details');
+
+  // Derive the real passenger roster from guests + ages (Step 2) and guest
+  // names (Step 3) — never a static mock — and map each traveler's
+  // supplements from the same suppAssignments map Step 2 writes to.
+  const passengers = s4BuildPassengers(st.guests, st.guestAges, st.guestData, st.suppAssignments, st.cabins, st.selectedPackages);
+
+  // Cabin-level items are identical for every occupant of a room, so drawing
+  // them on each passenger's row (as before) meant an 8-guest cabin printed
+  // the same 4 chips 8 times — most of the card's height was repetition, not
+  // information. Grouping by cabin states the room's items once and leaves
+  // each guest row to the one or two lines that differ per person.
+  const cabinGroups = [];
+  const cabinGroupByKey = {};
+  const soloPassengers = [];
+  passengers.forEach((p) => {
+    if (!p.cabinKey) { soloPassengers.push(p); return; }
+    if (!cabinGroupByKey[p.cabinKey]) {
+      const cab = (st.cabins || []).find((c) => cabinSuppKey(c.id) === p.cabinKey);
+      const group = {
+        cabinKey: p.cabinKey,
+        label: cab && cab.num ? `Room ${cab.num}` : 'Cabin',
+        // Same helper the cabin-wise receipt uses, so "what category is this
+        // room" reads identically whether the agent is looking at the guest
+        // list or the money — one derivation, not two screens agreeing by luck.
+        categoryName: cab ? cabinCategoryName(cab) : null,
+        people: [],
+      };
+      cabinGroupByKey[p.cabinKey] = group;
+      cabinGroups.push(group);
+    }
+    cabinGroupByKey[p.cabinKey].people.push(p);
+  });
+
+  // Seeds the draft straight off the assignment map by key, so one path serves
+  // both scopes. The old version read `passengers[idx].supps`, which is built to
+  // exclude cabin items and therefore can't describe a cabin's own selection.
+  const draftForKey = (key) => {
+    const out = {};
+    Object.entries(st.suppAssignments || {}).forEach(([sid, byKey]) => {
+      if (byKey && byKey[key] > 0) out[sid] = byKey[key];
+    });
+    return out;
+  };
+  const openManage = (target) => {
+    setManageTarget(target);
+    setDraftSupps(draftForKey(target.key));
+    // Seeded from the live record, so reopening shows what was saved rather
+    // than the previous guest's draft. Cabin scope has no record to seed from.
+    const rec = target.kind === 'guest' && target.code ? (st.guestData || {})[target.code] || {} : {};
+    setDraftGuest({
+      ...S4_EMPTY_GUEST_DRAFT,
+      ...s4SplitGuestName(rec.name),
+      dob: rec.dob || '', phone: rec.phone || '', email: rec.email || '',
+      directoryId: rec.directoryId || null,
+    });
+  };
+  const setDraftGuestField = (field, value) => setDraftGuest((prev) => ({ ...prev, [field]: value }));
+  // Copies a customer-index profile into the draft — every field, replacing what
+  // was there. A half-applied profile (name from the directory, phone left over
+  // from a placeholder) is the exact duplicate-record mess the search exists to
+  // prevent, so this deliberately overwrites rather than merges. `directoryId`
+  // rides along so the saved record remembers which customer it came from.
+  const applyDirectoryPerson = (p) => setDraftGuest({
+    firstName: p.firstName || '', lastName: p.lastName || '',
+    dob: p.dob || '', phone: p.phone || '', email: p.email || '',
+    directoryId: p.id || null,
+  });
+  const setDraftQty = (suppId, qty) => {
+    setDraftSupps((prev) => {
+      const next = { ...prev };
+      if (qty <= 0) delete next[suppId]; else next[suppId] = qty;
+      return next;
+    });
+  };
+  // How many keys of the *opposite* kind a supplement currently holds. Feeds the
+  // "adding here moves it" caption, so the mutual exclusion below is stated
+  // before it happens rather than discovered afterwards.
+  const otherScopeCount = (suppId) => {
+    const byKey = (st.suppAssignments || {})[suppId] || {};
+    const wantCabin = manageTarget && manageTarget.kind === 'cabin';
+    return Object.keys(byKey).filter((k) => byKey[k] > 0 && (wantCabin ? !isCabinSuppKey(k) : isCabinSuppKey(k))).length;
+  };
+  const saveManage = () => {
+    const { key: assignKey, kind, code } = manageTarget;
+    const wantCabin = kind === 'cabin';
+    setSt((s) => {
+      const suppAssignments = {};
+      Object.entries(s.suppAssignments || {}).forEach(([sid, byKey]) => { suppAssignments[sid] = { ...byKey }; });
+      // Clear this scope's own entry everywhere, then re-add the draft.
+      Object.keys(suppAssignments).forEach((sid) => { delete suppAssignments[sid][assignKey]; });
+      Object.entries(draftSupps).forEach(([sid, qty]) => {
+        if (!(qty > 0)) return;
+        const byKey = suppAssignments[sid] || {};
+        // Guest keys and cabin keys stay mutually exclusive per supplement: a
+        // supplement holding both bills twice while the panel only shows one of
+        // them, and Step 1's mode switch drops the abandoned side on sight.
+        Object.keys(byKey).forEach((k) => { if (isCabinSuppKey(k) !== wantCabin) delete byKey[k]; });
+        // A cabin charge is once per room, so its qty is always 1 — the
+        // `pricePP × qty` rollup has no other way to know the scope.
+        byKey[assignKey] = wantCabin ? 1 : qty;
+        suppAssignments[sid] = byKey;
+      });
+      const selectedSupps = {};
+      Object.keys(suppAssignments).forEach((sid) => {
+        const total = Object.values(suppAssignments[sid]).reduce((a, b) => a + b, 0);
+        if (total > 0) selectedSupps[sid] = total; else delete suppAssignments[sid];
+      });
+
+      // The guest-details half. Writes the same `guestData[code]` record shape
+      // Step 2 writes — `{ confirmed, name, dob, phone, email }` — so a name
+      // entered here is indistinguishable from one entered there, and walking
+      // back to Step 2 shows this guest as confirmed rather than blank.
+      //
+      // Merged onto the existing record, and an empty name leaves the stored one
+      // alone: opening this modal only to add a supplement must not wipe the
+      // traveller's name as a side effect.
+      let guestData = s.guestData;
+      if (kind === 'guest' && code) {
+        const typed = [draftGuest.firstName, draftGuest.lastName].filter(Boolean).join(' ').trim();
+        const prev = (s.guestData || {})[code] || null;
+        const touched = !!(typed || draftGuest.dob || draftGuest.phone || draftGuest.email);
+        // Only materialise a record when the form actually holds something, or
+        // one already exists to merge into. A traveller can reach this modal
+        // with no record at all (nobody has named them yet); if such an agent
+        // only bumps a supplement and saves, writing an empty record would tell
+        // Step 2 the guest is done — its "fill remaining as temp" count and its
+        // continue gate both key off the record merely existing.
+        if (touched || prev) {
+          const next = { ...(prev || {}), dob: draftGuest.dob, phone: draftGuest.phone, email: draftGuest.email };
+          if (typed) next.name = typed;
+          // Which customer this traveller resolves to, when they came from the
+          // index. Assigned OR deleted — never merely skipped: `next` spreads
+          // `prev`, so leaving it alone would keep a link the agent just broke by
+          // retyping the name, and the record would go on claiming to be a
+          // customer it no longer matches.
+          if (draftGuest.directoryId) next.directoryId = draftGuest.directoryId;
+          else delete next.directoryId;
+          // `confirmed` means "someone stands behind this record", which a
+          // nameless one cannot claim — so it follows the name, not the save.
+          if (next.name) next.confirmed = true;
+          guestData = { ...(s.guestData || {}), [code]: next };
+        }
+      }
+
+      return { ...s, suppAssignments, selectedSupps, guestData };
+    });
+    setManageTarget(null);
+  };
+  // Drops one supplement from one assignment key. The key is a guest key
+  // (`adults-0`) for a per-person item or a cabin key (`cabin:IS-204`) for a
+  // once-per-room one — `suppAssignments` stores both the same way, so the same
+  // removal works for either and the chips only differ in which key they pass.
+  const removeSuppByKey = (assignKey, suppId) => {
+    if (!assignKey) return;
+    setSt((s) => {
+      const suppAssignments = { ...(s.suppAssignments || {}) };
+      if (suppAssignments[suppId]) {
+        const byKey = { ...suppAssignments[suppId] };
+        delete byKey[assignKey];
+        if (Object.keys(byKey).length === 0) delete suppAssignments[suppId]; else suppAssignments[suppId] = byKey;
+      }
+      const selectedSupps = { ...(s.selectedSupps || {}) };
+      if (suppAssignments[suppId]) {
+        selectedSupps[suppId] = Object.values(suppAssignments[suppId]).reduce((a, b) => a + b, 0);
+      } else {
+        delete selectedSupps[suppId];
+      }
+      return { ...s, suppAssignments, selectedSupps };
+    });
+  };
+
+  // Package-bundled supplements are derived from `selectedPackages`, never
+  // stored per item, so the only way to drop one is to drop its package — which
+  // takes the whole bundle with it. That is the same all-or-nothing shape the
+  // package already has everywhere else in the flow.
+  const removePackage = (pkgId) => {
+    setSt((s) => ({ ...s, selectedPackages: (s.selectedPackages || []).filter((id) => id !== pkgId) }));
+  };
+
+  const savePackages = (next) => {
+    setSt({ selectedPackages: next });
+    setPkgPickerOpen(false);
+  };
+
+  const discard = () => {
+    if (!window.confirm('Discard this booking and start over?')) return;
+    setSt({ ...BOOKING_DEFAULTS, step: 1 }, { replace: true });
+  };
+
+  // One pricing source, shared with the rail and every other step. Replaces the
+  // divergent copy that hardcoded a 25% deposit (ignoring fc.deposit) and
+  // invented a $577 fare when nothing was selected.
+  const q = computeBookingPricing(st);
+  const sailing = q.sailing;
+  const g = st.guests || { adults: 0, youngAdults: 0, children: 0, infants: 0 };
+  const totalGuests = q.guestCount;
+  const cabin = q.cabin;
+  const fc = q.fc;
+  const cabinLabel = cabin ? `${cabin.name} · ${cabin.id}` : '—';
+  // Order summary groups add-ons (things an agent can add/remove) apart from
+  // taxes & port fees (fixed, non-editable) — two different questions ("what
+  // did we choose" vs "what does the cruise line/government require") that
+  // used to sit as undifferentiated rows in one flat list. The line previously
+  // labelled "Gratuities" is the only fixed-charge figure the pricing model
+  // produces, so it becomes the taxes/fees total here rather than inventing a
+  // second charge on top of it; the government/cruise-line split below is an
+  // illustrative allocation of that one figure, not a new cost.
+  const round2 = (n) => Math.round(n * 100) / 100;
+  const addOnsTotal = round2(q.suppTotal + q.packageTotal + q.protectionTotal);
+  const govtTaxes = round2(q.gratuities * 0.6);
+  const cruiseFees = round2(q.gratuities - govtTaxes);
+  const fcLabel = fc ? fc.code : '—';
+
+  // Cabin-wise lens. Comes from the same spCabinBreakdown the Step 1 rail uses,
+  // so the two views of a room can't disagree — and because it allocates
+  // `q.cabinFarePP`, the supplement assignments and `q.gratuities`, the room
+  // subtotals re-add to exactly the fare + add-ons + taxes rows in the global
+  // lens above rather than being a parallel calculation.
+  //
+  // Two things it deliberately does NOT allocate: trip protection and the
+  // promo discount. Both are booking-wide — protection prices per guest with no
+  // room dimension, and the coupon comes off the fare as one figure — so
+  // splitting them across rooms would invent a per-room number the pricing model
+  // never produces. They're stated once below the rooms instead, which is what
+  // keeps this column adding up to the same Booking total as the global lens.
+  const cw = summaryView === 'Cabin-wise Details' && q.status !== 'empty' ? spCabinBreakdown(st, q) : null;
+  const roomsSubtotal = cw
+    ? round2(cw.rooms.reduce((t, rm) => t + rm.subtotal, 0) + (cw.unassigned ? cw.unassigned.suppTotal : 0))
+    : 0;
+
+  // Supplements a selected package already covers. computeBookingPricing zeroes
+  // these, so the modal has to render them locked rather than offering a charge
+  // the total will never apply.
+  const pkgSuppIds = new Set();
+  (q.pkgs || []).forEach((p) => (p.includedSupps || []).forEach((id) => pkgSuppIds.add(id)));
+
+  const handleBack = (stepNum) => {
+    window.__bookingNavigate(stepNum);
+  };
+
+  // ── Things worth flagging before the agent commits. Every one of these is
+  // advisory: none of them disables Confirm, because a demo booking is often
+  // deliberately incomplete and blocking it would be worse than noting it. ──
+  const primaryGuest = passengers.find((pp) => pp.note === 'Primary') || null;
+  const tempCompanions = passengers.filter((pp) => pp.isTemp && pp.note !== 'Primary');
+  const warnings = [];
+  if (totalGuests === 0) {
+    warnings.push('No guests on this booking yet');
+  } else if (!primaryGuest || primaryGuest.isTemp) {
+    warnings.push('Primary guest still has a placeholder name');
+  }
+  if (tempCompanions.length > 0) {
+    warnings.push(`${tempCompanions.length} other guest${tempCompanions.length === 1 ? '' : 's'} still ${tempCompanions.length === 1 ? 'has a placeholder name' : 'have placeholder names'}`);
+  }
+  if (!st.protection) warnings.push('Trip protection not selected');
+
+  // Restated under the guest list so the supplements number the agent just
+  // eyeballed per-person matches the one in the order summary below.
+  const suppCount = (q.suppLines || []).filter((ln) => !ln.inPkg).length;
+
+  return (
+    <WFAppShell
+      activeGroup="bookings"
+      active="create-booking"
+      breadcrumb={['CRM', 'Bookings', 'Create', 'Review & confirm']}
+      progressBar={<S4StepProgress onBack={handleBack} />}>
+
+      {/* No right rail on this step. The rail's recap duplicated what the cards
+          below already say, and its own default was to sit collapsed here — the
+          only part worth keeping was the always-visible total, which is now the
+          sticky bar at the bottom of this scrollport. */}
+      <div data-screen-label="Step 3 · Review & Confirm">
+
+        {/* One capped, centred container for the whole screen — heading included.
+            Past ~1140px nothing gains from being wider: it would only drag a
+            guest's name and their Add/Edit button apart. The heading used to sit
+            outside this cap and run full-width, so the page had two different
+            measures stacked on each other; and without `margin: 0 auto` the
+            block hugged the left edge, leaving the whole surplus as one void on
+            the right. Now the surplus is symmetric gutters. */}
+        <div style={{ maxWidth: 1140, margin: '0 auto' }}>
+          <div style={{ fontWeight: 700, color: WF.ink, letterSpacing: -0.3, marginBottom: 4, fontSize: 24 }}>Review &amp; confirm</div>
+          <div style={{ fontSize: 13, color: WF.inkSoft, marginBottom: 20 }}>Verify every line below matches what the guest agreed to, then confirm.</div>
+
+          {/* ── Anything worth a second look before committing. Advisory only. ── */}
+          {warnings.length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 9, padding: '9px 12px', marginBottom: 14, background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 8 }}>
+              <span style={{ fontSize: 12.5, lineHeight: 1.3, flexShrink: 0 }}>⚠️</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                <div style={{ fontSize: 11.5, fontWeight: 700, color: '#92400E' }}>Worth checking</div>
+                <div style={{ fontSize: 11.5, color: '#92400E', lineHeight: 1.45 }}>
+                  {warnings.join(' · ')}
+                  <span style={{ color: '#B45309' }}> · none of these block confirmation.</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ═══════════════════════════════════════════════════════════════════
+              ONE surface for the entire review.
+
+              This was three separately bordered cards floating on the page
+              background — snapshot, guests, summary — which is the wrong model
+              for what this screen is. Those three things are not three
+              documents; they are the top, middle and price of a single
+              booking the agent is signing off. Three borders and two 16px gaps
+              said "unrelated", and the gaps also let the page background cut
+              between the guest list and the money that guest list produces.
+
+              Now: one border, one radius, one shadowless white sheet, and the
+              structure is carried by rules *inside* it (see S4_RULE above).
+              That is the difference between a set of widgets and a document —
+              and a document is what you review before committing.
+
+              Zone order top-to-bottom follows the question order: what did we
+              sell (snapshot, full width, because it scopes everything under
+              it) → to whom (guests) and for how much (summary) side by side,
+              because those two are what get cross-checked against each other.
+              ═══════════════════════════════════════════════════════════════ */}
+          <div style={{ background: WF.panel, border: `1px solid ${WF.line}`, borderRadius: 12, overflow: 'hidden' }}>
+
+            {/* ── Booking snapshot. Full width, because it describes the whole
+                    booking rather than the guest column below it — a two-column
+                    split at this level would have squeezed four facts into the
+                    narrower measure meant for a receipt. Four facts, not three:
+                    Departs and Arrival are now separate columns rather than one
+                    combined "date → port" string, so each date gets its own
+                    label instead of sharing a line that answered two questions
+                    at once. Cabin stays dropped — room assignment already lives
+                    on each cabin group's own header in Guest details, right next
+                    to the guests in it. Ports are dummy ("Port Tampa Bay" for
+                    both legs) pending a real embark/disembark-port field on the
+                    sailing model. ── */}
+            <div style={{ padding: '13px 20px 14px' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, color: WF.inkLabel, textTransform: 'uppercase', marginBottom: 10 }}>Booking snapshot</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))' }}>
+                {[
+                  { label: 'Destination', value: sailing ? `${sailing.region} · ${sailing.nights}N` : '—', sub: sailing ? sailing.ship : '—' },
+                  { label: 'Departs', value: sailing ? sailing.depart : '—', sub: 'Port Tampa Bay' },
+                  { label: 'Arrival', value: sailing ? sailing.ret : '—', sub: 'Port Tampa Bay' },
+                  { label: 'Farecode', value: fc ? (fc.refundable ? 'Refundable' : 'Non-refundable') : '—', sub: fcLabel },
+                ].map((f, i) => (
+                  <div key={f.label} style={{ padding: i === 0 ? '0 16px 0 0' : '0 16px', borderLeft: i === 0 ? 'none' : `1px solid ${WF.line}`, minWidth: 0 }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: WF.inkLabel, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 3 }}>{f.label}</div>
+                    <div style={{ fontSize: 12.5, fontWeight: 700, color: WF.ink, lineHeight: 1.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.value}</div>
+                    <div style={{ fontSize: 10.5, color: WF.inkSoft, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.sub}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Zone 2 · what was booked ┊ what it costs. Two columns, split
+                    by measure rather than importance: guest rows want a ~650px
+                    line so a name and its Edit button stay related, a receipt
+                    wants ~340px so a label and its number sit next to each
+                    other. `alignItems: stretch` (the grid default) lets the
+                    dividing rule on the right column run the full height of
+                    the taller column instead of stopping where the shorter one
+                    ends. ── */}
+            <div style={{ borderTop: S4_RULE, display: 'grid', gridTemplateColumns: 'minmax(0, 1.55fr) minmax(320px, 1fr)' }}>
+
+              {/* ═══ Guests, and what each of them is carrying. Supplements stay
+                      attached to the person who ordered them rather than being
+                      flattened into a product list — verifying "did we put the
+                      spa pass on the right guest" is the actual task here. ═══ */}
+              <div style={{ padding: '15px 20px 18px', minWidth: 0 }}>
+            <S4Section
+              title="Guest details"
+              meta={`${g.adults} Adults${g.youngAdults ? ` · ${g.youngAdults} Young Adults` : ''} · ${g.children} Children${g.infants ? ` · ${g.infants} Infants` : ''}`}>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {cabinGroups.map((group) => {
+                  const cabinSuppIds = Object.keys(group.people[0].cabinSupps || {}).filter((id) => group.people[0].cabinSupps[id] > 0);
+                  return (
+                    <div key={group.cabinKey} style={{ border: `1px solid ${WF.line}`, borderRadius: 8, overflow: 'hidden' }}>
+                      {/* Cabin-level items are identical for every occupant, so
+                          they're stated once on the room's own header row rather
+                          than repeated on each person inside it — under the room
+                          label, not beside it. The add button stays pinned to
+                          the label's own line (right-aligned) so it doesn't
+                          drift onto — and look stranded below — an otherwise
+                          empty chip row when the cabin has nothing assigned yet. */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 5, padding: '6px 10px', background: WF.fill, borderBottom: `1px solid ${WF.line}` }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                          {/* No 🛏️ here: the label already begins with the word
+                              "Room", so the glyph restated it in a second
+                              alphabet and put a colour on a line that is
+                              otherwise pure grey structure. */}
+                          {/* flex/minWidth/ellipsis added alongside the category
+                              name: "Interior Stateroom" is long enough next to
+                              the guest count that this line can now overflow the
+                              row on a narrow window, where "Room 3104" alone
+                              never did. */}
+                          <div style={{ fontSize: 10.5, fontWeight: 700, color: WF.ink, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {group.label}
+                            {group.categoryName && <span style={{ fontWeight: 500, color: WF.inkSoft }}> · {group.categoryName}</span>}
+                            <span style={{ fontWeight: 500, color: WF.inkSoft }}> · {group.people.length} guest{group.people.length === 1 ? '' : 's'}</span>
+                          </div>
+                          {/* Could already be removed but never added — a
+                              cabin-level item meant walking back to Step 1.
+                              Icon-only: the tooltip already names the room, so
+                              a text label just repeated what's on this line. */}
+                          {/* Icon-only, so it carries an aria-label: "+" alone
+                              announces as nothing useful to a screen reader,
+                              and the visible tooltip isn't exposed reliably. */}
+                          <button
+                            onClick={() => openManage({ kind: 'cabin', key: group.cabinKey, title: group.label })}
+                            className="s4-btn s4-ghost"
+                            aria-label={`Add a supplement charged once for ${group.label}`}
+                            title={`Add a supplement charged once for ${group.label}`}
+                            style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 22, fontSize: 13, fontWeight: 700, lineHeight: 1, borderRadius: 5, flexShrink: 0 }}>
+                            +
+                          </button>
+                        </div>
+                        {cabinSuppIds.length > 0 && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                            {cabinSuppIds.map((id) => {
+                              const su = (S2_SUPP || []).find((s) => s.id === id);
+                              if (!su) return null;
+                              return (
+                                <span key={id} title="Charged once per cabin" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, borderRadius: 4, border: `1px solid ${S4_ACCENT_TINT}`, background: '#fff', fontSize: 10, fontWeight: 500, color: WF.ink, padding: '2px 6px', whiteSpace: 'nowrap' }}>
+                                  {su.name}
+                                  <button type="button" className="s4-x" onClick={() => removeSuppByKey(group.cabinKey, id)} title={`Remove ${su.name} from this cabin`} style={{ border: 'none', background: 'none', padding: 0, font: 'inherit', lineHeight: 1 }}>×</button>
+                                </span>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                      <div style={{ padding: '0 10px' }}>
+                        {group.people.map((guest, i) => (
+                          <S4GuestRow key={guest.guestKey} guest={guest} last={i === group.people.length - 1} onOpenManage={() => openManage({ kind: 'guest', key: guest.guestKey, title: `${guest.name} (${guest.code})`, code: guest.code, guest })} onRemoveSupp={removeSuppByKey} />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+                {/* No box here on purpose: a cabin group's border+header earns its
+                    weight by holding cabin-level info a solo guest doesn't have.
+                    Boxing an unassigned guest identically made two different
+                    things look like the same thing sitting flush together. */}
+                {soloPassengers.length > 0 && (
+                  <div style={{ paddingTop: cabinGroups.length > 0 ? 2 : 0 }}>
+                    {soloPassengers.map((guest, i) => (
+                      <S4GuestRow key={guest.guestKey} guest={guest} last={i === soloPassengers.length - 1} onOpenManage={() => openManage({ kind: 'guest', key: guest.guestKey, title: `${guest.name} (${guest.code})`, code: guest.code, guest })} onRemoveSupp={removeSuppByKey} />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Package contents are identical for every traveller, so stating
+                  them per row printed the same four chips N times and drowned
+                  the per-guest items that actually differ. Said once here, below
+                  the rooms rather than above them — packages are a party-wide
+                  add-on, not a room's own detail, so they read better as the
+                  section's closing summary than as a header over rooms they
+                  don't describe — with the remove that drops the bundle and,
+                  since this block is the only place packages appear on this
+                  step, the add that puts one back. The header renders whether or
+                  not any are selected, so removing the last one doesn't take the
+                  way back with it. */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 15, paddingTop: 14, borderTop: S4_RULE }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 2 }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.5, color: WF.inkLabel, textTransform: 'uppercase' }}>Upgrade packages</div>
+                  <button
+                    onClick={() => setPkgPickerOpen(true)}
+                    className="s4-btn s4-ghost"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 3, padding: '4px 9px', fontSize: 10.5, fontWeight: 700, borderRadius: 5, flexShrink: 0 }}>
+                    <span style={{ fontSize: 11, lineHeight: 1 }}>+</span> Add package
+                  </button>
+                </div>
+                {(q.pkgs || []).length === 0 ? (
+                  <div style={{ fontSize: 11.5, color: WF.inkSoft }}>No packages added — supplements are charged individually.</div>
+                ) : (
+                  q.pkgs.map((pkg) => {
+                    const names = (pkg.includedSupps || [])
+                      .map((id) => (S2_SUPP || []).find((s) => s.id === id))
+                      .filter(Boolean).map((s) => s.name);
+                    return (
+                      /* The package's emoji is gone with the section icons: the
+                         violet panel plus the ALL GUESTS chip already mark this
+                         as a bundle rather than a per-guest line, so the glyph
+                         was a third redundant signal — and it was the only
+                         coloured artwork left in a column of grey type. */
+                      <div key={pkg.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 9, padding: '9px 11px', background: '#FAF9FF', border: '1px solid #EDE9FE', borderRadius: 7 }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: WF.ink }}>{pkg.name} package</span>
+                            <span style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: 0.4, color: '#6D28D9', background: '#F5F3FF', borderRadius: 3, padding: '1px 5px' }}>ALL GUESTS</span>
+                          </div>
+                          <div style={{ fontSize: 10.5, color: WF.inkSoft, marginTop: 2, lineHeight: 1.4 }}>{names.join(' · ')}</div>
+                        </div>
+                        <button
+                          onClick={() => removePackage(pkg.id)}
+                          className="s4-btn s4-secondary"
+                          title={`Remove the ${pkg.name} package and everything bundled with it`}
+                          style={{ padding: '4px 9px', fontSize: 10.5, fontWeight: 600, borderRadius: 5, color: WF.inkSoft, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                          Remove
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+
+              {/* Trip protection option — moved from Order summary column
+                  to be with other guest-level configuration choices. */}
+              {/* A real <button role="switch">, not a clickable <div>. This was
+                  a div with an onClick: unreachable by keyboard, invisible to
+                  assistive tech, and announcing no on/off state — on a control
+                  that adds a real charge to the booking. */}
+              <S4Option label="Trip protection" divider style={{ marginTop: 24 }}>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={!!st.protection}
+                  onClick={() => setSt({ protection: !st.protection })}
+                  className="s4-btn s4-secondary"
+                  style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, padding: '8px 11px', borderColor: WF.line, borderRadius: 8, textAlign: 'left' }}>
+                  <span style={{ minWidth: 0 }}>
+                    <span style={{ display: 'block', fontSize: 11.5, fontWeight: 700, color: WF.ink }}>Add trip protection</span>
+                    <span style={{ display: 'block', fontSize: 10.5, color: WF.inkSoft, marginTop: 1 }}>Medical &amp; cancellation · ${PROTECTION_PP}/guest</span>
+                  </span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 9, flexShrink: 0 }}>
+                    <span style={{ fontSize: 11.5, fontWeight: 600, color: st.protection ? WF.ink : WF.inkSoft, fontFamily: 'ui-monospace, monospace' }}>
+                      {st.protection ? `+${money(q.protectionTotal)}` : '—'}
+                    </span>
+                    <span aria-hidden="true" style={{ width: 38, height: 22, borderRadius: 11, background: st.protection ? WF.accentOn : '#94A3B8', position: 'relative', transition: 'background 0.2s', flexShrink: 0, display: 'block' }}>
+                      <span style={{ display: 'block', width: 16, height: 16, borderRadius: 8, background: '#fff', position: 'absolute', top: 3, left: st.protection ? 19 : 3, transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.25)' }} />
+                    </span>
+                  </span>
+                </button>
+              </S4Option>
+            </S4Section>
+              </div>
+
+              {/* ═══ What it costs, and the commercial decisions that move it.
+                      Narrow on purpose: every row here is a label and a number,
+                      which only reads as a pair at receipt width.
+
+                      The receipt and the decisions that produce it are one
+                      continuous read, so they share this column with dotted group
+                      rules between them rather than being split into separate
+                      boxes. Order summary comes first — it's the number the agent
+                      is here to verify, so it isn't the thing you scroll past four
+                      decisions to find. There is no Packages block of its own
+                      either — a package's contents already appear once on the
+                      Guests side, so this is only what it costs and, via its
+                      chip, the only place to drop it. ═══ */}
+              <div style={{ padding: '15px 20px 18px', borderLeft: S4_RULE, minWidth: 0 }}>
+              <S4Section title="Order summary">
+                {/* The one intentional exception to "no boxes inside the sheet".
+                    Everything else in this card is separated by rules alone;
+                    this is separated by *fill*, because it is the only block
+                    that isn't information to read — it's the commitment. A
+                    tint marks a destination without adding a competing outline.
+
+                    Sits directly under the "Order summary" header, above the
+                    Global/Cabin-wise toggle and every line item — the total
+                    and its Confirm/Hold/Discard actions lead the card rather
+                    than trailing after the receipt and Checkout options.
+
+                    Tinted rather than navy on purpose. The earlier version was a
+                    dark panel with WF.accent (navy) on it for Confirm booking —
+                    navy on navy, so the one button that mattered was the least
+                    visible thing on the screen. On this tint it gets the same
+                    navy-on-light contrast every other primary action in the app
+                    uses. It also sits in normal flow rather than pinned: a
+                    floating sticky bar sat on top of whichever guest row
+                    scrolled under it and read as detached from the numbers it
+                    was summarising. */}
+                <div style={{ marginBottom: 14, background: '#EFF6FF', border: '1px solid #DBEAFE', borderRadius: 9, padding: '12px' }}>
+                  <S4TotalsStats q={q} />
+
+                  {/* Payment terms lives here now, not in Checkout options below —
+                      it decides whether "Amount due now" above is the deposit or
+                      the full balance, so the control sits beside the number it
+                      drives instead of two sections away from it. The deposit
+                      rate itself comes from the farecode and can't be stated on
+                      the pill; it's already spelled out in the stats above. */}
+                  <div style={{ marginTop: 11, paddingTop: 10, borderTop: '1px solid #DBEAFE' }}>
+                    <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: 0.5, color: WF.inkLabel, textTransform: 'uppercase', marginBottom: 5 }}>Payment terms</div>
+                    <SPPills options={['Pay Full Balance', 'Deposit Only']} value={st.paymentMode} onChange={(m) => setSt({ paymentMode: m })} />
+                  </div>
+
+                  {/* Action hierarchy, in the order an agent decides: commit,
+                      else hold, else abandon.
+
+                      Confirm booking leads, on its own full-width row, at the
+                      largest target in the column. It used to sit *last*, 31px
+                      tall, under a Hold/Discard pair drawn at identical weight —
+                      so the one action the entire flow exists to reach read as
+                      the third of three equals.
+
+                      Discard drops to text weight and loses its box. It destroys
+                      the draft, and a destructive action should not sit beside
+                      the primary at matching size and matching border; the red
+                      is held back until hover, when intent has been shown. */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 11, paddingTop: 10, borderTop: '1px solid #DBEAFE' }}>
+                    <button
+                      onClick={() => q.status === 'final' && alert('Booking submitted! (Demo only)')}
+                      disabled={q.status !== 'final'}
+                      className="s4-btn s4-primary"
+                      title={q.status !== 'final' ? 'Choose a sailing, cabin and farecode to confirm' : undefined}
+                      style={{ width: '100%', minHeight: 40, padding: '10px 14px', fontSize: 13.5, fontWeight: 700, borderRadius: 8 }}>Confirm booking</button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      {/* Hold used to promise a duration set by a separate policy
+                          pill row above. That row is gone — the duration is now
+                          chosen at the point of holding, in a small menu off this
+                          button, so the choice and the action happen together. */}
+                      <div style={{ position: 'relative', flex: 1 }}>
+                        <button
+                          onClick={() => setShowHoldMenu((v) => !v)}
+                          className="s4-btn s4-secondary"
+                          style={{ width: '100%', minHeight: 34, padding: '8px 14px', fontSize: 12, fontWeight: 600, borderRadius: 7 }}>
+                          Hold
+                        </button>
+                        {showHoldMenu && (
+                          <>
+                            <div onClick={() => setShowHoldMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
+                            <div style={{
+                              position: 'absolute', bottom: '100%', left: 0, marginBottom: 6, zIndex: 41,
+                              width: 160, background: '#fff', border: '1px solid #E2E8F0', borderRadius: 9,
+                              boxShadow: '0 12px 32px rgba(15,31,61,0.16)', overflow: 'hidden',
+                            }}>
+                              <div style={{ padding: '8px 12px 6px', fontSize: 10.5, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                Hold for
+                              </div>
+                              {['24h', '48h', '72h'].map((d) => (
+                                <button
+                                  key={d}
+                                  onClick={() => { setSt({ holdDur: d }); setShowHoldMenu(false); alert(`Booking held for ${d}. (Demo only)`); }}
+                                  className="s4-btn"
+                                  style={{
+                                    display: 'block', width: '100%', padding: '9px 12px', border: 'none',
+                                    background: 'transparent', color: '#0F172A', fontSize: 12.5, fontWeight: 500,
+                                    textAlign: 'left',
+                                  }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.background = '#F8FAFC'; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
+                                  {d}
+                                </button>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      <button
+                        onClick={discard}
+                        className="s4-btn s4-quiet"
+                        style={{ minHeight: 34, padding: '8px 12px', fontSize: 12, fontWeight: 600, borderRadius: 7 }}>Discard</button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Global ┊ Cabin-wise — the same lens the Step 1 rail offers on
+                    "Your selection", brought to the receipt. One booking has two
+                    readings an agent needs: the ledger they verify against the
+                    contract, and the per-room cut they read back to a guest who
+                    asks "what is *our* room costing". Hidden until there is
+                    pricing at all — a toggle over an empty state offers a choice
+                    between two blanks. */}
+                {q.status !== 'empty' && (
+                  <div style={{ marginBottom: 12 }}>
+                    <SPSegmented
+                      options={['Global Details', 'Cabin-wise Details']}
+                      value={summaryView}
+                      onChange={setSummaryView} />
+                  </div>
+                )}
+
+                {q.status === 'empty' ? (
+                  <div style={{ fontSize: 12, color: WF.inkSoft, fontStyle: 'italic' }}>Select a sailing and cabin to see pricing.</div>
+                ) : cw ? (
+                  <>
+                    <SPCabinDetails b={st} p={q} />
+
+                    {/* The booking-wide remainder. Without this the room
+                        subtotals would stop short of the Booking total sitting
+                        directly underneath them and the column would look like
+                        it had lost money. Same group shape as the global lens —
+                        a strong subtotal with its parts indented beneath. */}
+                    {cw.rooms.length > 0 && (
+                      <div style={{ marginTop: 11, paddingTop: 9, borderTop: S4_RULE }}>
+                        <S4Row label="Rooms subtotal" amount={roomsSubtotal} strong />
+                        <div style={{ display: 'flex', flexDirection: 'column', paddingLeft: 12, marginTop: 2 }}>
+                          <S4Row label="• Trip protection" sub="Whole booking · not per room" amount={q.protectionTotal} />
+                          {q.couponDisc !== 0 && (
+                            <S4Row label="• Discounts / promotions" sub={st.appliedCoupon} amount={q.couponDisc} accent="#059669" />
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {/* Cruise fare. The rate is a caption on the row, not an
+                        indented child with its own figure in the amount column.
+                        As a child it printed "• Base fare … $750.00" directly
+                        under "Cruise fare … $7,500.00" — two numbers, ten times
+                        apart, with nothing on the page saying why. A reader
+                        checking the receipt could not derive one from the other.
+                        `cabinFareTotal` is exactly `cabinFarePP × guestCount`
+                        (booking-store.jsx), so the caption states that identity
+                        and the row now shows its own arithmetic. */}
+                    <S4Row
+                      label="Cruise fare"
+                      sub={totalGuests > 0 ? `${money(q.cabinFarePP)} per guest × ${totalGuests} guest${totalGuests === 1 ? '' : 's'}` : null}
+                      amount={q.cabinFareTotal}
+                      strong />
+
+                    {/* Add-ons — what the agent chose to add, as one subtotal
+                        with its three parts always listed underneath (not just
+                        the non-zero ones) so the group reads as a complete,
+                        consistent checklist rather than a shrinking list that
+                        changes shape as items are added or removed. */}
+                    <div style={{ marginTop: 11, paddingTop: 9, borderTop: S4_RULE }}>
+                      <S4Row label="Add-ons" amount={addOnsTotal} strong />
+                      <div style={{ display: 'flex', flexDirection: 'column', paddingLeft: 12, marginTop: 2 }}>
+                        <S4Row label="• Supplements" amount={q.suppTotal} />
+                        <S4Row label="• Packages" amount={q.packageTotal} />
+                        <S4Row label="• Trip protection" amount={q.protectionTotal} />
+                      </div>
+                    </div>
+
+                    {/* Taxes and port fees — a fixed, non-editable figure with
+                        its government/cruise-line split shown as sub-items for
+                        full transparency. (The split is an illustrative allocation
+                        of the one fixed-fee figure the pricing model produces,
+                        not an additional charge.) */}
+                    <div style={{ marginTop: 11, paddingTop: 9, borderTop: S4_RULE }}>
+                      <S4Row label="Taxes and port fees" amount={q.gratuities} strong />
+                      <div style={{ display: 'flex', flexDirection: 'column', paddingLeft: 12, marginTop: 2 }}>
+                        <S4Row label="• Govt taxes & fees" amount={govtTaxes} />
+                        <S4Row label="• Required cruise fees and expenses" amount={cruiseFees} />
+                      </div>
+                    </div>
+
+                    {/* Discounts / promotions — only takes up space once an
+                        agent has actually applied something. */}
+                    {q.couponDisc !== 0 && (
+                      <div style={{ marginTop: 11, paddingTop: 9, borderTop: S4_RULE }}>
+                        <S4Row label="Discounts / promotions" sub={st.appliedCoupon} amount={q.couponDisc} accent="#059669" strong />
+                      </div>
+                    )}
+                  </>
+                )}
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 13, marginTop: 14, paddingTop: 12, borderTop: S4_RULE }}>
+
+                  <S4Option label="Promotions">
+                    <SPPills options={['None', 'SAVE10', 'EARLYBIRD']} value={st.appliedCoupon} onChange={(c) => setSt({ appliedCoupon: c })} />
+                    <div style={{ display: 'flex', gap: 5, marginTop: 8 }}>
+                      <input
+                        type="text" placeholder="Custom code…" value={st.customCode || ''}
+                        onChange={(e) => setSt({ customCode: e.target.value.toUpperCase() })}
+                        onKeyDown={(e) => { if (e.key === 'Enter' && (st.customCode || '').trim()) setSt({ appliedCoupon: st.customCode.trim() }); }}
+                        style={{ flex: 1, minWidth: 0, padding: '7px 10px', fontSize: 11, border: `1px solid ${WF.line}`, borderRadius: 6, fontFamily: 'inherit', outline: 'none' }} />
+                      <button
+                        onClick={() => { if ((st.customCode || '').trim()) setSt({ appliedCoupon: st.customCode.trim() }); }}
+                        disabled={!(st.customCode || '').trim()}
+                        style={{ padding: '7px 12px', fontSize: 11, fontWeight: 600, border: 'none', borderRadius: 6, background: (st.customCode || '').trim() ? '#1B2434' : '#CBD5E1', color: '#fff', cursor: (st.customCode || '').trim() ? 'pointer' : 'default', fontFamily: 'inherit' }}>Apply</button>
+                    </div>
+                    {st.appliedCoupon !== 'None' && (
+                      <div style={{ marginTop: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, padding: '7px 11px', background: q.couponIsCustom ? '#FFFBEB' : '#F0FDF4', borderRadius: 7, border: `1px solid ${q.couponIsCustom ? '#FDE68A' : '#DCFCE7'}` }}>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: q.couponIsCustom ? '#92400E' : '#059669' }}>
+                          {q.couponIsCustom ? '⏳ Pending validation' : `✨ ${Math.round(q.couponPct * 100)}% off base fare`}
+                        </div>
+                        <div style={{ fontSize: 11.5, fontWeight: 700, color: q.couponIsCustom ? '#92400E' : '#059669', fontFamily: 'ui-monospace, monospace' }}>{spMoney(q.couponDisc)}</div>
+                      </div>
+                    )}
+                  </S4Option>
+
+                </div>
+              </S4Section>
+              </div>
+
+            </div>
+            {/* ── end Zone 2 · guests ┊ summary ── */}
+
+          </div>
+          {/* ── end unified review surface ── */}
+
+        </div>
+      </div>
+
+      {/* Edit modal — one component, scoped by `manageTarget` to either a guest
+          key (two tabs: details + supplements) or a cabin key (supplements
+          only). `key` remounts it per target so the tab resets to Guest details
+          for each traveller instead of inheriting the last one's tab. */}
+      {manageTarget !== null && (
+        <S4EditModal
+          key={manageTarget.key}
+          target={manageTarget}
+          draftSupps={draftSupps}
+          setDraftQty={setDraftQty}
+          draftGuest={draftGuest}
+          setDraftGuestField={setDraftGuestField}
+          onPickDirectory={applyDirectoryPerson}
+          pkgSuppIds={pkgSuppIds}
+          otherScopeCount={otherScopeCount}
+          onSave={saveManage}
+          onCancel={() => setManageTarget(null)} />
+      )}
+
+      {pkgPickerOpen && (
+        <S4PackagePickerModal
+          booking={st}
+          current={st.selectedPackages || []}
+          baseTotal={q.total}
+          onSave={savePackages}
+          onCancel={() => setPkgPickerOpen(false)} />
+      )}
+    </WFAppShell>
+  );
+}
+
+window.Step4App = Step4App;
+</script>
+
+<!-- 8 · Step router ──────────────────────────────────────────────────────── -->
+<script type="text/babel">
+// The router owns the booking. Steps receive it as props and never hold their
+// own copy, so switching steps cannot drop a field — the old design gave each
+// step a private useState seeded from a different storage key, and Step 2
+// overwrote the shared snapshot with its narrower object on every keystroke.
+function BookingFlowRouter() {
+  const [booking, setBooking] = React.useState(loadBooking);
+  const step = booking.step || 1;
+
+  React.useEffect(function () {
+    saveBooking(booking);
+  }, [booking]);
+
+  // Accepts a patch object or an updater fn, so existing call sites written as
+  // `setSt(s => ({...s, x}))` keep working unchanged. `replace` is used by
+  // Discard to reset rather than merge.
+  const update = React.useCallback(function (changesOrFn, opts) {
+    setBooking(function (prev) {
+      const changes = typeof changesOrFn === 'function' ? changesOrFn(prev) : changesOrFn;
+      if (opts && opts.replace) return normalizeBooking(changes);
+      return { ...prev, ...changes };
+    });
+  }, []);
+
+  const navigate = React.useCallback(function (n) {
+    setBooking(function (prev) { return { ...prev, step: n }; });
+  }, []);
+
+  React.useEffect(function () {
+    window.__bookingNavigate = navigate;
+    return function () { delete window.__bookingNavigate; };
+  }, [navigate]);
+
+  const props = { booking: booking, update: update, navigate: navigate };
+  if (step === 1) return <Step2App {...props} />;
+  if (step === 2) return <Step3App {...props} />;
+  if (step === 3) return <Step4App {...props} />;
+  return null;
+}
+
+window.BookingFlowRouter = BookingFlowRouter;
+
+ReactDOM.createRoot(document.getElementById('root')).render(<BookingFlowRouter />);
+</script>
+</body>
+</html>

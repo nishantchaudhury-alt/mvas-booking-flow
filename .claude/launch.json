@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "http-server",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["http-server", "--no-cache"],
+      "port": 60891,
+      "autoPort": true
+    }
+  ]
+}
