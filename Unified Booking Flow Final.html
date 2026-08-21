@@ -189,7 +189,7 @@ function s4BuildPassengers(guests, guestAges, guestData, suppAssignments, cabins
       const rec = gd[passCode];
       const supps = {};
       Object.entries(assign).forEach(([suppId, byGuest]) => {
-        if (byGuest && byGuest[guestKey] > 0) supps[suppId] = byGuest[guestKey];
+        if (key !== 'infants' && byGuest && byGuest[guestKey] > 0) supps[suppId] = byGuest[guestKey];
       });
       const ck = cabinOf[guestKey];
       list.push({
@@ -337,11 +337,14 @@ function S4EditModal({ target, draftSupps, setDraftQty, draftGuest, setDraftGues
     return true;
   });
 
+  const g = target.guest;
+  const isInfant = !!(g && g.type === 'Infant');
+
   // How many of this guest's own items are already on, shown on the Supplements
   // tab label. Without it, switching tabs is the only way to find out whether
   // the tab you're not looking at has anything in it.
-  const suppOnCount = Object.keys(draftSupps).filter((id) => draftSupps[id] > 0).length;
-  const g = target.guest;
+  const suppOnCount = isInfant ? 0 : Object.keys(draftSupps).filter((id) => draftSupps[id] > 0).length;
+  const suppTabLabel = isInfant ? 'Supplements · Not eligible' : `Supplements${suppOnCount > 0 ? ` · ${suppOnCount}` : ''}`;
 
   return (
     <div onClick={onCancel} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.45)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
@@ -370,8 +373,8 @@ function S4EditModal({ target, draftSupps, setDraftQty, draftGuest, setDraftGues
         <div style={{ padding: '12px 24px', borderBottom: `1px solid ${WF.line}`, background: '#fff' }}>
           <div style={{ maxWidth: 340 }}>
             <SPSegmented
-              options={['Guest details', `Supplements${suppOnCount > 0 ? ` · ${suppOnCount}` : ''}`]}
-              value={onSupps ? `Supplements${suppOnCount > 0 ? ` · ${suppOnCount}` : ''}` : 'Guest details'}
+              options={['Guest details', suppTabLabel]}
+              value={onSupps ? suppTabLabel : 'Guest details'}
               onChange={(v) => setTab(v.indexOf('Supplements') === 0 ? 'Supplements' : 'Guest details')} />
           </div>
         </div>
@@ -496,8 +499,17 @@ function S4EditModal({ target, draftSupps, setDraftQty, draftGuest, setDraftGues
           </div>
         )}
 
+        {onSupps && isInfant && (
+          <div style={{ flex: 1, padding: '24px', display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
+            <div style={{ width: '100%', padding: '14px 16px', border: `1px solid ${WF.line}`, borderRadius: 9, background: WF.fill }}>
+              <div style={{ fontSize: 12.5, fontWeight: 700, color: WF.ink }}>Supplements are not available for infants.</div>
+              <div style={{ fontSize: 11.5, color: WF.inkSoft, marginTop: 4 }}>No supplement can be assigned or charged to this guest category.</div>
+            </div>
+          </div>
+        )}
+
         {/* Search + category filters */}
-        {onSupps && (
+        {onSupps && !isInfant && (
         <div style={{ padding: '16px 24px 12px', borderBottom: `1px solid ${WF.line}` }}>
           <div style={{ position: 'relative', marginBottom: 12 }}>
             <span style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: WF.inkFaint, fontSize: 15 }}>🔍</span>
@@ -517,7 +529,7 @@ function S4EditModal({ target, draftSupps, setDraftQty, draftGuest, setDraftGues
         )}
 
         {/* Supplement list */}
-        {onSupps && (
+        {onSupps && !isInfant && (
         <div style={{ flex: 1, overflowY: 'auto', padding: '14px 24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
           {supps.length > 0 ? supps.map((su) => {
             const qty = draftSupps[su.id] || 0;
@@ -771,7 +783,7 @@ function Step4App({ booking, update }) {
   };
   const openManage = (target) => {
     setManageTarget(target);
-    setDraftSupps(draftForKey(target.key));
+    setDraftSupps(target.guest && target.guest.type === 'Infant' ? {} : draftForKey(target.key));
     // Seeded from the live record, so reopening shows what was saved rather
     // than the previous guest's draft.
     const rec = target.code ? (st.guestData || {})[target.code] || {} : {};
@@ -794,6 +806,7 @@ function Step4App({ booking, update }) {
     directoryId: p.id || null,
   });
   const setDraftQty = (suppId, qty) => {
+    if (manageTarget && manageTarget.guest && manageTarget.guest.type === 'Infant') return;
     setDraftSupps((prev) => {
       const next = { ...prev };
       if (qty <= 0) delete next[suppId]; else next[suppId] = qty;
@@ -806,13 +819,13 @@ function Step4App({ booking, update }) {
       const suppAssignments = {};
       Object.entries(s.suppAssignments || {}).forEach(([sid, byKey]) => {
         suppAssignments[sid] = Object.fromEntries(
-          Object.entries(byKey || {}).filter(([key, qty]) => !isCabinSuppKey(key) && qty > 0)
+          Object.entries(byKey || {}).filter(([key, qty]) => !isCabinSuppKey(key) && !key.startsWith('infants-') && qty > 0)
         );
       });
       // Clear this guest's own entry everywhere, then re-add the draft.
       Object.keys(suppAssignments).forEach((sid) => { delete suppAssignments[sid][assignKey]; });
       Object.entries(draftSupps).forEach(([sid, qty]) => {
-        if (!(qty > 0)) return;
+        if (!(qty > 0) || assignKey.startsWith('infants-')) return;
         const byKey = suppAssignments[sid] || {};
         byKey[assignKey] = qty;
         suppAssignments[sid] = byKey;

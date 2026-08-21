@@ -262,7 +262,7 @@ function spCabinBreakdown(b, p) {
       if (!su || !byKey) return;
       let guestQty = 0;
       Object.entries(byKey).forEach(([k, v]) => {
-        if (!(v > 0) || !keys.has(k)) return;
+        if (!(v > 0) || !keys.has(k) || k.startsWith('infants-')) return;
         if (!isCabinSuppKey(k)) guestQty += v;
       });
       if (guestQty > 0) {

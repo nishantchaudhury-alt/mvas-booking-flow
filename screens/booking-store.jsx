@@ -104,9 +104,10 @@ function normalizeBooking(raw) {
     year: rawMonth.year || null,
   };
   b.guestData = r.guestData && typeof r.guestData === 'object' ? r.guestData : {};
-  // Per-cabin supplement assignment has been retired. Keep only guest keys
-  // and rebuild totals from those visible assignments so a saved `cabin:`
-  // quantity can never survive as a hidden charge.
+  // Per-cabin supplement assignment has been retired, and infants cannot
+  // receive supplements. Keep only eligible guest keys and rebuild totals from
+  // those visible assignments so neither legacy shape can survive as a hidden
+  // charge.
   const rawSuppAssignments = r.suppAssignments && typeof r.suppAssignments === 'object'
     ? r.suppAssignments : {};
   b.suppAssignments = {};
@@ -115,7 +116,7 @@ function normalizeBooking(raw) {
     if (!rawAssignment || typeof rawAssignment !== 'object') return;
     const guestAssignment = {};
     Object.entries(rawAssignment).forEach(([guestKey, qty]) => {
-      if (!guestKey.startsWith('cabin:') && qty > 0) guestAssignment[guestKey] = qty;
+      if (!guestKey.startsWith('cabin:') && !guestKey.startsWith('infants-') && qty > 0) guestAssignment[guestKey] = qty;
     });
     const totalQty = Object.values(guestAssignment).reduce((sum, qty) => sum + qty, 0);
     if (totalQty > 0) {
@@ -222,8 +223,18 @@ function computeBookingPricing(booking) {
   const pkgs = [];
   const packageTotal = 0;
 
-  // Every selected supplement is charged directly to its assigned guests.
-  const qtys = b.selectedSupps && !Array.isArray(b.selectedSupps) ? b.selectedSupps : {};
+  // Every selected supplement is charged directly to its assigned, eligible
+  // guests. Derive quantities from the assignment map rather than trusting the
+  // selectedSupps cache, so an infant or legacy cabin key can never create a
+  // false price even if malformed state bypasses normalization.
+  const qtys = {};
+  Object.entries(b.suppAssignments || {}).forEach(([suppId, byGuest]) => {
+    const qty = Object.entries(byGuest || {}).reduce((sum, [guestKey, guestQty]) => {
+      if (guestKey.startsWith('cabin:') || guestKey.startsWith('infants-') || !(guestQty > 0)) return sum;
+      return sum + guestQty;
+    }, 0);
+    if (qty > 0) qtys[suppId] = qty;
+  });
   const suppLines = [];
   let suppTotal = 0;
   Object.keys(qtys).forEach((id) => {

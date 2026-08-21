@@ -377,7 +377,7 @@ function GuestSupplyStepper({ value, onChange, disabled }) {
 }
 
 // ── Per-guest assignment panel, visually grouped by cabin ──
-function AssignGuestsPanel({ sup, roster, assignment, onGuestQty, onClearCabin, onDone }) {
+function AssignGuestsPanel({ sup, roster, assignment, onGuestQty, onAddCabin, onClearCabin, onDone }) {
   return (
     <div style={{ padding: '4px 16px 16px', background: '#fff' }}>
       {/* Cabin cards use a two-column grid instead of one long vertical roster.
@@ -386,36 +386,26 @@ function AssignGuestsPanel({ sup, roster, assignment, onGuestQty, onClearCabin, 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10, alignItems: 'start' }}>
         {roster.map((cabin) => {
           const cabinQty = cabin.list.reduce((sum, guest) => sum + (assignment[guest.guestKey] || 0), 0);
+          const eligibleGuests = cabin.list.filter((guest) =>
+            guest.categoryKey !== 'infants' && (sup.minAge == null || guest.minAge >= sup.minAge)
+          );
+          const allEligibleAssigned = eligibleGuests.length > 0 && eligibleGuests.every((guest) => (assignment[guest.guestKey] || 0) > 0);
           return (
           <div key={cabin.key} style={{ border: `1px solid ${WF.line}`, borderRadius: 8, overflow: 'hidden', minWidth: 0 }}>
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              gap: 8, padding: '7px 10px 7px 14px', background: '#F8FAFC',
+              gap: 8, padding: '7px 14px', background: '#F8FAFC',
               borderBottom: `1px solid ${WF.lineSoft}`
             }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0, whiteSpace: 'nowrap' }}>
                 <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.6, color: WF.inkLabel, textTransform: 'uppercase' }}>{cabin.heading}</span>
                 <span style={{ fontSize: 10.5, color: WF.inkSoft }}>· {cabin.count} guest{cabin.count === 1 ? '' : 's'}</span>
               </span>
-              <button
-                type="button"
-                disabled={cabinQty === 0}
-                onClick={() => onClearCabin(cabin.list.map((guest) => guest.guestKey))}
-                aria-label={`Remove ${sup.name} from all guests in ${cabin.heading}`}
-                title={cabinQty > 0 ? `Remove ${sup.name} from every guest in this cabin` : `No ${sup.name} assigned in this cabin`}
-                style={{
-                  padding: '4px 7px', borderRadius: 5, fontFamily: 'inherit',
-                  border: `1px solid ${cabinQty > 0 ? '#FCA5A5' : WF.line}`,
-                  background: cabinQty > 0 ? '#FEF2F2' : '#fff',
-                  fontSize: 10, fontWeight: 700, color: cabinQty > 0 ? '#B91C1C' : WF.inkFaint,
-                  cursor: cabinQty > 0 ? 'pointer' : 'default', whiteSpace: 'nowrap', flexShrink: 0
-                }}>
-                Remove all
-              </button>
             </div>
             {cabin.list.map((guest, gi) => {
-              const restricted = sup.minAge != null && guest.minAge < sup.minAge;
-              const qty = (assignment[guest.guestKey]) || 0;
+              const isInfant = guest.categoryKey === 'infants';
+              const restricted = isInfant || (sup.minAge != null && guest.minAge < sup.minAge);
+              const qty = isInfant ? 0 : (assignment[guest.guestKey] || 0);
               return (
                 <div key={guest.guestKey} style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
@@ -428,8 +418,8 @@ function AssignGuestsPanel({ sup, roster, assignment, onGuestQty, onClearCabin, 
                       borderRadius: 4, padding: '2px 7px', whiteSpace: 'nowrap'
                     }}>Age {guest.ageLabel}</span>
                     {restricted && (
-                      <span style={{ fontSize: 10.5, fontWeight: 700, color: '#B45309', whiteSpace: 'nowrap' }}>
-                        {sup.minAge}+ only
+                      <span style={{ fontSize: 10.5, fontWeight: 700, color: isInfant ? WF.inkFaint : '#B45309', whiteSpace: 'nowrap' }}>
+                        {isInfant ? 'Not eligible' : `${sup.minAge}+ only`}
                       </span>
                     )}
                   </div>
@@ -440,6 +430,41 @@ function AssignGuestsPanel({ sup, roster, assignment, onGuestQty, onClearCabin, 
                 </div>
               );
             })}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+              padding: '8px 10px', background: '#F8FAFC', borderTop: `1px solid ${WF.lineSoft}`
+            }}>
+              <button
+                type="button"
+                disabled={cabinQty === 0}
+                onClick={() => onClearCabin(cabin.list.map((guest) => guest.guestKey))}
+                aria-label={`Remove ${sup.name} from all guests in ${cabin.heading}`}
+                title={cabinQty > 0 ? `Remove ${sup.name} from every guest in this cabin` : `No ${sup.name} assigned in this cabin`}
+                style={{
+                  padding: '5px 9px', borderRadius: 5, fontFamily: 'inherit',
+                  border: `1px solid ${cabinQty > 0 ? '#FCA5A5' : WF.line}`,
+                  background: cabinQty > 0 ? '#FEF2F2' : '#fff',
+                  fontSize: 10, fontWeight: 700, color: cabinQty > 0 ? '#B91C1C' : WF.inkLabel,
+                  cursor: cabinQty > 0 ? 'pointer' : 'default', whiteSpace: 'nowrap'
+                }}>
+                Remove all
+              </button>
+              <button
+                type="button"
+                disabled={allEligibleAssigned || eligibleGuests.length === 0}
+                onClick={() => onAddCabin(eligibleGuests.map((guest) => guest.guestKey))}
+                aria-label={`Assign ${sup.name} to all eligible guests in ${cabin.heading}`}
+                title={allEligibleAssigned ? `${sup.name} is already assigned to every eligible guest` : `Assign one ${sup.name} to every eligible guest in this cabin`}
+                style={{
+                  padding: '5px 9px', borderRadius: 5, fontFamily: 'inherit',
+                  border: `1px solid ${allEligibleAssigned || eligibleGuests.length === 0 ? WF.line : WF.accentLine}`,
+                  background: allEligibleAssigned || eligibleGuests.length === 0 ? '#fff' : WF.accentTint,
+                  fontSize: 10, fontWeight: 700, color: allEligibleAssigned || eligibleGuests.length === 0 ? WF.inkLabel : WF.accentInk,
+                  cursor: allEligibleAssigned || eligibleGuests.length === 0 ? 'default' : 'pointer', whiteSpace: 'nowrap'
+                }}>
+                  Assign to all
+              </button>
+            </div>
           </div>
           );
         })}
@@ -482,7 +507,20 @@ function SupplementsSection({ selectedSupps, guests, cabins, suppAssignments, on
 
   const setGuestQty = (suppId, guestKey, qty) => {
     const suppAssign = { ...(assignments[suppId] || {}) };
+    if (guestKey.startsWith('infants-')) {
+      delete suppAssign[guestKey];
+      commitSuppAssignment(suppId, suppAssign);
+      return;
+    }
     if (qty <= 0) delete suppAssign[guestKey]; else suppAssign[guestKey] = qty;
+    commitSuppAssignment(suppId, suppAssign);
+  };
+
+  const addCabinQty = (suppId, guestKeys) => {
+    const suppAssign = { ...(assignments[suppId] || {}) };
+    guestKeys.forEach((guestKey) => {
+      if (!guestKey.startsWith('infants-')) suppAssign[guestKey] = Math.max(1, suppAssign[guestKey] || 0);
+    });
     commitSuppAssignment(suppId, suppAssign);
   };
 
@@ -493,9 +531,12 @@ function SupplementsSection({ selectedSupps, guests, cabins, suppAssignments, on
   };
 
   const commitSuppAssignment = (suppId, suppAssign) => {
+    const validAssignment = Object.fromEntries(
+      Object.entries(suppAssign).filter(([guestKey, qty]) => !guestKey.startsWith('infants-') && qty > 0)
+    );
     const nextAssignments = { ...assignments };
-    if (Object.keys(suppAssign).length === 0) delete nextAssignments[suppId]; else nextAssignments[suppId] = suppAssign;
-    const totalQty = Object.values(suppAssign).reduce((a, b) => a + b, 0);
+    if (Object.keys(validAssignment).length === 0) delete nextAssignments[suppId]; else nextAssignments[suppId] = validAssignment;
+    const totalQty = Object.values(validAssignment).reduce((a, b) => a + b, 0);
     const nextQtys = { ...suppQtys };
     if (totalQty <= 0) delete nextQtys[suppId]; else nextQtys[suppId] = totalQty;
     onToggle(nextQtys, nextAssignments);
@@ -643,6 +684,7 @@ function SupplementsSection({ selectedSupps, guests, cabins, suppAssignments, on
                       roster={roster}
                       assignment={suppAssign}
                       onGuestQty={(guestKey, v) => setGuestQty(sup.id, guestKey, v)}
+                      onAddCabin={(guestKeys) => addCabinQty(sup.id, guestKeys)}
                       onClearCabin={(guestKeys) => clearCabinQty(sup.id, guestKeys)}
                       onDone={() => setExpandedSuppId(null)} />
                 )}
