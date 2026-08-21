@@ -1163,18 +1163,17 @@ function Step4App({ booking, update }) {
                     scrolled under it and read as detached from the numbers it
                     was summarising. */}
                 <div style={{ marginBottom: 14, background: '#EFF6FF', border: '1px solid #DBEAFE', borderRadius: 9, padding: '12px' }}>
-                  <S4TotalsStats q={q} />
-
                   {/* Payment terms lives here now, not in Checkout options below —
-                      it decides whether "Amount due now" above is the deposit or
-                      the full balance, so the control sits beside the number it
-                      drives instead of two sections away from it. The deposit
-                      rate itself comes from the farecode and can't be stated on
-                      the pill; it's already spelled out in the stats above. */}
-                  <div style={{ marginTop: 11, paddingTop: 10, borderTop: '1px solid #DBEAFE' }}>
+                      it decides whether "Amount due now" below is the deposit or
+                      the full balance, so the decision leads the number it drives.
+                      The deposit rate itself comes from the farecode and can't be
+                      stated on the pill; it is spelled out in the stats below. */}
+                  <div style={{ marginBottom: 11, paddingBottom: 10, borderBottom: '1px solid #DBEAFE' }}>
                     <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: 0.5, color: WF.inkLabel, textTransform: 'uppercase', marginBottom: 5 }}>Payment terms</div>
                     <SPPills options={['Pay Full Balance', 'Deposit Only']} value={st.paymentMode} onChange={(m) => setSt({ paymentMode: m })} />
                   </div>
+
+                  <S4TotalsStats q={q} />
 
                   {/* Action hierarchy, in the order an agent decides: commit,
                       else hold, else abandon.
