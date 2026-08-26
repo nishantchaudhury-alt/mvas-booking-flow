@@ -34,6 +34,7 @@ function GuestDetailsSection({ guests, guestAges, guestData, setGuestData }) {
   // Drives the header's "Fill remaining/all as temp" label and whether it
   // shows at all — nothing left to do once every guest has a record.
   const unconfirmedCount = guestList.filter((g) => !guestData[g.id]).length;
+  const completedCount = guestList.length - unconfirmedCount;
 
   const handleConfirm = (guestId, name, extra) => {
     setGuestData((prev) => ({ ...prev, [guestId]: { confirmed: true, name, ...extra } }));
@@ -61,8 +62,8 @@ function GuestDetailsSection({ guests, guestAges, guestData, setGuestData }) {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 20 }}>
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
+    <div style={{ marginBottom: 20 }}>
+      <div style={{ border: `1px solid ${WF.line}`, borderRadius: 10, background: '#fff', boxShadow: '0 1px 2px rgba(15,23,42,0.05)' }}>
         {/* Header — sticky, so "Fill remaining as temp" stays reachable no matter
             how far down a long guest list the agent has scrolled. Deliberately
             NOT wrapped in the row body's overflow:hidden below: any ancestor
@@ -71,60 +72,120 @@ function GuestDetailsSection({ guests, guestAges, guestData, setGuestData }) {
         <div style={{
           position: 'sticky', top: 0, zIndex: 2,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-          padding: '10px 20px', background: '#fff',
-          border: `1px solid ${WF.line}`, borderRadius: '12px 12px 0 0',
+          padding: '12px 14px', background: '#fff',
+          borderBottom: `1px solid ${WF.line}`, borderRadius: '10px 10px 0 0',
         }}>
-          <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.8, color: WF.inkLabel, textTransform: 'uppercase' }}>Traveler Line-Up</span>
-          {unconfirmedCount > 0 && (
-            <button
-              onClick={handleFillRemainingAsTemp}
-              title="Skip precise database lookups and create fast placeholder records for remaining travelers."
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 5,
-                background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontFamily: 'inherit',
-                fontSize: 11.5, fontWeight: 700, color: WF.accentOn, whiteSpace: 'nowrap',
-              }}>
-              ⚡ Fill {unconfirmedCount < guestList.length ? 'remaining' : 'all'} as temp
-            </button>
-          )}
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.75, color: WF.inkLabel, textTransform: 'uppercase' }}>Traveler line-up</div>
+            <div style={{ marginTop: 3, fontSize: 11, color: WF.inkSoft }}>
+              {guestList.length} traveler{guestList.length === 1 ? '' : 's'} · Add or review the profile attached to each guest
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 5,
+              padding: '5px 8px', borderRadius: 999,
+              background: unconfirmedCount === 0 ? '#F0FDF4' : WF.fill,
+              border: `1px solid ${unconfirmedCount === 0 ? '#BBF7D0' : WF.line}`,
+              color: unconfirmedCount === 0 ? '#047857' : WF.inkSoft,
+              fontSize: 10, fontWeight: 800, whiteSpace: 'nowrap',
+            }}>
+              {unconfirmedCount === 0 && <span aria-hidden="true">✓</span>}
+              {completedCount} of {guestList.length} ready
+            </span>
+            {unconfirmedCount > 0 && (
+              <button
+                onClick={handleFillRemainingAsTemp}
+                title="Skip precise database lookups and create fast placeholder records for remaining travelers."
+                style={{
+                  height: 30, padding: '0 10px', borderRadius: 6,
+                  background: WF.panel, border: `1px solid ${WF.line}`,
+                  cursor: 'pointer', fontFamily: 'inherit', color: WF.ink,
+                  fontSize: 10.5, fontWeight: 700, whiteSpace: 'nowrap',
+                }}>
+                Fill {unconfirmedCount < guestList.length ? 'remaining' : 'all'} as temp
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Guest rows — the only overflow:hidden box; a sibling of the sticky
             header, not an ancestor, so it can't interfere with it. */}
-        <div style={{ background: '#fff', border: `1px solid ${WF.line}`, borderTop: 'none', borderRadius: '0 0 12px 12px', overflow: 'hidden' }}>
-        {guestList.map((guest, idx) => {
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
+          gap: 8, padding: 10, background: WF.fill, borderRadius: '0 0 10px 10px',
+        }}>
+        {guestList.map((guest) => {
           const isExpanded = expandedGuestId === guest.id;
           const isDone = !!guestData[guest.id];
           const isManual = !!manualMode[guest.id];
-          const isLast = idx === guestList.length - 1;
+          const record = guestData[guest.id] || {};
+          const isTemp = isDone && /^Temp\s/i.test(record.name || '');
+          const isPrimary = guest.label.toLowerCase().includes('primary');
+          const ageRange = { Adult: '21+', 'Young Adult': '13–21', Child: '3–12', Infant: '0–3' }[guest.type];
+          const ageLabel = guest.age != null ? `Age ${guest.age}` : `Age ${ageRange}`;
           const form = manualForm[guest.id] || { firstName: '', lastName: '', dob: '', email: '', phone: '' };
 
           return (
-            <React.Fragment key={guest.id}>
+            <div key={guest.id} style={{
+              gridColumn: isExpanded ? '1 / -1' : 'auto',
+              border: `1px solid ${isExpanded ? WF.accent : WF.line}`,
+              borderRadius: 9, overflow: 'hidden',
+              background: '#fff', boxShadow: '0 1px 2px rgba(15,23,42,0.04)',
+            }}>
               {/* Row */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', alignItems: 'center', gap: 12, padding: '10px 20px', background: isExpanded ? '#F8FAFC' : '#fff' }}>
+              <div style={{
+                display: 'grid', gridTemplateColumns: 'auto minmax(0, 1fr) auto',
+                alignItems: 'center', gap: 10, padding: '11px 12px',
+                background: isExpanded ? WF.accentTint : '#fff',
+              }}>
                 {/* Badge */}
-                {/* "Done" here means the same thing the progress bar's done step
-                    means — this traveller is complete — so it wears the same
-                    accent rather than a green of its own. Green in this app is
-                    reserved for availability and savings. */}
-                <div style={{ width: 30, height: 30, borderRadius: 8, background: isDone ? WF.accentTint : '#EEF2FF', color: isDone ? WF.accentInk : '#3B4FD4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11.5, fontWeight: 700, border: `1.5px solid ${isDone ? WF.accentLine : '#C7D2FE'}`, flexShrink: 0 }}>
-                  {isDone ? '✓' : guest.id}
+                {/* The stable guest code remains visible after completion; the
+                    first eligible adult uses the navy primary treatment. */}
+                <div style={{
+                  width: 36, height: 36, borderRadius: 8,
+                  background: isPrimary ? WF.accent : WF.fill,
+                  color: isPrimary ? '#fff' : WF.ink,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 11, fontWeight: 800,
+                  border: `1px solid ${isPrimary ? WF.accent : WF.line}`,
+                  flexShrink: 0, fontFamily: 'ui-monospace, monospace',
+                }}>
+                  {guest.id}
                 </div>
                 {/* Info */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: WF.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {isDone && guestData[guest.id].name ? guestData[guest.id].name : guest.label}
-                  </span>
-                  <span style={{ fontSize: 11, color: WF.inkSoft, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    {isDone ?
-                    <>{guestData[guest.id].name ? <span style={{ background: '#FEF3C7', color: '#92400E', padding: '1px 5px', borderRadius: 3, fontSize: 9.5, fontWeight: 700 }}>TEMP</span> : <span style={{ color: '#059669', fontWeight: 600 }}>Confirmed</span>}</> :
-                    'No profile attached'}
-                  </span>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                    <span style={{ fontSize: 12.5, fontWeight: 800, color: WF.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {isDone && record.name ? record.name : `${guest.type} ${guest.id.replace(/\D/g, '') || ''}`.trim()}
+                    </span>
+                    {isTemp && (
+                      <span style={{ background: '#FEF3C7', color: '#92400E', padding: '2px 5px', borderRadius: 4, fontSize: 8.5, fontWeight: 800, flexShrink: 0 }}>TEMP</span>
+                    )}
+                    {isPrimary && (
+                      <span style={{ background: WF.accentTint, color: WF.accent, border: `1px solid ${WF.accentLine}`, padding: '2px 5px', borderRadius: 4, fontSize: 8.5, fontWeight: 800, flexShrink: 0 }}>PRIMARY</span>
+                    )}
+                  </div>
+                  <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 5, color: WF.inkSoft, fontSize: 10.5 }}>
+                    <span>{guest.type}</span>
+                    <span aria-hidden="true" style={{ color: WF.inkFaint }}>·</span>
+                    <span>{ageLabel}</span>
+                    <span aria-hidden="true" style={{ color: WF.inkFaint }}>·</span>
+                    <span style={{ color: isDone ? '#047857' : WF.inkFaint, fontWeight: 700 }}>
+                      {isDone ? 'Ready' : 'Needs details'}
+                    </span>
+                  </div>
                 </div>
                 {/* Button */}
-                <button onClick={() => {setExpandedGuestId(isExpanded ? null : guest.id);setSearchQuery('');}} style={{ padding: '6px 14px', fontSize: 12, fontWeight: 600, border: isExpanded ? 'none' : `1px solid ${WF.line}`, background: isExpanded ? '#1B2434' : '#fff', color: isExpanded ? '#fff' : WF.ink, borderRadius: 7, cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: 'inherit', flexShrink: 0 }}>
-                  {isExpanded ? 'Close' : 'Add details'}
+                <button onClick={() => {setExpandedGuestId(isExpanded ? null : guest.id);setSearchQuery('');}} style={{
+                  height: 30, padding: '0 10px', fontSize: 10.5, fontWeight: 700,
+                  border: `1px solid ${isExpanded || !isDone ? WF.accent : WF.line}`,
+                  background: isExpanded || !isDone ? WF.accent : '#fff',
+                  color: isExpanded || !isDone ? '#fff' : WF.ink,
+                  borderRadius: 6, cursor: 'pointer', whiteSpace: 'nowrap',
+                  fontFamily: 'inherit', flexShrink: 0,
+                }}>
+                  {isExpanded ? 'Close' : isDone ? 'Edit details' : 'Add details'}
                 </button>
               </div>
 
@@ -237,8 +298,7 @@ function GuestDetailsSection({ guests, guestAges, guestData, setGuestData }) {
                 </div>
               }
 
-              {!isExpanded && !isLast && <div style={{ height: 1, background: WF.line, margin: '0 20px' }} />}
-            </React.Fragment>);
+            </div>);
 
         })}
         </div>

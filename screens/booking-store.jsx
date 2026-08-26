@@ -41,6 +41,7 @@ const BOOKING_DEFAULTS = {
   // the agent was. 1 = Sailing/fare/cabin, 2 = Add guests, 3 = Review & confirm.
   bookingId: 'DRAFT-9087',
   source: 'Phone',
+  bookingType: 'Normal',
   step: 1,
 
   // Step 1 — trip context
@@ -56,7 +57,6 @@ const BOOKING_DEFAULTS = {
   // Departure months are multi-select within the chosen year. Keep the
   // collection in state so successive checkbox toggles remain additive.
   selectedMonth: { months: [], year: null },
-  selectedIntent: null,
 
   // Step 2 — sailing, cabin, fare, extras
   selectedSailingCode: null,
@@ -75,6 +75,11 @@ const BOOKING_DEFAULTS = {
 
   // Step 3 — guest records, keyed A1 / YA1 / C1 / I1
   guestData: {},
+  // Review can explicitly move (or temporarily clear) the single booking lead.
+  // `configured` distinguishes an intentional "none" from older bookings that
+  // still use the legacy first-adult fallback.
+  primaryGuestCode: null,
+  primaryGuestConfigured: false,
 
   // Commercial terms. Editable from every step, so they start neutral — a
   // coupon the agent never applied must not silently discount the quote.
@@ -103,7 +108,15 @@ function normalizeBooking(raw) {
     months: [...new Set(rawMonths.filter((m) => validMonths.has(m)))],
     year: rawMonth.year || null,
   };
+  // Travel intent has been retired. Strip it from older persisted drafts so
+  // the removed field cannot survive as hidden booking context.
+  delete b.selectedIntent;
+  const validBookingTypes = new Set(['Normal', 'Future', 'Channel Partner Booking']);
+  b.bookingType = validBookingTypes.has(r.bookingType) ? r.bookingType : 'Normal';
   b.guestData = r.guestData && typeof r.guestData === 'object' ? r.guestData : {};
+  b.primaryGuestConfigured = r.primaryGuestConfigured === true;
+  b.primaryGuestCode = typeof r.primaryGuestCode === 'string' && r.primaryGuestCode.trim()
+    ? r.primaryGuestCode.trim() : null;
   // Per-cabin supplement assignment has been retired, and infants cannot
   // receive supplements. Keep only eligible guest keys and rebuild totals from
   // those visible assignments so neither legacy shape can survive as a hidden

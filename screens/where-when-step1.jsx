@@ -11,9 +11,9 @@
 // FILTER PANEL · Design tokens
 // ─────────────────────────────────────────────────────────────────────────────
 
-const FP_NAVY = '#0F1F3D';
+const FP_NAVY = '#1B2434';
 const FP_BORDER = '#E2E8F0';
-const FP_BG = '#F4F6F9';
+const FP_BG = '#F1F5F9';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FILTER PANEL · Constants
@@ -24,15 +24,9 @@ const FP_BG = '#F4F6F9';
 const FP_REGIONS = window.MVAS_REGIONS;
 const FP_HOME_PORTS = window.MVAS_HOME_PORTS;
 
-const FP_INTENTS = [
-{ name: 'Relaxation', emoji: '🏖️' },
-{ name: 'Adventure', emoji: '⛺' },
-{ name: 'Anniversary', emoji: '💑' },
-{ name: 'Family', emoji: '🎁' }];
-
-
 const FP_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const FP_YEARS = ['2026', '2027'];
+const FP_BOOKING_TYPES = ['Normal', 'Future', 'Channel Partner Booking'];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPERS
@@ -44,7 +38,7 @@ function fpSelectedMonths(selectedMonth) {
   return selectedMonth.month ? [selectedMonth.month] : [];
 }
 
-function fpBuildChips(selectedDestinations, selectedPorts, selectedHomePorts, selectedDuration, selectedMonth, selectedIntent) {
+function fpBuildChips(selectedDestinations, selectedPorts, selectedHomePorts, selectedDuration, selectedMonth) {
   const chips = [];
   (selectedHomePorts || []).forEach((id) => {
     chips.push({ icon: '🛳️', label: mvasHomePortName(id) });
@@ -63,10 +57,6 @@ function fpBuildChips(selectedDestinations, selectedPorts, selectedHomePorts, se
   fpSelectedMonths(selectedMonth).forEach((month) => {
     chips.push({ icon: '📅', label: `${month}${selectedMonth.year ? ` ${selectedMonth.year}` : ''}` });
   });
-  if (selectedIntent) {
-    const i = FP_INTENTS.find((x) => x.name === selectedIntent);
-    if (i) chips.push({ icon: i.emoji, label: selectedIntent });
-  }
   return chips;
 }
 
@@ -77,8 +67,7 @@ function fpBuildChips(selectedDestinations, selectedPorts, selectedHomePorts, se
 // searchable/counted port popover: simpler to scan, and it scales the same
 // way whether a facet has 3 options or 22 — a plain list inside a popover,
 // no search box, no live counts. Two flavours of content:
-//   - single-select rows auto-apply and close on click (Departing From and
-//     Travel Intent)
+//   - single-select rows auto-apply and close on click (Departing From)
 //   - multi-select rows need an explicit Done (Departure Dates,
 //     Destination(s), Duration),
 //     with a Clear alongside for backing out entirely
@@ -214,7 +203,7 @@ function FPDropdownFooter({ onClear, onDone, clearDisabled }) {
 // that clipping (nothing here applies a CSS transform to the ancestors,
 // which is the one thing that would drag a fixed element back into their
 // containing block), so the popover renders relative to the viewport instead.
-function FPDropdown({ trigger, open, onToggle, onClose, footer, width = 260, children }) {
+function FPDropdown({ label, trigger, open, onToggle, onClose, footer, width = 260, children }) {
   const btnRef = React.useRef(null);
   const [pos, setPos] = React.useState(null);
 
@@ -256,13 +245,24 @@ function FPDropdown({ trigger, open, onToggle, onClose, footer, width = 260, chi
         onClick={onToggle}
         style={{
           display: 'flex', alignItems: 'center', gap: 8, width: '100%',
-          padding: '11px 14px', borderRadius: 10,
-          border: `1.5px solid ${open ? FP_NAVY : FP_BORDER}`,
-          background: '#fff', color: FP_NAVY,
-          cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
-          transition: 'border-color 0.15s', outline: 'none', textAlign: 'left'
+          minHeight: 48, padding: '7px 11px', borderRadius: 8,
+          border: `1px solid ${open ? FP_NAVY : FP_BORDER}`,
+          background: open ? '#EFF6FF' : '#fff', color: FP_NAVY,
+          cursor: 'pointer', fontFamily: 'inherit',
+          transition: 'border-color 0.15s, background 0.15s', outline: 'none', textAlign: 'left'
         }}>
-        <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{trigger}</span>
+        <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {label && (
+            <span style={{
+              fontSize: 9, lineHeight: 1, fontWeight: 750, letterSpacing: 0.45,
+              textTransform: 'uppercase', color: '#64748B',
+            }}>{label}</span>
+          )}
+          <span style={{
+            fontSize: 12.5, lineHeight: 1.2, fontWeight: 650, color: FP_NAVY,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>{trigger}</span>
+        </span>
         <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.18s' }}>
           <path d="M2 4L6 8L10 4" stroke="#64748B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
@@ -301,13 +301,13 @@ function SearchFilterPanel({ state, onUpdate }) {
     selectedPorts,
     selectedHomePorts,
     selectedDuration,
-    selectedMonth,
-    selectedIntent
+    selectedMonth
   } = state;
   const homePorts = selectedHomePorts || [];
   const ports = selectedPorts || [];
   const durations = selectedDuration || [];
   const selectedMonths = fpSelectedMonths(selectedMonth);
+  const bookingType = state.bookingType || 'Normal';
 
   // Track if user has made any selections in this session
   const [hasEverInteracted, setHasEverInteracted] = React.useState(false);
@@ -387,13 +387,7 @@ function SearchFilterPanel({ state, onUpdate }) {
     });
   };
 
-  const setIntent = (val) => {
-    setHasEverInteracted(true);
-    onUpdate({ selectedIntent: selectedIntent === val ? null : val });
-    closeDropdown();
-  };
-
-  const chips = fpBuildChips(selectedDestinations, ports, homePorts, durations, selectedMonth, selectedIntent);
+  const chips = fpBuildChips(selectedDestinations, ports, homePorts, durations, selectedMonth);
 
   // Trigger labels — state its contents when something is picked, the facet
   // name otherwise.
@@ -410,27 +404,81 @@ function SearchFilterPanel({ state, onUpdate }) {
   const durationLabel = durations.length === 0 ? 'Duration'
     : durations.length <= 2 ? durations.map((id) => (getDurationBand(id) || {}).short || id).join(', ')
     : `${durations.length} selected`;
-  const intentLabel = selectedIntent || 'Travel Intent';
-
   return (
     <>
       <div style={{
-        background: '#fff', borderRadius: 16, overflow: 'hidden',
-        boxShadow: '0 2px 16px rgba(15,31,61,0.08)',
+        background: '#fff', borderRadius: 10, overflow: 'hidden',
+        boxShadow: '0 1px 2px rgba(15,23,42,0.08)',
         border: `1px solid ${FP_BORDER}`
       }}>
 
+      {/* ══ BOOKING TYPE ════════════════════════════════════════════════════
+          This sets booking context only; inventory filtering remains driven
+          by the date, port, destination and duration facets below. */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 14, padding: '8px 16px',
+        background: WF.fill, borderBottom: `1px solid ${WF.line}`,
+      }}>
+        <div style={{
+          flex: '0 0 auto', fontSize: 10, fontWeight: 750, letterSpacing: 0.65,
+          color: WF.inkLabel, textTransform: 'uppercase'
+        }}>
+          Booking Type
+        </div>
+        <div role="tablist" aria-label="Booking Type" style={{
+          display: 'grid', gridTemplateColumns: '72px 68px 182px', gap: 3,
+          width: 334, maxWidth: '100%', padding: 3,
+          border: `1px solid ${WF.line}`, borderRadius: 8,
+          background: '#FFFFFF'
+        }}>
+          {FP_BOOKING_TYPES.map((type) => {
+            const selected = bookingType === type;
+            return (
+              <button
+                key={type}
+                type="button"
+                role="tab"
+                aria-selected={selected}
+                onClick={() => onUpdate({ bookingType: type })}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                  minHeight: 27, padding: '4px 8px',
+                  border: `1px solid ${selected ? WF.accent : 'transparent'}`, borderRadius: 6,
+                  background: selected ? WF.accent : 'transparent',
+                  color: selected ? WF.accentText : WF.inkSoft,
+                  fontFamily: 'inherit', fontSize: 11.5, fontWeight: selected ? 700 : 600,
+                  cursor: 'pointer', whiteSpace: 'nowrap',
+                  boxShadow: selected ? '0 1px 2px rgba(15,23,42,0.08)' : 'none',
+                  transition: 'background 0.12s, color 0.12s'
+                }}>
+                <span aria-hidden="true" style={{
+                  width: 12, height: 12, borderRadius: 999, flexShrink: 0,
+                  display: 'grid', placeItems: 'center',
+                  border: `1px solid ${selected ? 'rgba(255,255,255,0.72)' : WF.line}`,
+                  background: selected ? 'rgba(255,255,255,0.14)' : '#FFFFFF',
+                  color: selected ? '#FFFFFF' : 'transparent', fontSize: 9, fontWeight: 800,
+                }}>{selected ? '✓' : ''}</span>
+                {type}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* ══ SEARCH BAR ══════════════════════════════════════════════════════ */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: "16px" }}>
-        {/* Source selector — left of the search input */}
-        {window.SourcePill2 && state.source !== undefined && (
-          <window.SourcePill2 source={state.source} onChange={(v) => onUpdate({ source: v })} />
-        )}
+      <div style={{ padding: '13px 16px 14px' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, marginBottom: 7 }}>
+          <div style={{ fontSize: 10.5, fontWeight: 750, letterSpacing: 0.55, color: WF.inkLabel, textTransform: 'uppercase' }}>
+            Search inventory
+          </div>
+          <div style={{ fontSize: 9.5, color: WF.inkSoft }}>Destination, ship, or sailing code</div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         {/* Search input — clearly typeable */}
         <div style={{
           flex: 1, display: 'flex', alignItems: 'center', gap: 8,
-          background: '#F8FAFC', border: `1.5px solid ${FP_BORDER}`,
-          height: 36, borderRadius: 8, padding: '0 12px',
+          background: '#FFFFFF', border: `1px solid ${FP_BORDER}`,
+          height: 40, borderRadius: 8, padding: '0 12px',
           transition: 'border-color 0.15s'
         }}
         onFocusCapture={(e) => e.currentTarget.style.borderColor = FP_NAVY}
@@ -456,8 +504,8 @@ function SearchFilterPanel({ state, onUpdate }) {
           onClick={toggle}
           title={isExpanded ? 'Collapse filters' : 'Expand filters'}
           style={{
-            width: 32, height: 32, borderRadius: 16, flexShrink: 0,
-            border: `1.5px solid ${FP_BORDER}`, background: '#fff',
+            width: 36, height: 36, borderRadius: 8, flexShrink: 0,
+            border: `1px solid ${FP_BORDER}`, background: WF.fill,
             cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             color: '#64748B',
@@ -469,6 +517,7 @@ function SearchFilterPanel({ state, onUpdate }) {
             <path d="M2 4L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </button>
+        </div>
       </div>
 
       {/* ══ ACTIVE CHIPS (collapsed only) ═══════════════════════════════════ */}
@@ -513,11 +562,22 @@ function SearchFilterPanel({ state, onUpdate }) {
       }}>
         <div style={{ height: 1, background: FP_BORDER }} />
 
+        <div style={{
+          display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12,
+          padding: '12px 16px 0',
+        }}>
+          <div style={{ fontSize: 10.5, fontWeight: 750, letterSpacing: 0.55, color: WF.inkLabel, textTransform: 'uppercase' }}>
+            Itinerary filters
+          </div>
+          <div style={{ fontSize: 9.5, color: WF.inkSoft }}>Select one or more options</div>
+        </div>
+
         {/* ── Primary row: Departure Dates / Departing From / Destination(s) / Duration ── */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, padding: '14px 16px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, padding: '8px 16px 14px' }}>
 
           {/* DEPARTURE DATES */}
           <FPDropdown
+            label="Departure date"
             trigger={dateLabel}
             open={openKey === 'dates'}
             onToggle={() => setOpenKey((k) => (k === 'dates' ? null : 'dates'))}
@@ -564,6 +624,7 @@ function SearchFilterPanel({ state, onUpdate }) {
 
           {/* DEPARTING FROM — single-select, real MVAS embarkation cities */}
           <FPDropdown
+            label="Departing from"
             trigger={homeLabel}
             open={openKey === 'home'}
             onToggle={() => setOpenKey((k) => (k === 'home' ? null : 'home'))}
@@ -584,6 +645,7 @@ function SearchFilterPanel({ state, onUpdate }) {
               did — without the search box that made 22 ports feel bigger
               than it is. */}
           <FPDropdown
+            label="Destination"
             trigger={destLabel}
             open={openKey === 'dest'}
             onToggle={() => setOpenKey((k) => (k === 'dest' ? null : 'dest'))}
@@ -627,6 +689,7 @@ function SearchFilterPanel({ state, onUpdate }) {
 
           {/* DURATION — the four bands the product is actually sold in. */}
           <FPDropdown
+            label="Duration"
             trigger={durationLabel}
             open={openKey === 'duration'}
             onToggle={() => setOpenKey((k) => (k === 'duration' ? null : 'duration'))}
@@ -648,36 +711,49 @@ function SearchFilterPanel({ state, onUpdate }) {
           </FPDropdown>
         </div>
 
-        {/* ── Secondary row: Travel Intent / Promo Code ── */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', padding: '0 16px 16px' }}>
-          <FPDropdown
-            trigger={intentLabel}
-            open={openKey === 'intent'}
-            onToggle={() => setOpenKey((k) => (k === 'intent' ? null : 'intent'))}
-            onClose={closeDropdown}
-            width={200}>
-            {FP_INTENTS.map((intent) => (
-              <FPListRow
-                key={intent.name}
-                icon={intent.emoji}
-                label={intent.name}
-                selected={selectedIntent === intent.name}
-                onClick={() => setIntent(intent.name)} />
-            ))}
-          </FPDropdown>
+        {/* ── Secondary row: Booking Source / Promo Code ── */}
+        <div style={{ padding: '11px 16px 14px', borderTop: `1px solid ${WF.line}`, background: WF.fill }}>
+          <div style={{
+            display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12,
+            marginBottom: 7,
+          }}>
+            <div style={{ fontSize: 10.5, fontWeight: 750, letterSpacing: 0.55, color: WF.inkLabel, textTransform: 'uppercase' }}>
+              Booking details
+            </div>
+            <div style={{ fontSize: 9.5, color: WF.inkSoft }}>Source and promotional pricing</div>
+          </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
+          {window.SourcePill2 && state.source !== undefined && (
+            <div style={{ flex: '1 1 200px', minWidth: 170 }}>
+              <window.SourcePill2
+                source={state.source}
+                onChange={(v) => onUpdate({ source: v })}
+                fullWidth />
+            </div>
+          )}
 
           <div style={{ flex: '1 1 220px', display: 'flex', gap: 6, minWidth: 200 }}>
-            <input
-              type="text"
-              placeholder="Enter coupon"
-              style={{
-                flex: 1, padding: '10px 12px', fontSize: 12, fontFamily: 'inherit',
-                border: `1.5px solid ${FP_BORDER}`, borderRadius: 8,
-                color: FP_NAVY, background: '#fff', outline: 'none'
-              }} />
+            <div style={{
+              flex: 1, minWidth: 0, minHeight: 40, display: 'flex', alignItems: 'center', gap: 8,
+              padding: '6px 11px', border: `1px solid ${FP_BORDER}`, borderRadius: 8,
+              color: FP_NAVY, background: '#fff',
+            }}>
+              <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <label style={{ fontSize: 9, lineHeight: 1, fontWeight: 750, letterSpacing: 0.45, textTransform: 'uppercase', color: WF.inkLabel }}>
+                  Promotion code
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter code"
+                  style={{
+                    width: '100%', padding: 0, fontSize: 12.5, lineHeight: 1.2, fontFamily: 'inherit',
+                    border: 'none', color: FP_NAVY, background: 'transparent', outline: 'none'
+                  }} />
+              </div>
+            </div>
             <button style={{
-              padding: '9px 16px', fontSize: 12, fontWeight: 600, fontFamily: 'inherit',
-              border: `1.5px solid ${FP_BORDER}`, borderRadius: 8,
+              minHeight: 40, padding: '9px 16px', fontSize: 12, fontWeight: 650, fontFamily: 'inherit',
+              border: `1px solid ${FP_BORDER}`, borderRadius: 8,
               background: '#fff', color: FP_NAVY, cursor: 'pointer',
               transition: 'all 0.12s', whiteSpace: 'nowrap'
             }}
@@ -686,6 +762,7 @@ function SearchFilterPanel({ state, onUpdate }) {
               Apply
             </button>
           </div>
+        </div>
         </div>
       </div>
 

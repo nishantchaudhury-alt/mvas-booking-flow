@@ -183,6 +183,214 @@ function SPGroup({ label, first, children }) {
   );
 }
 
+// ── Compact information cards used by the persistent right rail ────────────
+// The rail is deliberately narrow. Rather than repeat the desktop pattern of
+// uppercase heading + several loose rows, these cards lead with the decision-
+// making value and keep its label as supporting metadata. This makes the same
+// information readable at a glance without hiding any booking data.
+function SPKicker({ children }) {
+  return (
+    <div style={{
+      fontSize: 9, fontWeight: 800, letterSpacing: 0.72,
+      color: WF.inkLabel || WF.inkSoft, textTransform: 'uppercase', lineHeight: 1.2,
+    }}>{children}</div>
+  );
+}
+
+function SPDatum({ label, value, dim, mono, align = 'left' }) {
+  return (
+    <div style={{ minWidth: 0, textAlign: align }}>
+      <div style={{
+        fontSize: 8.5, fontWeight: 700, letterSpacing: 0.45,
+        color: WF.inkFaint, textTransform: 'uppercase', lineHeight: 1.2,
+      }}>{label}</div>
+      <div style={{
+        marginTop: 2, fontSize: 10.5, fontWeight: 700,
+        color: dim ? WF.inkFaint : WF.ink, lineHeight: 1.25,
+        fontFamily: mono ? 'ui-monospace, monospace' : 'inherit',
+        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        fontVariantNumeric: mono ? 'tabular-nums' : 'normal',
+      }}>{value}</div>
+    </div>
+  );
+}
+
+function SPBookingSnapshot({
+  b, p, destStr, homePortStr, guestStr, durationStr, monthStr,
+  roomLabel, roomStr, showSupps, setShowSupps,
+}) {
+  const bookingType = b.bookingType || 'Normal';
+
+  return (
+    <>
+      <SPGroup label="Trip" first>
+        <SPRow label="Booking Type" value={bookingType} />
+        <SPRow label="Source" value={b.source || SP_DASH} dim={!b.source} />
+        <SPRow label="Destination" value={destStr || SP_DASH} dim={!destStr} />
+        <SPRow label="Departing" value={homePortStr || SP_DASH} dim={!homePortStr} />
+        <SPRow label="Guests" value={guestStr} dim={p.guestCount === 0} mono />
+        <SPRow label="Duration" value={durationStr || SP_DASH} dim={!durationStr} />
+        <SPRow label="Month" value={monthStr || SP_DASH} dim={!monthStr} />
+      </SPGroup>
+
+      <SPGroup label="Sailing">
+        <SPRow
+          label="Sailing"
+          value={p.sailing ? `${p.sailing.region} · ${p.sailing.nights}N` : SP_DASH}
+          dim={!p.sailing} />
+        <SPRow label="Departs" value={p.sailing ? p.sailing.depart : SP_DASH} dim={!p.sailing} />
+      </SPGroup>
+
+      <SPGroup label="Stateroom">
+        <SPRow label="Cabin" value={p.cabin ? p.cabin.name : SP_DASH} dim={!p.cabin} />
+        <SPRow
+          label="Cabin delta"
+          value={p.cabin ? (p.cabinDeltaPP > 0 ? `+$${p.cabinDeltaPP}pp` : 'Included') : SP_DASH}
+          dim={!p.cabin}
+          mono={!!p.cabin} />
+        <SPRow label={roomLabel} value={roomStr || SP_DASH} dim={!roomStr} />
+        <SPRow
+          label="Assignment"
+          value={b.cabinId ? (b.assignmentMethod === 'auto' ? 'Auto-assign' : 'Manual select') : SP_DASH}
+          dim={!b.cabinId} />
+      </SPGroup>
+
+      <SPGroup label="Fare & extras">
+        <SPRow label="Farecode" value={p.fc ? p.fc.code : SP_DASH} dim={!p.fc} mono />
+
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, padding: '3px 0' }}>
+          <div style={{ fontSize: 12, color: WF.inkSoft }}>Supplements</div>
+          {p.suppLines.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => setShowSupps((v) => !v)}
+              aria-expanded={showSupps}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                background: 'none', border: 'none', padding: 0,
+                cursor: 'pointer', fontFamily: 'ui-monospace, monospace',
+                fontSize: 12, fontWeight: 700, color: SP_ACCENT,
+              }}>
+              {p.suppLines.length} · {p.suppTotal > 0 ? `+${money(p.suppTotal)}` : 'included'}
+              <span aria-hidden="true" style={{
+                fontSize: 9,
+                transform: showSupps ? 'rotate(180deg)' : 'none',
+                transition: 'transform 0.12s',
+              }}>▾</span>
+            </button>
+          ) : (
+            <div style={{ fontSize: 12, color: WF.inkFaint }}>None</div>
+          )}
+        </div>
+
+        {showSupps && p.suppLines.length > 0 && (
+          <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {p.suppLines.map((ln) => (
+              <div key={ln.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, fontSize: 11 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
+                  <span>{ln.emoji}</span>
+                  <span style={{ color: WF.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {ln.name}{ln.qty > 1 ? ` ×${ln.qty}` : ''}
+                  </span>
+                </div>
+                <span style={{ flexShrink: 0, fontSize: 9.5, fontWeight: 700, color: WF.ink, fontFamily: 'ui-monospace, monospace' }}>
+                  {ln.amount > 0 ? `+${money(ln.amount)}` : '—'}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </SPGroup>
+    </>
+  );
+}
+
+function SPPriceSummary({ b, p }) {
+  const groups = [
+    {
+      label: 'Cruise & fees',
+      rows: [
+        { label: 'Cabin fare', sub: p.guestCount > 0 ? `${money(p.cabinFarePP)} per guest × ${p.guestCount}` : null, amount: p.cabinFareTotal },
+        { label: 'Gratuities', amount: p.gratuities },
+      ],
+    },
+    {
+      label: 'Add-ons',
+      rows: [
+        { label: 'Supplements', amount: p.suppTotal },
+        { label: 'Trip protection', amount: p.protectionTotal },
+      ],
+    },
+  ];
+
+  if (p.couponDisc !== 0) {
+    groups.push({
+      label: 'Discounts',
+      rows: [{ label: `Coupon · ${b.appliedCoupon}`, amount: p.couponDisc }],
+    });
+  }
+
+  return (
+    <div style={{ border: `1px solid ${WF.line}`, borderRadius: 10, overflow: 'hidden', background: WF.panel, boxShadow: '0 1px 2px rgba(15,23,42,.05)' }}>
+      {groups.map((group, groupIndex) => (
+        <div key={group.label} style={{ padding: '9px 11px', borderTop: groupIndex === 0 ? 'none' : `1px solid ${WF.line}` }}>
+          <SPKicker>{group.label}</SPKicker>
+          <div style={{ marginTop: 4 }}>
+            {group.rows.map((row) => (
+              <SPPriceRow key={row.label} label={row.label} sub={row.sub} amount={row.amount} />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SPAmountDueCard({ p }) {
+  const dueShare = p.total > 0 ? Math.max(0, Math.min(100, (p.amountDue / p.total) * 100)) : 0;
+  const rateLabel = p.payFull ? 'Full balance' : `${Math.round(p.depositRate * 100)}% deposit`;
+
+  return (
+    <div style={{
+      borderRadius: 10, background: WF.accentTint || '#EFF6FF',
+      border: `1px solid ${WF.accentLine || '#DBEAFE'}`,
+      padding: '11px 12px', boxShadow: '0 1px 2px rgba(15,23,42,.06)',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <SPKicker>Payment today</SPKicker>
+        <span style={{
+          padding: '3px 7px', borderRadius: 999, background: WF.panel,
+          border: `1px solid ${WF.accentLine || '#DBEAFE'}`,
+          color: WF.accentInk, fontSize: 8.5, fontWeight: 800, whiteSpace: 'nowrap',
+        }}>{rateLabel}</span>
+      </div>
+      <div style={{ marginTop: 7, fontSize: 9.5, fontWeight: 700, color: WF.inkSoft }}>Amount due now</div>
+      <div style={{
+        marginTop: 2, fontSize: 23, fontWeight: 800, color: WF.ink,
+        fontFamily: 'ui-monospace, monospace', fontVariantNumeric: 'tabular-nums',
+        letterSpacing: -0.5, lineHeight: 1.05,
+      }}>{money(p.amountDue)}</div>
+      <div style={{ height: 4, marginTop: 10, borderRadius: 999, background: '#DCE6F3', overflow: 'hidden' }}>
+        <div style={{ width: `${dueShare}%`, height: '100%', borderRadius: 999, background: WF.accentInk }} />
+      </div>
+      <div style={{
+        display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10,
+        marginTop: 9, paddingTop: 9, borderTop: `1px solid ${WF.accentLine || '#DBEAFE'}`,
+      }}>
+        <SPDatum label={p.status === 'partial' ? 'Provisional total' : 'Booking total'} value={money(p.total)} mono />
+        <SPDatum label="Remaining" value={money(p.remaining)} mono align="right" />
+      </div>
+      <div style={{ marginTop: 8, fontSize: 9.5, color: WF.inkSoft, lineHeight: 1.35 }}>
+        {p.payFull
+          ? 'Nothing remains after this payment.'
+          : p.status === 'partial'
+            ? 'Select a fare to confirm the final deposit.'
+            : 'Remaining balance is due 45 days before departure.'}
+      </div>
+    </div>
+  );
+}
+
 // ── Pill row used by promotions / hold / payment terms ──
 function SPPills({ options, value, onChange, dark }) {
   return (
@@ -366,148 +574,126 @@ function spCabinBreakdown(b, p) {
   return { rooms, unassigned };
 }
 
-// One supplement line inside a cabin card. Guest-level is the default read;
-// cabin-level, package-bundle and package-covered lines carry a small tag
-// saying why their number is shaped the way it is (once per room / per
-// person for the whole room / $0).
+// One supplement line inside a room receipt. Quantity is its own compact datum
+// and all charge amounts use the standard receipt ink; emojis and coloured
+// scope tags made these financial rows harder to scan without adding meaning.
 function SPCabinSuppLine({ ln }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, fontSize: 11, padding: '2px 0' }}>
+    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, padding: '2px 0' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
-        <span>{ln.emoji}</span>
-        <span style={{ color: WF.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {ln.name}{(ln.scope === 'guest' || ln.scope === 'pkg') && ln.qty > 1 ? ` ×${ln.qty}` : ''}
-        </span>
-        {ln.scope === 'cabin' && (
+        <span style={{ fontSize: 10.5, fontWeight: 500, color: WF.inkSoft, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ln.name}</span>
+        {ln.qty > 1 && (
           <span style={{
-            fontSize: 8.5, fontWeight: 700, letterSpacing: 0.3, color: WF.accentInk,
-            background: WF.accentTint, borderRadius: 3, padding: '1px 4px', flexShrink: 0,
-          }}>CABIN</span>
-        )}
-        {ln.scope === 'pkg' && (
-          <span style={{
-            fontSize: 8.5, fontWeight: 700, letterSpacing: 0.3, color: '#6D28D9',
-            background: '#F5F3FF', borderRadius: 3, padding: '1px 4px', flexShrink: 0,
-          }}>PKG</span>
-        )}
-        {ln.inPkg && (
-          <span style={{
-            fontSize: 8.5, fontWeight: 700, letterSpacing: 0.3, color: '#6D28D9',
-            background: '#F5F3FF', borderRadius: 3, padding: '1px 4px', flexShrink: 0,
-          }}>IN PKG</span>
+            padding: '1px 4px', borderRadius: 4, background: WF.fill,
+            border: `1px solid ${WF.line}`, color: WF.inkSoft,
+            fontSize: 8.5, fontWeight: 700, fontFamily: 'ui-monospace, monospace', flexShrink: 0,
+          }}>×{ln.qty}</span>
         )}
       </div>
       <span style={{
-        fontFamily: 'ui-monospace, monospace', fontWeight: 600, flexShrink: 0,
-        color: ln.amount > 0 ? SP_ACCENT : WF.inkFaint,
-      }}>{ln.amount > 0 ? `+${money(ln.amount)}` : '—'}</span>
+        fontSize: 10.5, fontFamily: 'ui-monospace, monospace', fontWeight: 700,
+        fontVariantNumeric: 'tabular-nums', flexShrink: 0, color: ln.amount > 0 ? WF.inkSoft : WF.inkFaint,
+      }}>{ln.amount > 0 ? money(ln.amount) : '—'}</span>
     </div>
   );
 }
 
-// One stateroom card. The per-guest fare split sits behind its own accordion
-// — collapsed by default — rather than always showing: an agent scanning
-// several rooms for the subtotal shouldn't have to scroll past every room's
-// full guest list first, but the split is one click away when a guest asks
-// "why is my share different from theirs".
+// One room-level receipt. Identity and subtotal lead so rooms can be compared
+// without opening them; fare, supplements and mandatory fees then explain that
+// total in the same order as the booking-level receipt. The per-guest fare split
+// remains one click away for the exception case where a guest asks how berths
+// were allocated.
 function SPCabinRoomCard({ rm, p }) {
   const [open, setOpen] = React.useState(false);
-  const rowStyle = { display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, padding: '2.5px 0' };
-  const labelStyle = { fontSize: 11.5, color: WF.inkSoft, minWidth: 0 };
-  const valStyle = { fontSize: 11.5, fontWeight: 600, color: WF.ink, fontFamily: 'ui-monospace, monospace', flexShrink: 0 };
+  const amountStyle = {
+    fontSize: 12, fontWeight: 800, color: WF.ink,
+    fontFamily: 'ui-monospace, monospace', fontVariantNumeric: 'tabular-nums', flexShrink: 0,
+  };
 
   return (
-    <div style={{ border: `1px solid ${WF.line}`, borderRadius: 8, overflow: 'hidden' }}>
+    <div style={{ border: `1px solid ${WF.line}`, borderRadius: 9, overflow: 'hidden', background: WF.panel, boxShadow: '0 1px 2px rgba(15,23,42,.06)' }}>
       <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
-        padding: '6px 10px', background: WF.fill, borderBottom: `1px solid ${WF.line}`,
+        display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12,
+        padding: '9px 10px', background: WF.fill, borderBottom: `1px solid ${WF.line}`,
       }}>
-        {/* flex/minWidth/ellipsis: a category name ("Interior Stateroom") is
-            long enough on the rail's narrower width that it can now compete
-            with the guest-count column for space where the old two-letter
-            code never did. */}
-        <div style={{ fontSize: 11, fontWeight: 700, color: WF.ink, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {rm.label}
-          {rm.cat && <span style={{ fontWeight: 500, color: WF.inkFaint }}> · {rm.cat}</span>}
+        <div style={{ minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 11.5, fontWeight: 800, color: WF.ink }}>{rm.label}</span>
+            <span style={{
+              padding: '2px 6px', borderRadius: 999, background: WF.panel,
+              border: `1px solid ${WF.line}`, color: WF.inkSoft,
+              fontSize: 9, fontWeight: 700, whiteSpace: 'nowrap',
+            }}>{rm.occupants} guest{rm.occupants === 1 ? '' : 's'}</span>
+          </div>
+          {rm.cat && <div style={{ fontSize: 9.5, fontWeight: 500, color: WF.inkSoft, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{rm.cat}</div>}
         </div>
-        <div style={{ fontSize: 10.5, color: WF.inkSoft, flexShrink: 0 }}>
-          {rm.occupants} guest{rm.occupants === 1 ? '' : 's'}
+        <div style={{ textAlign: 'right', flexShrink: 0 }}>
+          <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: 0.45, color: WF.inkLabel, textTransform: 'uppercase' }}>Room total</div>
+          <div style={{ ...amountStyle, fontSize: 13.5, marginTop: 2 }}>{money(rm.subtotal)}</div>
         </div>
       </div>
-      <div style={{ padding: '7px 10px' }}>
-        {/* Cabin fare doubles as the accordion trigger for who's paying what
-            share of it. The row used to caption itself "{cabinFarePP} pp ×
-            {occupants}"; a flat rate is exactly what the per-guest split
-            contradicts (berths 3+ and children price lower), so that caption
-            is gone — the split behind this toggle is the real breakdown, and
-            it re-adds to the amount shown here whether expanded or not. */}
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-          disabled={rm.people.length === 0}
-          style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
-            width: '100%', padding: '2.5px 0', background: 'none', border: 'none',
-            cursor: rm.people.length === 0 ? 'default' : 'pointer', fontFamily: 'inherit', textAlign: 'left',
-          }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-            {rm.people.length > 0 && (
-              <span style={{
-                fontSize: 8, color: WF.inkFaint, flexShrink: 0,
-                transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.12s',
-              }}>▶</span>
-            )}
-            <div style={{ ...labelStyle, fontWeight: 700, color: WF.ink }}>Cabin fare</div>
-            {rm.people.length > 0 && !open && (
-              <span style={{ fontSize: 10, color: WF.inkFaint }}>· per-guest split</span>
-            )}
+      <div>
+        <div style={{ padding: '9px 10px' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+            <div>
+              <div style={{ fontSize: 10.5, fontWeight: 700, color: WF.ink }}>Cabin fare</div>
+              <div style={{ fontSize: 9.5, color: WF.inkSoft, marginTop: 2 }}>Allocated across {rm.occupants} guest{rm.occupants === 1 ? '' : 's'}</div>
+            </div>
+            <span style={amountStyle}>{money(rm.fare)}</span>
           </div>
-          <span style={valStyle}>{money(rm.fare)}</span>
-        </button>
-        {open && rm.people.length > 0 && (
-          <div style={{ marginTop: 3, marginBottom: 2, paddingLeft: 16, borderLeft: `2px solid ${WF.line}` }}>
-            {rm.people.map((pax) => (
-              <div key={pax.key} style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, padding: '2px 0' }}>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 11, color: WF.inkSoft, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {pax.name}
+          {rm.people.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setOpen((v) => !v)}
+              aria-expanded={open}
+              style={{
+                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+                marginTop: 7, padding: '6px 8px', borderRadius: 6,
+                border: `1px solid ${open ? WF.accentLine : WF.line}`,
+                background: open ? WF.accentTint : WF.fill, color: WF.accentInk,
+                cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
+              }}>
+              <span style={{ fontSize: 9.5, fontWeight: 700 }}>{open ? 'Hide guest fare split' : 'View guest fare split'}</span>
+              <span aria-hidden="true" style={{ fontSize: 8, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .12s' }}>▼</span>
+            </button>
+          )}
+          {open && rm.people.length > 0 && (
+            <div style={{ marginTop: 6, padding: '5px 8px', borderRadius: 6, background: WF.fill, border: `1px solid ${WF.line}` }}>
+              {rm.people.map((pax, index) => (
+                <div key={pax.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '4px 0', borderTop: index === 0 ? 'none' : `1px solid ${WF.lineSoft}` }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                    <span style={{ padding: '2px 4px', borderRadius: 4, border: `1px solid ${WF.line}`, background: WF.panel, color: WF.inkSoft, fontSize: 8.5, fontWeight: 700, fontFamily: 'ui-monospace, monospace', flexShrink: 0 }}>{pax.code}</span>
+                    <span style={{ minWidth: 0 }}>
+                      <span style={{ display: 'block', fontSize: 10, color: WF.ink, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pax.name}</span>
+                      <span style={{ display: 'block', fontSize: 8.5, color: WF.inkSoft, marginTop: 1 }}>{pax.type} · {pax.berthLabel}</span>
+                    </span>
                   </div>
-                  <div style={{ fontSize: 9.5, color: WF.inkFaint, marginTop: 0.5 }}>
-                    {pax.type} · {pax.berthLabel}
-                  </div>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: WF.inkSoft, fontFamily: 'ui-monospace, monospace', fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{money(pax.fare)}</span>
                 </div>
-                <span style={{
-                  fontSize: 11, fontWeight: 500, color: WF.inkFaint,
-                  fontFamily: 'ui-monospace, monospace', fontVariantNumeric: 'tabular-nums', flexShrink: 0,
-                }}>{money(pax.fare)}</span>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <div style={{ margin: '5px 0', paddingTop: 5, borderTop: `1px dashed ${WF.line}` }}>
-          <div style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: 0.5, color: WF.inkLabel, textTransform: 'uppercase', marginBottom: 3 }}>
-            Supplements
-          </div>
-          {rm.lines.length > 0 ? (
-            rm.lines.map((ln) => <SPCabinSuppLine key={ln.id} ln={ln} />)
-          ) : (
-            <div style={{ fontSize: 11, color: WF.inkFaint }}>None</div>
+              ))}
+            </div>
           )}
         </div>
 
-        <div style={{ ...rowStyle, paddingTop: 5, borderTop: `1px dashed ${WF.line}` }}>
-          <div style={labelStyle}>
-            Taxes &amp; fees
-            <div style={{ fontSize: 10, color: WF.inkFaint, marginTop: 1 }}>share of {money(p.gratuities)}</div>
+        <div style={{ padding: '9px 10px', borderTop: `1px solid ${WF.line}` }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, marginBottom: rm.lines.length > 0 ? 5 : 0 }}>
+            <div>
+              <div style={{ fontSize: 10.5, fontWeight: 700, color: WF.ink }}>Supplements</div>
+              <div style={{ fontSize: 9.5, color: WF.inkSoft, marginTop: 2 }}>{rm.lines.length > 0 ? `${rm.lines.length} selected item${rm.lines.length === 1 ? '' : 's'}` : 'No supplements assigned'}</div>
+            </div>
+            <span style={amountStyle}>{money(rm.suppTotal)}</span>
           </div>
-          <span style={valStyle}>{money(rm.taxes)}</span>
+          {rm.lines.length > 0 ? (
+            rm.lines.map((ln) => <SPCabinSuppLine key={ln.id} ln={ln} />)
+          ) : null}
         </div>
 
-        <div style={{ ...rowStyle, marginTop: 4, paddingTop: 6, borderTop: `1px solid ${WF.line}` }}>
-          <div style={{ ...labelStyle, fontWeight: 700, color: WF.ink }}>Room subtotal</div>
-          <span style={{ ...valStyle, fontSize: 12, fontWeight: 700 }}>{money(rm.subtotal)}</span>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, padding: '9px 10px', borderTop: `1px solid ${WF.line}` }}>
+          <div>
+            <div style={{ fontSize: 10.5, fontWeight: 700, color: WF.ink }}>Taxes and port fees</div>
+            <div style={{ fontSize: 9.5, color: WF.inkSoft, marginTop: 2 }}>Room share of {money(p.gratuities)}</div>
+          </div>
+          <span style={amountStyle}>{money(rm.taxes)}</span>
         </div>
       </div>
     </div>
@@ -579,7 +765,6 @@ function BookingSummaryPanel({
   const monthStr = selectedMonths.length
     ? `${selectedMonths.join(', ')} ${b.selectedMonth.year || ''}`.trim()
     : (b.selectedMonth && b.selectedMonth.year) || '';
-  const intentEmoji = { Relaxation: '🏖️', Adventure: '⛺', Anniversary: '💑', Family: '🎁' }[b.selectedIntent] || '✈️';
   // The stateroom matrix persists every confirmed room in `cabins`; the legacy
   // selectedCabinNum field only stores the first room for base-fare
   // compatibility. Build the visible summary from the complete cabin record so
@@ -615,8 +800,8 @@ function BookingSummaryPanel({
             settled and the agent is talking about price, so the money should be
             the first thing in the rail. `key` on the step makes each step apply
             its own default instead of inheriting the previous step's toggle.
-            Trip intent used to be its own full-width section — a lot of visual
-            weight for one pill — so it's folded in here as the first row. ── */}
+            Booking source is shown as the first trip row so the acquisition
+            context remains visible throughout the flow. ── */}
         <SPSection
           key={`selection-${step}`}
           title="Your selection"
@@ -636,79 +821,18 @@ function BookingSummaryPanel({
           {selectionView === 'Cabin-wise Details' ? (
             <SPCabinDetails b={b} p={p} />
           ) : (
-          <>
-          <SPGroup label="Trip" first>
-            <SPRow
-              label="Intent"
-              value={b.selectedIntent ? `${intentEmoji} ${b.selectedIntent}` : SP_DASH}
-              dim={!b.selectedIntent} />
-            <SPRow label="Destination" value={destStr || SP_DASH} dim={!destStr} />
-            <SPRow label="Departing" value={homePortStr || SP_DASH} dim={!homePortStr} />
-            <SPRow label="Guests" value={guestStr} dim={p.guestCount === 0} mono />
-            <SPRow label="Duration" value={durationStr || SP_DASH} dim={!durationStr} />
-            <SPRow label="Month" value={monthStr || SP_DASH} dim={!monthStr} />
-          </SPGroup>
-
-          <SPGroup label="Sailing">
-            <SPRow
-              label="Sailing"
-              value={p.sailing ? `${p.sailing.region} · ${p.sailing.nights}N` : SP_DASH}
-              dim={!p.sailing} />
-            <SPRow label="Departs" value={p.sailing ? p.sailing.depart : SP_DASH} dim={!p.sailing} />
-          </SPGroup>
-
-          <SPGroup label="Stateroom">
-            <SPRow label="Cabin" value={p.cabin ? p.cabin.name : SP_DASH} dim={!p.cabin} />
-            <SPRow
-              label="Cabin delta"
-              value={p.cabin ? (p.cabinDeltaPP > 0 ? `+$${p.cabinDeltaPP}pp` : 'Included') : SP_DASH}
-              dim={!p.cabin} mono={!!p.cabin} />
-            <SPRow label={roomLabel} value={roomStr || SP_DASH} dim={!roomStr} />
-            <SPRow
-              label="Assignment"
-              value={b.cabinId ? (b.assignmentMethod === 'auto' ? 'Auto-assign' : 'Manual select') : SP_DASH}
-              dim={!b.cabinId} />
-          </SPGroup>
-
-          <SPGroup label="Fare & extras">
-          <SPRow label="Farecode" value={p.fc ? p.fc.code : SP_DASH} dim={!p.fc} mono />
-
-          {/* Supplements — expandable line list */}
-          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, padding: '3px 0' }}>
-            <div style={{ fontSize: 12, color: WF.inkSoft }}>Supplements</div>
-            {p.suppLines.length > 0 ? (
-              <button onClick={() => setShowSupps((v) => !v)} style={{
-                display: 'inline-flex', alignItems: 'center', gap: 4, background: 'none', border: 'none',
-                padding: 0, cursor: 'pointer', fontFamily: 'ui-monospace, monospace',
-                fontSize: 12, fontWeight: 700, color: SP_ACCENT,
-              }}>
-                {p.suppLines.length} · {p.suppTotal > 0 ? `+${money(p.suppTotal)}` : 'included'}
-                <span style={{ fontSize: 9, transform: showSupps ? 'rotate(180deg)' : 'none', transition: 'transform 0.12s' }}>▾</span>
-              </button>
-            ) : (
-              <div style={{ fontSize: 12, color: WF.inkFaint }}>None</div>
-            )}
-          </div>
-          {showSupps && p.suppLines.length > 0 && (
-            <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {p.suppLines.map((ln) => (
-                <div key={ln.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, fontSize: 11 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
-                    <span>{ln.emoji}</span>
-                    <span style={{ color: WF.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {ln.name}{ln.qty > 1 ? ` ×${ln.qty}` : ''}
-                    </span>
-                  </div>
-                  <span style={{
-                    fontFamily: 'ui-monospace, monospace', fontWeight: 600, flexShrink: 0,
-                    color: ln.amount > 0 ? SP_ACCENT : WF.inkFaint,
-                  }}>{ln.amount > 0 ? `+${money(ln.amount)}` : '—'}</span>
-                </div>
-              ))}
-            </div>
-          )}
-          </SPGroup>
-          </>
+            <SPBookingSnapshot
+              b={b}
+              p={p}
+              destStr={destStr}
+              homePortStr={homePortStr}
+              guestStr={guestStr}
+              durationStr={durationStr}
+              monthStr={monthStr}
+              roomLabel={roomLabel}
+              roomStr={roomStr}
+              showSupps={showSupps}
+              setShowSupps={setShowSupps} />
           )}
         </SPSection>
 
@@ -719,28 +843,7 @@ function BookingSummaryPanel({
               Select a sailing and cabin to see pricing.
             </div>
           ) : (
-            <>
-              {/* Fare — what the voyage itself costs. */}
-              <SPGroup label="Fare" first>
-                <SPPriceRow
-                  label="Cabin fare"
-                  sub={p.guestCount > 0 ? `${money(p.cabinFarePP)} pp × ${p.guestCount}` : null}
-                  amount={p.cabinFareTotal} />
-                <SPPriceRow label="Gratuities" amount={p.gratuities} />
-              </SPGroup>
-
-              {/* Add-ons — what the agent chose to put on top. */}
-              <SPGroup label="Add-ons">
-                <SPPriceRow label="Supplements" amount={p.suppTotal} accent={p.suppTotal > 0 ? SP_ACCENT : null} />
-                <SPPriceRow label="Trip protection" amount={p.protectionTotal} />
-              </SPGroup>
-
-              {p.couponDisc !== 0 && (
-                <SPGroup label="Discounts">
-                  <SPPriceRow label={`Coupon · ${b.appliedCoupon}`} amount={p.couponDisc} />
-                </SPGroup>
-              )}
-            </>
+            <SPPriceSummary b={b} p={p} />
           )}
         </SPSection>
 
@@ -845,48 +948,7 @@ function BookingSummaryPanel({
               Total appears once a sailing and cabin are chosen.
             </div>
           ) : (
-            <div style={{ borderRadius: 10, background: '#EFF6FF', border: '1px solid #DBEAFE', padding: '11px 13px' }}>
-
-              {/* Primary figure */}
-              <div style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: 0.7, color: WF.accentInk, textTransform: 'uppercase', marginBottom: 3 }}>
-                Amount due now
-              </div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' }}>
-                <div style={{ fontSize: 22, fontWeight: 800, color: WF.ink, fontFamily: 'ui-monospace, monospace', lineHeight: 1 }}>
-                  {money(p.amountDue)}
-                </div>
-              </div>
-
-              {/* Booking total + Remaining — a label/value list underneath the
-                  primary figure, not a second stat competing beside it */}
-              <div style={{
-                marginTop: 9, paddingTop: 8, borderTop: '1px solid #DBEAFE',
-                display: 'flex', flexDirection: 'column', gap: 4,
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
-                  <span style={{ fontSize: 11.5, fontWeight: 500, color: WF.inkSoft }}>
-                    {p.status === 'partial' ? 'Provisional total' : 'Booking total'}
-                  </span>
-                  <span style={{ display: 'flex', alignItems: 'baseline', gap: 5 }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: WF.ink, fontFamily: 'ui-monospace, monospace' }}>
-                      {money(p.total)}
-                    </span>
-                  </span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
-                  <span style={{ fontSize: 11.5, fontWeight: 500, color: WF.inkSoft }}>Remaining</span>
-                  <span style={{ fontSize: 12.5, fontWeight: 700, color: WF.inkSoft, fontFamily: 'ui-monospace, monospace' }}>
-                    {money(p.remaining)}
-                  </span>
-                </div>
-              </div>
-
-              <div style={{ fontSize: 10.5, color: WF.inkSoft, marginTop: 8 }}>
-                {p.payFull
-                  ? 'Paid in full · nothing due later'
-                  : `${Math.round(p.depositRate * 100)}% deposit${p.status === 'partial' ? ' · select a fare to confirm' : ' · balance due at 45 days'}`}
-              </div>
-            </div>
+            <SPAmountDueCard p={p} />
           )}
         </div>
       </div>

@@ -56,35 +56,90 @@ function StepProgress2({ current, onBack }) {
 
 // ── Header source pill (carried over) ──
 const SRC_OPTS = ['Phone', 'CRM · Contact Center', 'Partner', 'Web Assist'];
-function SourcePill2({ source, onChange }) {
+function SourcePill2({ source, onChange, fullWidth = false }) {
   const [open, setOpen] = React.useState(false);
+  const [pos, setPos] = React.useState(null);
   const ref = React.useRef(null);
   React.useEffect(() => {
     if (!open) return;
+    const place = () => {
+      if (!ref.current) return;
+      const rect = ref.current.getBoundingClientRect();
+      const width = Math.max(196, rect.width);
+      setPos({
+        top: rect.bottom + 6,
+        left: Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)),
+        width,
+      });
+    };
     const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    place();
     document.addEventListener('mousedown', onDoc);
-    return () => document.removeEventListener('mousedown', onDoc);
+    window.addEventListener('resize', place);
+    window.addEventListener('scroll', place, true);
+    return () => {
+      document.removeEventListener('mousedown', onDoc);
+      window.removeEventListener('resize', place);
+      window.removeEventListener('scroll', place, true);
+    };
   }, [open]);
   return (
-    <div ref={ref} style={{ position: 'relative', flexShrink: 0 }}>
-      <button onClick={() => setOpen(o => !o)} style={{
+    <div ref={ref} style={{ position: 'relative', flexShrink: 0, width: fullWidth ? '100%' : 'auto' }}>
+      <button type="button" aria-expanded={open} onClick={() => setOpen(o => !o)} style={{
         display: 'inline-flex', alignItems: 'center', gap: 8,
-        height: 36, padding: '0 12px', borderRadius: 8, whiteSpace: 'nowrap',
-        cursor: 'pointer', border: `1px solid ${WF.line}`, background: WF.fill, fontFamily: 'inherit', fontSize: 12, color: WF.inkSoft,
+        width: fullWidth ? '100%' : 'auto', height: fullWidth ? 40 : 38,
+        padding: fullWidth ? '6px 11px' : '0 14px', borderRadius: fullWidth ? 8 : 10, whiteSpace: 'nowrap',
+        cursor: 'pointer', border: `${fullWidth ? 1 : 1.5}px solid ${open ? WF.accent : WF.line}`,
+        background: open && fullWidth ? WF.accentTint : WF.panel,
+        fontFamily: 'inherit', fontSize: 13, color: WF.ink, outline: 'none',
+        transition: 'border-color 0.15s, background 0.15s',
       }}>
-        <span style={{ color: WF.inkFaint }}>Source</span>
-        <span style={{ color: WF.ink, fontWeight: 600 }}>{source}</span>
-        <span style={{ color: WF.inkFaint, fontSize: 9 }}>▾</span>
+        {fullWidth ? (
+          <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 1, textAlign: 'left' }}>
+            <span style={{
+              fontSize: 9, lineHeight: 1, fontWeight: 750, letterSpacing: 0.45,
+              textTransform: 'uppercase', color: WF.inkLabel,
+            }}>Source</span>
+            <span style={{ fontSize: 12.5, lineHeight: 1.2, color: WF.ink, fontWeight: 650 }}>{source}</span>
+          </span>
+        ) : (
+          <>
+            <span style={{ color: WF.inkSoft }}>Source</span>
+            <span style={{ color: WF.ink, fontWeight: 600, textAlign: 'left' }}>{source}</span>
+          </>
+        )}
+        <svg
+          aria-hidden="true"
+          width="12"
+          height="12"
+          viewBox="0 0 12 12"
+          fill="none"
+          style={{
+            flexShrink: 0, color: WF.inkLabel,
+            transform: open ? 'rotate(180deg)' : 'none',
+            transition: 'transform 0.18s ease',
+          }}>
+          <path
+            d="M2 4L6 8L10 4"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round" />
+        </svg>
       </button>
-      {open && (
-        <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 60, minWidth: 196, background: WF.panel, border: `1px solid ${WF.line}`, borderRadius: 8, boxShadow: '0 8px 24px rgba(15,23,42,0.14)', padding: 4 }}>
+      {open && pos && (
+        <div style={{
+          position: 'fixed', top: pos.top, left: pos.left, width: pos.width, zIndex: 60,
+          background: WF.panel, border: `1px solid ${WF.line}`, borderRadius: 10,
+          boxShadow: '0 8px 24px rgba(15,23,42,0.14)', padding: 4, boxSizing: 'border-box'
+        }}>
           {SRC_OPTS.map(opt => {
             const on = opt === source;
             return (
-              <button key={opt} onClick={() => { onChange(opt); setOpen(false); }} style={{
+              <button key={opt} type="button" onClick={() => { onChange(opt); setOpen(false); }} style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, width: '100%', textAlign: 'left',
                 padding: '8px 10px', borderRadius: 6, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5,
-                background: on ? WF.fill : 'transparent', color: on ? WF.ink : WF.inkSoft, fontWeight: on ? 600 : 500,
+                background: on ? WF.accentTint : 'transparent', color: on ? WF.ink : WF.inkSoft, fontWeight: on ? 600 : 500,
               }}>
                 <span>{opt}</span>
                 {on && <span style={{ color: WF.accent, fontSize: 12, fontWeight: 700 }}>✓</span>}

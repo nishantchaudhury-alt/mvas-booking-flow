@@ -552,49 +552,8 @@ function CabinAssignmentTable({ qty, roomsBySlot, cabinGuests, activeSlot, party
   );
 }
 
-// ── Small uppercase section label, the one label treatment in the modal ──
-function SPLabel({ children, style }) {
-  return (
-    <div style={{
-      fontSize: 10, fontWeight: 700, letterSpacing: 0.6,
-      color: WF.inkLabel, textTransform: 'uppercase', ...style
-    }}>{children}</div>
-  );
-}
-
-// ── Progress readout: label · "n of m" · hairline bar.
-// Neutral while incomplete (the resting state is not a warning), teal when
-// complete, red only when the count is invalid. Used for guests in the rail
-// and for rooms in the footer, so both progress signals read identically. ──
-function ProgressLine({ label, value, max, invalid, style }) {
-  const done = max > 0 && value === max;
-  const tone = invalid ? BAD : done ? OK : WF.inkSoft;
-  const pct = max > 0 ? Math.min(100, (value / max) * 100) : 0;
-  return (
-    <div style={{ minWidth: 0, ...style }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: SP.sm, marginBottom: 5 }}>
-        <span style={{ fontSize: 11.5, color: WF.inkSoft, whiteSpace: 'nowrap' }}>{label}</span>
-        <span style={{
-          marginLeft: 'auto', fontSize: 11.5, fontWeight: 700, color: tone,
-          fontFamily: 'ui-monospace, monospace', whiteSpace: 'nowrap'
-        }}>{value} / {max}{done ? ' ✓' : ''}</span>
-      </div>
-      <div style={{ height: 3, borderRadius: 2, background: WF.lineSoft, overflow: 'hidden' }}>
-        <div style={{
-          height: '100%', width: `${pct}%`, borderRadius: 2,
-          background: invalid ? BAD : done ? OK : TEAL.base, transition: 'width 0.18s ease'
-        }} />
-      </div>
-    </div>
-  );
-}
-
-// ── Feature filter chip, in the pane header. Icon-only (with `icon`) for a
-// specific amenity — a picture reads faster than a word when scanning a row
-// of these — except "All" (no `icon`), which stays a text pill since there's
-// no icon that reads as "clear the filter" as unambiguously as the word does.
-// The label is never fully gone: it's the aria-label and hover title, so the
-// icon is still named for anyone who can't identify it on sight. ──
+// ── Feature filter chip. Icon and label stay together: these operational
+// filters must be recognizable without remembering an icon legend. ──
 function FeatureChip({ icon, label, active, onClick }) {
   return (
     <button
@@ -604,9 +563,8 @@ function FeatureChip({ icon, label, active, onClick }) {
       title={label}
       style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        height: 30, minWidth: icon ? 30 : undefined,
-        padding: icon ? 0 : '0 13px', borderRadius: icon ? '50%' : 999,
-        fontSize: 11.5, fontWeight: active ? 700 : 600, whiteSpace: 'nowrap', fontFamily: 'inherit',
+        gap: 5, height: 28, padding: '0 9px', borderRadius: 6,
+        fontSize: 10, fontWeight: active ? 750 : 600, whiteSpace: 'nowrap', fontFamily: 'inherit',
         border: `1px solid ${active ? TEAL.border : WF.line}`,
         background: active ? TEAL.tint : WF.panel,
         color: active ? TEAL.base : WF.inkSoft,
@@ -614,7 +572,8 @@ function FeatureChip({ icon, label, active, onClick }) {
       }}
       onMouseEnter={(e) => { if (!active) e.currentTarget.style.borderColor = TEAL.border; }}
       onMouseLeave={(e) => { if (!active) e.currentTarget.style.borderColor = WF.line; }}>
-      {icon ? <RoomFeatureIcon feature={icon} size={15} /> : label}
+      {icon && <RoomFeatureIcon feature={icon} size={13} />}
+      {label}
     </button>
   );
 }
@@ -632,7 +591,9 @@ const ROOM_STATE_STYLE = {
 function RoomCard({ room, state, ownerSlot, onClick, disabled }) {
   const s = ROOM_STATE_STYLE[state];
   const tags = ROOM_FEATURES.filter((f) => f.test(room));
-  const owned = state === 'selected' || state === 'taken';
+  const statusLabel = state === 'selected' ? `✓ Cabin ${ownerSlot + 1}` : state === 'taken' ? `Cabin ${ownerSlot + 1}` : state === 'filtered' ? 'Filtered' : 'Available';
+  const statusBg = state === 'selected' ? WF.accent : state === 'taken' ? WF.fillStrong : state === 'filtered' ? WF.fillStrong : '#F0FDF4';
+  const statusColor = state === 'selected' ? '#FFFFFF' : state === 'taken' || state === 'filtered' ? WF.inkSoft : '#047857';
   return (
     <button
       onClick={onClick}
@@ -643,7 +604,7 @@ function RoomCard({ room, state, ownerSlot, onClick, disabled }) {
       }${state === 'taken' ? `, already in cabin ${ownerSlot + 1}` : ''}`}
       style={{
         display: 'block', textAlign: 'left', width: '100%',
-        padding: '6px 8px 5px', borderRadius: RD.sm, fontFamily: 'inherit',
+        minHeight: 62, padding: '7px 8px', borderRadius: RD.sm, fontFamily: 'inherit',
         border: `1px solid ${s.border}`, background: s.bg, opacity: s.opacity,
         cursor: disabled ? 'not-allowed' : 'pointer',
         // Inset ring instead of an outer glow: it thickens the selected edge
@@ -654,24 +615,24 @@ function RoomCard({ room, state, ownerSlot, onClick, disabled }) {
       onMouseEnter={(e) => { if (!disabled && state !== 'selected') e.currentTarget.style.borderColor = TEAL.border; }}
       onMouseLeave={(e) => { if (!disabled && state !== 'selected') e.currentTarget.style.borderColor = s.border; }}>
 
-      {/* Room number — the only thing that needs to be scannable at this density */}
-      <div style={{
-        fontSize: 15, fontWeight: 700, lineHeight: 1.15, letterSpacing: -0.2,
-        color: s.num, fontFamily: 'ui-monospace, monospace'
-      }}>{room.num}</div>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 6 }}>
+        <div style={{
+          fontSize: 14, fontWeight: 800, lineHeight: 1.15, letterSpacing: -0.2,
+          color: s.num, fontFamily: 'ui-monospace, monospace'
+        }}>{room.num}</div>
+        <span style={{
+          padding: '2px 5px', borderRadius: 4, whiteSpace: 'nowrap',
+          background: statusBg, color: statusColor,
+          fontSize: 7.5, fontWeight: 800, letterSpacing: 0.25, textTransform: 'uppercase'
+        }}>{statusLabel}</span>
+      </div>
 
-      {/* One fixed-height meta line, so every tile is exactly the same size.
-          Ownership wins over amenities: once a room is taken, which cabin holds
-          it matters more than whether it has a crib. */}
-      <div style={{ height: 11, marginTop: 1, display: 'flex', alignItems: 'center', gap: 4, overflow: 'hidden' }}>
-        {owned ? (
-          <span style={{
-            fontSize: 8.5, fontWeight: 700, letterSpacing: 0.3,
-            color: state === 'selected' ? TEAL.base : WF.inkFaint, whiteSpace: 'nowrap'
-          }}>{state === 'selected' ? '✓ ' : ''}CABIN {ownerSlot + 1}</span>
-        ) : tags.map((f) => (
+      <div style={{ height: 14, marginTop: 7, display: 'flex', alignItems: 'center', gap: 5, overflow: 'hidden' }}>
+        <span style={{ fontSize: 8.5, color: WF.inkFaint, whiteSpace: 'nowrap' }}>{LOC_LABELS[room.loc]}</span>
+        {tags.length > 0 && <span style={{ width: 1, height: 10, background: WF.line, flexShrink: 0 }} />}
+        {tags.map((f) => (
           <span key={f.key} title={f.label} style={{ display: 'inline-flex', color: WF.inkFaint }}>
-            <RoomFeatureIcon feature={f.key} size={9.5} />
+            <RoomFeatureIcon feature={f.key} size={10.5} />
           </span>
         ))}
       </div>
@@ -805,116 +766,151 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
           background: WF.panel, borderRadius: RD.lg, overflow: 'hidden',
           boxShadow: '0 24px 64px rgba(15,23,42,0.28)', border: `1px solid ${WF.line}`
         }}>
-        {/* ── Header: category identity + qty + close. Kept deliberately quiet
-            so the two panes below carry the visual weight. ── */}
+        {/* ── Header: establish the task, then present the four decisions as a
+            compact summary. Category is the primary object; fare, requested
+            quantity and completion are supporting facts rather than one long
+            sentence competing for attention. ── */}
         <div style={{
-          flexShrink: 0, display: 'flex', alignItems: 'center', gap: SP.lg,
-          padding: `${SP.md}px ${SP.lg}px`, borderBottom: `1px solid ${WF.line}`, background: WF.panel
+          flexShrink: 0, padding: `${SP.md}px ${SP.lg}px`,
+          borderBottom: `1px solid ${WF.line}`, background: WF.panel
         }}>
-          {/* Category identity — click to switch to a different category */}
-          <div style={{ position: 'relative', minWidth: 0 }}>
-            <button
-              onClick={() => setSwitcherOpen(o => !o)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 10, maxWidth: '100%',
-                padding: '5px 9px 5px 7px', margin: '-4px 0', borderRadius: RD.sm,
-                border: `1px solid ${switcherOpen ? TEAL.base : 'transparent'}`,
-                background: switcherOpen ? TEAL.tint : 'transparent',
-                cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left'
-              }}
-              onMouseEnter={(e) => { if (!switcherOpen) e.currentTarget.style.background = WF.fill; }}
-              onMouseLeave={(e) => { if (!switcherOpen) e.currentTarget.style.background = 'transparent'; }}>
-              <div style={{ width: 12, height: 12, borderRadius: 3, background: row.color, flexShrink: 0 }} />
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: WF.ink, letterSpacing: -0.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  {row.label}
-                  <span style={{ fontSize: 10, color: WF.inkFaint, transform: switcherOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>▾</span>
-                </div>
-                <div style={{ fontSize: 11.5, color: WF.inkSoft, marginTop: 1 }}>${row.price.toLocaleString()}.00 · Tap to switch category</div>
-              </div>
-            </button>
-
-            {switcherOpen && (
-              <React.Fragment>
-                <div onClick={() => setSwitcherOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
-                <div style={{
-                  position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 41,
-                  width: 380, maxHeight: 360, overflowY: 'auto',
-                  background: WF.panel, borderRadius: 10, border: `1px solid ${WF.line}`,
-                  boxShadow: '0 16px 40px rgba(15,23,42,0.22)', padding: 6
-                }}>
-                  <div style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: 0.6, color: WF.inkLabel, textTransform: 'uppercase', padding: '6px 8px 4px' }}>Switch to another category</div>
-                  {STATEROOM_ROWS.map(r => {
-                    const isCurrent = r.id === row.id;
-                    const soldOut = r.total === 0;
-                    const disabled = soldOut && !isCurrent;
-                    return (
-                      <button
-                        key={r.id}
-                        onClick={() => { if (!disabled && !isCurrent) onSwitchCategory(r.id); setSwitcherOpen(false); }}
-                        disabled={disabled}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: 10, width: '100%',
-                          padding: '8px', borderRadius: 7, border: 'none', textAlign: 'left',
-                          background: isCurrent ? WF.accentTint : 'transparent',
-                          cursor: disabled ? 'not-allowed' : 'pointer',
-                          opacity: disabled ? 0.45 : 1, fontFamily: 'inherit'
-                        }}
-                        onMouseEnter={(e) => { if (!isCurrent && !disabled) e.currentTarget.style.background = WF.fill; }}
-                        onMouseLeave={(e) => { if (!isCurrent) e.currentTarget.style.background = 'transparent'; }}>
-                        <div style={{ width: 11, height: 11, borderRadius: 3, background: r.color, flexShrink: 0 }} />
-                        <div style={{ minWidth: 0, flex: 1 }}>
-                          <div style={{ fontSize: 12.5, fontWeight: 600, color: WF.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.label}</div>
-                          <div style={{ fontSize: 10, color: WF.inkSoft, marginTop: 1 }}>{CAT_LABELS[r.cat]} · {LOC_LABELS[r.location]}</div>
-                        </div>
-                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                          <div style={{ fontSize: 12, fontWeight: 700, color: WF.ink, fontFamily: 'ui-monospace, monospace' }}>${r.price.toLocaleString()}</div>
-                          <div style={{ fontSize: 9.5, fontWeight: 600, color: soldOut ? '#B91C1C' : '#15803D', marginTop: 1 }}>{soldOut ? 'Sold out' : `${r.total} avail`}</div>
-                        </div>
-                        {isCurrent && <span style={{ fontSize: 12, color: WF.accentInk, flexShrink: 0 }}>✓</span>}
-                      </button>
-                    );
-                  })}
-                </div>
-              </React.Fragment>
-            )}
-          </div>
-
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: SP.lg, flexShrink: 0 }}>
-            {/* Stateroom qty — adjust without leaving the modal. Capped at the
-                category's real inventory: this used to increment freely, so a
-                category with 2 rooms left would happily accept 5 cabins and
-                then strand three columns that could never be filled. */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: SP.sm }}>
-              <SPLabel>Total staterooms</SPLabel>
-              <QtyControl
-                value={qty}
-                max={row.total}
-                onChange={(val) => val >= 1 && val <= row.total && onQtyChange(val)} />
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: SP.lg }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 15.5, fontWeight: 750, color: WF.ink, letterSpacing: -0.25 }}>Assign staterooms</div>
+              <div style={{ marginTop: 2, fontSize: 10.5, color: WF.inkSoft }}>Choose the category, place guests, then confirm a room for each cabin.</div>
             </div>
-            {/* Rooms-chosen badge. The footer progress bar is a long way from
-                the qty control it reflects, so the count lives up here too. */}
-            <div style={{
-              padding: '4px 10px', borderRadius: 999, whiteSpace: 'nowrap',
-              fontSize: 11, fontWeight: 700,
-              background: filledCount === qty ? '#F0FDF4' : '#FFFBEB',
-              border: `1px solid ${filledCount === qty ? '#BBF7D0' : '#FDE68A'}`,
-              color: filledCount === qty ? OK : '#92400E'
-            }}>{filledCount} of {qty} room{qty === 1 ? '' : 's'} chosen</div>
-            {/* Non-destructive close. Removing the category is a separate,
-                labelled action in the footer — a glyph that silently discards
-                the agent's picks is indefensible. */}
             <button
               onClick={onClose}
               aria-label="Close"
               title="Close · your selections are kept"
               style={{
-                width: 30, height: 30, borderRadius: RD.sm, border: `1px solid ${WF.line}`,
-                background: WF.panel, color: WF.inkSoft, cursor: 'pointer', fontFamily: 'inherit',
-                fontSize: 16, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                marginLeft: 'auto', width: 30, height: 30, borderRadius: RD.sm,
+                border: `1px solid ${WF.line}`, background: WF.panel, color: WF.inkSoft,
+                cursor: 'pointer', fontFamily: 'inherit', fontSize: 16, lineHeight: 1,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
               }}
               onMouseEnter={(e) => { e.currentTarget.style.background = WF.fill; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = WF.panel; }}>×</button>
+          </div>
+
+          <div style={{
+            display: 'grid', gridTemplateColumns: 'minmax(280px, 1.55fr) 150px 190px 130px',
+            gap: SP.sm, marginTop: SP.md
+          }}>
+            {/* Category identity — click to switch to a different category */}
+            <div style={{ position: 'relative', minWidth: 0, alignSelf: 'center' }}>
+              <button
+                onClick={() => setSwitcherOpen(o => !o)}
+                aria-expanded={switcherOpen}
+                aria-haspopup="listbox"
+                style={{
+                  width: '100%', minHeight: 46,
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '6px 7px 6px 9px', borderRadius: RD.sm,
+                  border: `1px solid ${switcherOpen ? WF.accent : WF.line}`,
+                  background: switcherOpen ? WF.accentTint : WF.fill,
+                  cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left'
+                }}
+                onMouseEnter={(e) => { if (!switcherOpen) e.currentTarget.style.borderColor = WF.accentLine; }}
+                onMouseLeave={(e) => { if (!switcherOpen) e.currentTarget.style.borderColor = WF.line; }}>
+                <div style={{ width: 10, height: 10, borderRadius: 3, background: row.color, flexShrink: 0 }} />
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: 0.55, color: WF.inkLabel, textTransform: 'uppercase' }}>Stateroom category</div>
+                  <div style={{ marginTop: 2, display: 'flex', alignItems: 'baseline', gap: 6, minWidth: 0 }}>
+                    <span style={{ minWidth: 0, fontSize: 12.5, fontWeight: 750, color: WF.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.label}</span>
+                    <span style={{ fontSize: 9, color: WF.inkSoft, whiteSpace: 'nowrap', flexShrink: 0 }}>{CAT_LABELS[row.cat]} · {LOC_LABELS[row.location]}</span>
+                  </div>
+                </div>
+                <span style={{
+                  width: 24, height: 24, borderRadius: 6, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  color: WF.inkSoft, background: '#FFFFFF', border: `1px solid ${WF.line}`,
+                  transform: switcherOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s', flexShrink: 0
+                }}>
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                    <path d="M2 4L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </span>
+              </button>
+
+              {switcherOpen && (
+                <React.Fragment>
+                  <div onClick={() => setSwitcherOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
+                  <div style={{
+                    position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 41,
+                    width: 380, maxHeight: 360, overflowY: 'auto',
+                    background: WF.panel, borderRadius: 10, border: `1px solid ${WF.line}`,
+                    boxShadow: '0 16px 40px rgba(15,23,42,0.22)', padding: 6
+                  }}>
+                    <div style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: 0.6, color: WF.inkLabel, textTransform: 'uppercase', padding: '6px 8px 4px' }}>Switch to another category</div>
+                    {STATEROOM_ROWS.map(r => {
+                      const isCurrent = r.id === row.id;
+                      const soldOut = r.total === 0;
+                      const disabled = soldOut && !isCurrent;
+                      return (
+                        <button
+                          key={r.id}
+                          onClick={() => { if (!disabled && !isCurrent) onSwitchCategory(r.id); setSwitcherOpen(false); }}
+                          disabled={disabled}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+                            padding: '8px', borderRadius: 7, border: 'none', textAlign: 'left',
+                            background: isCurrent ? WF.accentTint : 'transparent',
+                            cursor: disabled ? 'not-allowed' : 'pointer',
+                            opacity: disabled ? 0.45 : 1, fontFamily: 'inherit'
+                          }}
+                          onMouseEnter={(e) => { if (!isCurrent && !disabled) e.currentTarget.style.background = WF.fill; }}
+                          onMouseLeave={(e) => { if (!isCurrent) e.currentTarget.style.background = 'transparent'; }}>
+                          <div style={{ width: 11, height: 11, borderRadius: 3, background: r.color, flexShrink: 0 }} />
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <div style={{ fontSize: 12.5, fontWeight: 600, color: WF.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.label}</div>
+                            <div style={{ fontSize: 10, color: WF.inkSoft, marginTop: 1 }}>{CAT_LABELS[r.cat]} · {LOC_LABELS[r.location]}</div>
+                          </div>
+                          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: WF.ink, fontFamily: 'ui-monospace, monospace' }}>${r.price.toLocaleString()}</div>
+                            <div style={{ fontSize: 9.5, fontWeight: 600, color: soldOut ? BAD : OK, marginTop: 1 }}>{soldOut ? 'Sold out' : `${r.total} available`}</div>
+                          </div>
+                          {isCurrent && <span style={{ fontSize: 12, color: WF.accentInk, flexShrink: 0 }}>✓</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </React.Fragment>
+              )}
+            </div>
+
+            <div style={{
+              minHeight: 58, padding: '8px 10px', border: `1px solid ${WF.line}`,
+              borderRadius: RD.sm, background: '#FFFFFF'
+            }}>
+              <div style={{ fontSize: 8.5, fontWeight: 800, letterSpacing: 0.55, color: WF.inkLabel, textTransform: 'uppercase' }}>Fare per room</div>
+              <div style={{ marginTop: 6, fontSize: 14, fontWeight: 800, color: WF.ink, fontFamily: 'ui-monospace, monospace' }}>${row.price.toLocaleString()}.00</div>
+              <div style={{ marginTop: 1, fontSize: 9, color: WF.inkFaint }}>Selected category</div>
+            </div>
+
+            <div style={{
+              minHeight: 58, padding: '8px 10px', border: `1px solid ${WF.line}`,
+              borderRadius: RD.sm, background: '#FFFFFF'
+            }}>
+              <div style={{ fontSize: 8.5, fontWeight: 800, letterSpacing: 0.55, color: WF.inkLabel, textTransform: 'uppercase' }}>Total staterooms</div>
+              <div style={{ marginTop: 7 }}>
+                <QtyControl
+                  value={qty}
+                  max={row.total}
+                  onChange={(val) => val >= 1 && val <= row.total && onQtyChange(val)} />
+              </div>
+            </div>
+
+            <div style={{
+              minHeight: 58, padding: '8px 10px',
+              border: `1px solid ${filledCount === qty ? '#BBF7D0' : WF.accentLine}`,
+              borderRadius: RD.sm, background: filledCount === qty ? '#F0FDF4' : WF.accentTint
+            }}>
+              <div style={{ fontSize: 8.5, fontWeight: 800, letterSpacing: 0.55, color: filledCount === qty ? '#047857' : WF.inkLabel, textTransform: 'uppercase' }}>Rooms selected</div>
+              <div style={{ marginTop: 5, fontSize: 14, fontWeight: 800, color: WF.ink, fontFamily: 'ui-monospace, monospace' }}>{filledCount} / {qty}</div>
+              <div style={{ marginTop: 1, fontSize: 9, fontWeight: 650, color: filledCount === qty ? '#047857' : WF.inkSoft }}>
+                {filledCount === qty ? 'Ready to confirm' : `${qty - filledCount} remaining`}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -939,11 +935,15 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
 
           {/* ══ Which guests go in which cabin ══ */}
           <div style={{ padding: `${SP.md}px ${SP.lg}px 0` }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: SP.sm, marginBottom: SP.sm }}>
-              <SPLabel>Guests per cabin</SPLabel>
-              <span style={{ fontSize: 11, color: WF.inkFaint }}>
-                · tap a column to pick its room
-              </span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: SP.md, marginBottom: SP.sm }}>
+              <div>
+                <div style={{ fontSize: 12.5, fontWeight: 750, color: WF.ink }}>Distribute guests by cabin</div>
+                <div style={{ marginTop: 2, fontSize: 9.5, color: WF.inkSoft }}>Use the cabin header to choose which room you are assigning.</div>
+              </div>
+              <span style={{
+                padding: '4px 7px', borderRadius: 6, border: `1px solid ${WF.line}`,
+                background: WF.fill, fontSize: 9, fontWeight: 800, color: WF.inkSoft
+              }}>{qty} cabin{qty === 1 ? '' : 's'} in this category</span>
             </div>
             <CabinAssignmentTable
               qty={qty}
@@ -958,133 +958,115 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
           </div>
 
           {/* ══ Which room ══ */}
-          <div style={{
-            display: 'flex', alignItems: 'flex-start', gap: SP.md, flexWrap: 'wrap',
-            padding: `${SP.lg}px ${SP.lg}px ${SP.sm}px`
-          }}>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 14.5, fontWeight: 700, color: WF.ink, letterSpacing: -0.2 }}>
-                Choose a room for Cabin {activeSlot + 1}
+          <div style={{ padding: `${SP.lg}px` }}>
+            <div style={{ border: `1px solid ${WF.line}`, borderRadius: RD.md, overflow: 'hidden', background: WF.panel }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: SP.md, padding: '9px 11px',
+                background: WF.fill, borderBottom: `1px solid ${WF.line}`
+              }}>
+                <div style={{
+                  width: 30, height: 30, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: WF.accent, color: '#FFFFFF', fontSize: 11, fontWeight: 800,
+                  fontFamily: 'ui-monospace, monospace', flexShrink: 0
+                }}>{activeSlot + 1}</div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 12.5, fontWeight: 750, color: WF.ink }}>Room inventory for Cabin {activeSlot + 1}</div>
+                  <div style={{ marginTop: 2, fontSize: 9.5, color: WF.inkSoft }}>{rooms.length} rooms in {CAT_LABELS[row.cat]} · select one room for this cabin</div>
+                </div>
+                <div style={{ marginLeft: 'auto', textAlign: 'right', flexShrink: 0 }}>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: filledCount === qty ? '#047857' : WF.ink, fontFamily: 'ui-monospace, monospace' }}>{filledCount} / {qty}</div>
+                  <div style={{ marginTop: 1, fontSize: 8.5, color: WF.inkFaint }}>Rooms assigned</div>
+                </div>
               </div>
-              <div style={{ fontSize: 11.5, color: WF.inkSoft, marginTop: 2 }}>
-                {filledCount} of {qty} assigned · {rooms.length} rooms in {CAT_LABELS[row.cat]}
-              </div>
-            </div>
-            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: SP.sm, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-              {/* Auto-assign spreads guests *and* picks rooms — see the handler.
-                  Doing only half of it left the agent to hand-balance 10 guests
-                  across 3 columns, which is the tedious part. */}
-              <button
-                onClick={onAutoAssign}
-                title="Spread the party across cabins by capacity, then fill each with the first available room"
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 5,
-                  padding: '5px 11px', borderRadius: 999, fontSize: 11.5, fontWeight: 600,
-                  border: `1px solid ${TEAL.border}`, background: TEAL.tint, color: TEAL.base,
-                  cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap'
-                }}>✨ Auto-assign</button>
-              <div style={{ width: 1, height: 18, background: WF.line }} />
-              {/* Ship position — the coarse cut, ahead of the per-room feature
-                  chips, so the filters read broad-to-narrow. */}
-              <SegmentedFilter
-                label="Location"
-                value={locFilter}
-                onChange={setLocFilter}
-                activeColor="#1B2434"
-                options={['fwd', 'mid', 'aft'].map(loc => ({ key: loc, label: LOC_LABELS[loc] }))} />
-              <div style={{ width: 1, height: 18, background: WF.line }} />
-              {/* Filter chips double as the legend for the tags on each card */}
-              <FeatureChip
-                label="All"
-                active={activeFilters.size === 0}
-                onClick={() => setActiveFilters(new Set())} />
-              {ROOM_FEATURES.map((f) => (
-                <FeatureChip
-                  key={f.key}
-                  icon={f.key}
-                  label={f.label}
-                  active={activeFilters.has(f.key)}
-                  onClick={() => toggleFilter(f.key)} />
-              ))}
-            </div>
-          </div>
 
-          {/* Room grid. Fixed tracks, so every card is the same size whatever
-              it contains and the rows actually align. */}
-          <div style={{ padding: `0 ${SP.lg}px ${SP.lg}px` }}>
-              {roomsByDeck.map(({ deck, rooms: deckRooms }) => (
-                <div key={deck}>
-                  {/* Sticks to the top of the body scroller, so the deck a room
-                      belongs to stays named while scrolling a long category. */}
-                  <div style={{
-                    position: 'sticky', top: 0, zIndex: 1, background: WF.panel,
-                    display: 'flex', alignItems: 'center', gap: SP.sm,
-                    padding: `${SP.md}px 0 ${SP.sm}px`
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: SP.md, flexWrap: 'wrap',
+                padding: '8px 11px', borderBottom: `1px solid ${WF.line}`, background: '#FFFFFF'
+              }}>
+                <button
+                  onClick={onAutoAssign}
+                  title="Spread the party across cabins by capacity, then fill each with the first available room"
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 5,
+                    height: 30, padding: '0 10px', borderRadius: 6, fontSize: 10.5, fontWeight: 750,
+                    border: `1px solid ${WF.accentLine}`, background: WF.accentTint, color: WF.accent,
+                    cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap'
+                  }}>✨ Auto-assign rooms</button>
+                <SegmentedFilter
+                  label="Ship position"
+                  value={locFilter}
+                  onChange={setLocFilter}
+                  activeColor={WF.accent}
+                  options={['fwd', 'mid', 'aft'].map(loc => ({ key: loc, label: LOC_LABELS[loc] }))} />
+                <div style={{ width: 1, height: 20, background: WF.line }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
+                  <span style={{ marginRight: 2, fontSize: 9, fontWeight: 800, letterSpacing: 0.4, color: WF.inkLabel, textTransform: 'uppercase' }}>Features</span>
+                  <FeatureChip
+                    label="All"
+                    active={activeFilters.size === 0}
+                    onClick={() => setActiveFilters(new Set())} />
+                  {ROOM_FEATURES.map((f) => (
+                    <FeatureChip
+                      key={f.key}
+                      icon={f.key}
+                      label={f.label}
+                      active={activeFilters.has(f.key)}
+                      onClick={() => toggleFilter(f.key)} />
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ padding: 10, background: WF.fill }}>
+                {roomsByDeck.map(({ deck, rooms: deckRooms }) => (
+                  <div key={deck} style={{
+                    marginBottom: deck === roomsByDeck[roomsByDeck.length - 1].deck ? 0 : 8,
+                    border: `1px solid ${WF.line}`, borderRadius: 8, overflow: 'hidden', background: '#FFFFFF'
                   }}>
-                    <div style={{ fontSize: 11.5, fontWeight: 700, color: WF.ink }}>Deck {deck}</div>
-                    <div style={{ flex: 1, height: 1, background: WF.lineSoft }} />
-                    <div style={{ fontSize: 10.5, color: WF.inkFaint }}>
-                      {deckRooms.length} {deckRooms.length === 1 ? 'room' : 'rooms'}
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: SP.sm,
+                      padding: '6px 8px', background: WF.fill, borderBottom: `1px solid ${WF.line}`
+                    }}>
+                      <div style={{ fontSize: 10.5, fontWeight: 750, color: WF.ink }}>Deck {deck}</div>
+                      <div style={{ flex: 1, height: 1, background: WF.lineSoft }} />
+                      <div style={{ fontSize: 9, color: WF.inkFaint }}>
+                        {deckRooms.length} {deckRooms.length === 1 ? 'room' : 'rooms'} on deck
+                      </div>
+                    </div>
+                    <div style={{
+                      display: 'grid', gap: 6, padding: 8,
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(108px, 1fr))'
+                    }}>
+                      {deckRooms.map(room => {
+                        const active = isRoomActive(room);
+                        const ownerSlotEntry = Object.entries(roomsBySlot).find(([, num]) => num === room.num);
+                        const ownerSlot = ownerSlotEntry ? parseInt(ownerSlotEntry[0], 10) : null;
+                        const sel = ownerSlot != null;
+                        const isCurrentSlot = ownerSlot === activeSlot;
+                        const state = isCurrentSlot ? 'selected' : sel ? 'taken' : active ? 'available' : 'filtered';
+                        return (
+                          <RoomCard
+                            key={room.num}
+                            room={room}
+                            state={state}
+                            ownerSlot={ownerSlot}
+                            disabled={!active && !sel}
+                            onClick={() => (active || sel) && onToggleRoom(room.num)} />
+                        );
+                      })}
                     </div>
                   </div>
-                  {/* Dense tracks: a category can carry 25+ rooms on one deck
-                      (Balcony has 28), so tiles are sized to pack ~7 per row
-                      rather than 4 — a 28-room deck is now ~4 short rows. */}
-                  <div style={{
-                    display: 'grid', gap: SP.xs + 2,
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(84px, 1fr))'
-                  }}>
-                    {deckRooms.map(room => {
-                      const active = isRoomActive(room);
-                      const ownerSlotEntry = Object.entries(roomsBySlot).find(([, num]) => num === room.num);
-                      const ownerSlot = ownerSlotEntry ? parseInt(ownerSlotEntry[0], 10) : null;
-                      const sel = ownerSlot != null;
-                      const isCurrentSlot = ownerSlot === activeSlot;
-                      // An already-picked room stays clickable even when filtered
-                      // out, so it can always be released.
-                      const state = isCurrentSlot ? 'selected' : sel ? 'taken' : active ? 'available' : 'filtered';
-                      return (
-                        <RoomCard
-                          key={room.num}
-                          room={room}
-                          state={state}
-                          ownerSlot={ownerSlot}
-                          disabled={!active && !sel}
-                          onClick={() => (active || sel) && onToggleRoom(room.num)} />
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* ── Footer: the destructive action is labelled, and room progress sits
-            next to the button it actually gates. ── */}
+        {/* ── Footer actions ── */}
         <div style={{
           flexShrink: 0, display: 'flex', alignItems: 'center', gap: SP.lg,
           padding: `${SP.md}px ${SP.lg}px`, borderTop: `1px solid ${WF.line}`, background: WF.panel
         }}>
-          <button
-            onClick={onBack}
-            title="Remove this stateroom category from the booking"
-            style={{
-              flexShrink: 0, padding: '7px 10px', fontSize: 11.5, fontWeight: 600, borderRadius: RD.sm,
-              border: '1px solid transparent', background: 'transparent', color: BAD,
-              cursor: 'pointer', fontFamily: 'inherit'
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = '#FEF2F2'; e.currentTarget.style.borderColor = '#FECACA'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent'; }}>
-            Remove category
-          </button>
-
-          <ProgressLine
-            label="Rooms assigned"
-            value={filledCount}
-            max={qty}
-            style={{ marginLeft: 'auto', width: 150, flexShrink: 0 }} />
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: SP.sm, flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: SP.sm, marginLeft: 'auto', flexShrink: 0 }}>
             <button
               onClick={onClose}
               style={{
@@ -1211,6 +1193,13 @@ function StateRoomMatrix({ update, s, onConfirmRooms }) {
   const [confirmedRooms, setConfirmedRooms] = React.useState(() => deriveMatrixStateFromCabins(s.cabins).confirmedRooms);
 
   const filteredRows = STATEROOM_ROWS.filter(r => !catFilter || r.cat === catFilter);
+  const visibleInventory = filteredRows.reduce((sum, row) => sum + row.total, 0);
+  const bookableCategoryCount = filteredRows.filter((row) => row.total > 0).length;
+  const categoryInventory = ['IS', 'OV', 'BAL', 'STE'].reduce((totals, cat) => {
+    totals[cat] = STATEROOM_ROWS.filter((row) => row.cat === cat).reduce((sum, row) => sum + row.total, 0);
+    return totals;
+  }, {});
+  const assignedRoomCount = Object.values(confirmedRooms).reduce((sum, rooms) => sum + rooms.length, 0);
 
   // Single write path for the cabin record. Always reconciles supplement
   // assignments in the same update so a removed cabin can never leave an
@@ -1404,105 +1393,170 @@ function StateRoomMatrix({ update, s, onConfirmRooms }) {
 
   const TH = ({ children, right }) => (
     <th style={{
-      padding: '5px 14px', fontSize: 10, fontWeight: 700, letterSpacing: 0.6,
+      padding: '6px 12px', fontSize: 9, fontWeight: 800, letterSpacing: 0.55,
       color: WF.inkLabel, textTransform: 'uppercase', textAlign: right ? 'center' : 'left',
-      borderBottom: `2px solid ${WF.line}`, whiteSpace: 'nowrap', background: WF.fill
+      borderBottom: `1px solid ${WF.line}`, whiteSpace: 'nowrap', background: WF.fill
     }}>{children}</th>
   );
 
   return (
-    <div>
-      {/* ── Filters row. No separate section-label line above it any more — the
-          "Stateroom Assignment" tab and the "Category" label here already say
-          what this is, and a merged label caused this row to wrap onto two
-          lines at typical widths, costing MORE height than the label it
-          replaced. Location used to sit at the opposite edge of this row;
-          it now lives in the room picker, where it narrows actual rooms
-          instead of whole categories — `space-between` still holds Clear
-          filter out to the right edge. ── */}
+    <div style={{
+      border: `1px solid ${WF.line}`, borderRadius: 9, overflow: 'hidden',
+      background: '#FFFFFF', boxShadow: '0 1px 2px rgba(15,23,42,0.05)',
+    }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 18,
+        padding: '12px', background: WF.fill, borderBottom: `1px solid ${WF.line}`,
+      }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 13.5, fontWeight: 750, letterSpacing: -0.15, color: WF.ink }}>
+            Choose a stateroom category
+          </div>
+          <div style={{ marginTop: 3, fontSize: 10, color: WF.inkSoft }}>Live availability by category and occupancy · select a quantity to assign exact rooms</div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(76px, 1fr))', gap: 6, flexShrink: 0 }}>
+          {[
+            [`${visibleInventory}`, 'Rooms available', catFilter ? CAT_LABELS[catFilter] : 'All categories'],
+            [`${bookableCategoryCount}/${filteredRows.length}`, 'Bookable', 'Category options'],
+            [`${assignedRoomCount}`, 'Rooms assigned', assignedRoomCount ? 'Saved selection' : 'None selected'],
+          ].map(([value, label, helper]) => (
+            <div key={label} style={{
+              minWidth: 86, padding: '6px 8px',
+              border: `1px solid ${label === 'Rooms assigned' && assignedRoomCount ? WF.accentLine : WF.line}`,
+              borderRadius: 7, background: label === 'Rooms assigned' && assignedRoomCount ? WF.accentTint : '#FFFFFF',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 5 }}>
+                <div className="s4-money" style={{ fontSize: 13, lineHeight: 1, fontWeight: 800, color: WF.ink }}>{value}</div>
+                <div style={{ fontSize: 8, lineHeight: 1, fontWeight: 800, letterSpacing: 0.35, color: WF.inkLabel, textTransform: 'uppercase' }}>{label}</div>
+              </div>
+              <div style={{ marginTop: 4, fontSize: 8.5, lineHeight: 1, color: WF.inkFaint }}>{helper}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      {/* Inventory-aware category filters: counts explain the effect of a
+          filter before the agent commits to it, including sold-out groups. */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14,
-        marginBottom: 10, padding: '5px 16px', background: WF.fill, border: `1px solid ${WF.line}`, borderRadius: 10
+        padding: '8px 12px', background: '#FFFFFF', borderBottom: `1px solid ${WF.line}`
       }}>
-        <SegmentedFilter
-          label="Category"
-          value={catFilter}
-          onChange={setCatFilter}
-          activeColor={WF.accentInk}
-          options={['IS', 'OV', 'BAL', 'STE'].map(cat => ({ key: cat, label: CAT_LABELS[cat] }))} />
-        {catFilter && (
-          <button
-            onClick={() => setCatFilter(null)}
-            style={{
-              fontSize: 11.5, fontWeight: 600, color: WF.accentInk, background: 'none',
-              border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0
-            }}>Clear filter</button>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+          <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: 0.5, color: WF.inkLabel, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>Cabin type</span>
+          {[{ key: null, label: 'All types', count: STATEROOM_ROWS.reduce((sum, row) => sum + row.total, 0) },
+            ...['IS', 'OV', 'BAL', 'STE'].map((cat) => ({ key: cat, label: CAT_LABELS[cat], count: categoryInventory[cat] }))
+          ].map((option) => {
+            const active = catFilter === option.key;
+            return (
+              <button
+                key={option.key || 'all'}
+                onClick={() => setCatFilter(option.key)}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 7, padding: '5px 8px',
+                  borderRadius: 6, border: `1px solid ${active ? WF.accent : WF.line}`,
+                  background: active ? WF.accent : WF.panel, color: active ? '#FFFFFF' : WF.ink,
+                  cursor: 'pointer', fontFamily: 'inherit', fontSize: 10.5, fontWeight: active ? 750 : 600,
+                  opacity: option.count === 0 && !active ? 0.58 : 1
+                }}>
+                {option.label}
+                <span style={{
+                  minWidth: 18, padding: '1px 5px', borderRadius: 999, textAlign: 'center',
+                  background: active ? 'rgba(255,255,255,0.16)' : WF.fill,
+                  color: active ? '#FFFFFF' : option.count === 0 ? BAD : WF.inkSoft,
+                  fontSize: 9, fontWeight: 800, fontFamily: 'ui-monospace, monospace'
+                }}>{option.count}</span>
+              </button>
+            );
+          })}
+        </div>
+        <div style={{ fontSize: 9.5, color: WF.inkFaint }}>Counts show rooms currently available</div>
       </div>
 
       {/* ── Table — grows to its full height with the page. overflowX stays so the
              wide column set scrolls sideways here rather than widening the page. ── */}
-      <div style={{ border: `1px solid ${WF.line}`, borderRadius: 10, overflowX: 'auto', scrollbarWidth: 'thin' }}>
+      <div style={{ overflowX: 'auto', scrollbarWidth: 'thin' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'auto' }}>
           <thead>
             <tr>
-              <TH>Category Name</TH>
-              <TH>Add Stateroom</TH>
-              <TH right>Price</TH>
-              <TH right>Total</TH>
-              <TH right>Single</TH>
-              <TH right>Double</TH>
-              <TH right>DB + INF</TH>
-              <TH right>Triple</TH>
-              <TH right>Quad</TH>
+              <TH>Category &amp; status</TH>
+              <TH>Rooms to add</TH>
+              <TH right>Fare / room</TH>
+              <TH right>Availability</TH>
+              <TH right>Sleeps 1</TH>
+              <TH right>Sleeps 2</TH>
+              <TH right>2 + infant</TH>
+              <TH right>Sleeps 3</TH>
+              <TH right>Sleeps 4</TH>
             </tr>
           </thead>
           <tbody>
-            {filteredRows.map((row, idx) => {
+            {filteredRows.map((row) => {
               const qty = qtys[row.id] || 0;
               const confirmed = confirmedRooms[row.id];
-              const isExpanded = openPanel === row.id;
-              const isAlt = idx % 2 === 1;
+              const soldOut = row.total === 0;
+              const categoryName = row.label.includes(' – ') ? row.label.split(' – ')[0] : row.label;
               return (
                 <React.Fragment key={row.id}>
                   <tr 
                     onClick={() => qty > 0 && setOpenPanel(row.id)}
-                    style={{ background: isAlt ? WF.fill : WF.panel, transition: 'background 0.1s', cursor: qty > 0 ? 'pointer' : 'default' }}
-                    onMouseEnter={(e) => { if (qty > 0) e.currentTarget.style.background = '#F9FAFB'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = isAlt ? WF.fill : WF.panel; }}>
+                    style={{
+                      background: confirmed ? WF.accentTint : soldOut ? WF.fill : WF.panel,
+                      boxShadow: confirmed ? `inset 3px 0 ${WF.accent}` : 'none',
+                      opacity: soldOut ? 0.66 : 1,
+                      transition: 'background 0.1s', cursor: qty > 0 ? 'pointer' : 'default'
+                    }}
+                    onMouseEnter={(e) => { if (qty > 0 && !confirmed) e.currentTarget.style.background = WF.fill; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = confirmed ? WF.accentTint : soldOut ? WF.fill : WF.panel; }}>
                     {/* Category name */}
-                    <td style={{ padding: '5px 16px', borderBottom: `1px solid ${WF.lineSoft}`, minWidth: 200 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{ width: 10, height: 10, borderRadius: 3, background: row.color, flexShrink: 0 }}></div>
-                        <div>
-                          <div style={{ fontSize: 12.5, fontWeight: 600, color: WF.ink }}>{row.label}</div>
+                    <td style={{ padding: '7px 12px', borderBottom: `1px solid ${WF.lineSoft}`, minWidth: 218 }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 9 }}>
+                        <div style={{ width: 9, height: 28, borderRadius: 3, background: row.color, flexShrink: 0 }}></div>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: WF.ink }}>{categoryName}</div>
+                            <span style={{
+                              padding: '1px 5px', borderRadius: 4, border: `1px solid ${WF.line}`,
+                              background: '#FFFFFF', fontSize: 8.5, fontWeight: 800,
+                              color: WF.inkSoft, fontFamily: 'ui-monospace, monospace'
+                            }}>{row.id}</span>
+                          </div>
+                          <div style={{ marginTop: 2, fontSize: 9, color: WF.inkFaint }}>{CAT_LABELS[row.cat]} · {LOC_LABELS[row.location]}</div>
                           {confirmed && (
-                            <div style={{ fontSize: 10.5, color: WF.accentInk, fontWeight: 600, marginTop: 2, cursor: 'pointer' }}>
-                              ✓ {confirmed.length} room{confirmed.length > 1 ? 's' : ''} assigned: {confirmed.join(', ')} · <span style={{ opacity: 0.7 }}>Click to edit</span>
+                            <div style={{ fontSize: 9.5, color: WF.accentInk, fontWeight: 700, marginTop: 3, cursor: 'pointer' }}>
+                              ✓ {confirmed.length} assigned · {confirmed.join(', ')} <span style={{ color: WF.inkFaint, fontWeight: 600 }}>· Edit rooms</span>
                             </div>
                           )}
                         </div>
                       </div>
                     </td>
                     {/* Qty control — stop row-click so +/- don't also open the modal */}
-                    <td onClick={(e) => e.stopPropagation()} style={{ padding: '5px 16px', borderBottom: `1px solid ${WF.lineSoft}`, textAlign: 'center', whiteSpace: 'nowrap' }}>
-                      <QtyControl
-                        value={qty}
-                        max={row.total}
-                        onChange={(val) => handleQtyChange(row, val)} />
+                    <td onClick={(e) => e.stopPropagation()} style={{ padding: '7px 12px', borderBottom: `1px solid ${WF.lineSoft}`, textAlign: 'center', whiteSpace: 'nowrap' }}>
+                      {soldOut ? (
+                        <span style={{ fontSize: 9.5, fontWeight: 700, color: BAD }}>Unavailable</span>
+                      ) : (
+                        <QtyControl
+                          value={qty}
+                          max={row.total}
+                          onChange={(val) => handleQtyChange(row, val)} />
+                      )}
                     </td>
                     {/* Price */}
-                    <td style={{ padding: '5px 16px', borderBottom: `1px solid ${WF.lineSoft}`, textAlign: 'center', whiteSpace: 'nowrap' }}>
-                      <span style={{ fontSize: 12.5, fontWeight: 600, color: WF.ink, fontFamily: 'ui-monospace, monospace' }}>
+                    <td style={{ padding: '7px 12px', borderBottom: `1px solid ${WF.lineSoft}`, textAlign: 'center', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontSize: 11.5, fontWeight: 750, color: WF.ink, fontFamily: 'ui-monospace, monospace' }}>
                         ${row.price.toLocaleString()}.00
                       </span>
                     </td>
-                    <td style={{ padding: '5px 16px', borderBottom: `1px solid ${WF.lineSoft}`, textAlign: 'center' }}><NumCell val={row.total} /></td>
-                    <td style={{ padding: '5px 16px', borderBottom: `1px solid ${WF.lineSoft}`, textAlign: 'center' }}><NumCell val={row.single} /></td>
-                    <td style={{ padding: '5px 16px', borderBottom: `1px solid ${WF.lineSoft}`, textAlign: 'center' }}><NumCell val={row.double} /></td>
-                    <td style={{ padding: '5px 16px', borderBottom: `1px solid ${WF.lineSoft}`, textAlign: 'center' }}><NumCell val={row.dbinf} /></td>
-                    <td style={{ padding: '5px 16px', borderBottom: `1px solid ${WF.lineSoft}`, textAlign: 'center' }}><NumCell val={row.triple} /></td>
-                    <td style={{ padding: '5px 16px', borderBottom: `1px solid ${WF.lineSoft}`, textAlign: 'center' }}><NumCell val={row.quad} /></td>
+                    <td style={{ padding: '7px 12px', borderBottom: `1px solid ${WF.lineSoft}`, textAlign: 'center' }}>
+                      <span style={{
+                        display: 'inline-flex', minWidth: 52, justifyContent: 'center', padding: '3px 6px', borderRadius: 999,
+                        background: soldOut ? '#FEF2F2' : '#F0FDF4', color: soldOut ? BAD : '#047857',
+                        fontSize: 9.5, fontWeight: 800
+                      }}>{soldOut ? 'Sold out' : `${row.total} available`}</span>
+                    </td>
+                    <td style={{ padding: '7px 12px', borderBottom: `1px solid ${WF.lineSoft}`, textAlign: 'center' }}><NumCell val={row.single} /></td>
+                    <td style={{ padding: '7px 12px', borderBottom: `1px solid ${WF.lineSoft}`, textAlign: 'center' }}><NumCell val={row.double} /></td>
+                    <td style={{ padding: '7px 12px', borderBottom: `1px solid ${WF.lineSoft}`, textAlign: 'center' }}><NumCell val={row.dbinf} /></td>
+                    <td style={{ padding: '7px 12px', borderBottom: `1px solid ${WF.lineSoft}`, textAlign: 'center' }}><NumCell val={row.triple} /></td>
+                    <td style={{ padding: '7px 12px', borderBottom: `1px solid ${WF.lineSoft}`, textAlign: 'center' }}><NumCell val={row.quad} /></td>
                   </tr>
                 </React.Fragment>
               );

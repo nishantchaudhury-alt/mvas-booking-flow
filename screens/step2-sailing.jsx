@@ -494,6 +494,21 @@ function SupplementsSection({ selectedSupps, guests, cabins, suppAssignments, on
 
   const roster = buildCabinGuestRoster(guests, cabins);
   const hasGuests = roster.length > 0;
+  const activeSup = expandedSuppId ? S2_SUPP.find((supp) => supp.id === expandedSuppId) : null;
+
+  React.useEffect(() => {
+    if (!expandedSuppId) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setExpandedSuppId(null);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [expandedSuppId]);
 
   // Filter the individual supplement catalog by category and search.
   const filteredSupps = S2_SUPP.filter((s) => {
@@ -504,6 +519,11 @@ function SupplementsSection({ selectedSupps, guests, cabins, suppAssignments, on
 
   // Get unique categories from supplements
   const categories = ['All', ...new Set(S2_SUPP.map((s) => s.category))];
+  const selectedProductCount = Object.keys(suppQtys).length;
+  const totalAssignedUnits = Object.values(suppQtys).reduce((sum, qty) => sum + qty, 0);
+  const activeAssignment = activeSup ? (assignments[activeSup.id] || {}) : {};
+  const activeAssignedGuests = Object.values(activeAssignment).filter((qty) => qty > 0).length;
+  const activeAssignedUnits = activeSup ? (suppQtys[activeSup.id] || 0) : 0;
 
   const setGuestQty = (suppId, guestKey, qty) => {
     const suppAssign = { ...(assignments[suppId] || {}) };
@@ -555,9 +575,32 @@ function SupplementsSection({ selectedSupps, guests, cabins, suppAssignments, on
       )}
 
       {/* Available to add section — search + category pills above the list */}
-      <div>
+      <div style={{
+        marginBottom: 10, border: `1px solid ${WF.line}`, borderRadius: 9,
+        overflow: 'hidden', background: '#FFFFFF',
+      }}>
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+          padding: '9px 11px', background: WF.fill, borderBottom: `1px solid ${WF.line}`,
+        }}>
+          <div>
+            <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 0.55, color: WF.inkLabel, textTransform: 'uppercase' }}>Supplement catalog</div>
+            <div style={{ marginTop: 3, fontSize: 9.5, color: WF.inkSoft }}>Assign optional products to eligible guests</div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ padding: '4px 7px', borderRadius: 6, border: `1px solid ${WF.line}`, background: '#FFFFFF', fontSize: 9.5, fontWeight: 700, color: WF.inkSoft }}>
+              {filteredSupps.length} shown
+            </span>
+            {selectedProductCount > 0 && (
+              <span style={{ padding: '4px 7px', borderRadius: 6, border: `1px solid ${WF.accentLine}`, background: WF.accentTint, fontSize: 9.5, fontWeight: 700, color: WF.accent }}>
+                {selectedProductCount} products · {totalAssignedUnits} assignments
+              </span>
+            )}
+          </div>
+        </div>
+        <div style={{ padding: '10px 11px 9px' }}>
         {/* Search bar */}
-        <div style={{ marginBottom: 12, position: 'relative' }}>
+        <div style={{ marginBottom: 9, position: 'relative' }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{
             position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)',
             color: WF.inkSoft, pointerEvents: 'none'
@@ -571,9 +614,9 @@ function SupplementsSection({ selectedSupps, guests, cabins, suppAssignments, on
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             style={{
-              width: '100%', padding: '10px 12px 10px 36px', borderRadius: 8,
-              border: `1.5px solid ${WF.line}`, background: WF.panel, color: WF.ink,
-              fontSize: 13, fontFamily: 'inherit', transition: 'border-color 0.12s'
+              width: '100%', padding: '9px 12px 9px 36px', borderRadius: 8,
+              border: `1px solid ${WF.line}`, background: WF.panel, color: WF.ink,
+              fontSize: 12.5, fontFamily: 'inherit', transition: 'border-color 0.12s'
             }}
             onFocus={(e) => e.target.style.borderColor = S2_TEAL}
             onBlur={(e) => e.target.style.borderColor = WF.line} />
@@ -581,7 +624,7 @@ function SupplementsSection({ selectedSupps, guests, cabins, suppAssignments, on
         </div>
 
         {/* Category filter pills */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
           {categories.map((cat) => {
             const on = cat === 'All' && catFilter === null || catFilter === cat;
             return (
@@ -589,9 +632,9 @@ function SupplementsSection({ selectedSupps, guests, cabins, suppAssignments, on
                 key={cat}
                 onClick={() => setCatFilter(cat === 'All' ? null : cat)}
                 style={{
-                  padding: '6px 12px', borderRadius: 20, fontSize: 12, fontWeight: on ? 700 : 500,
-                  border: `1.5px solid ${on ? '#1B2434' : WF.line}`,
-                  background: on ? '#1B2434' : WF.panel,
+                  padding: '5px 10px', borderRadius: 999, fontSize: 11, fontWeight: on ? 700 : 500,
+                  border: `1px solid ${on ? WF.accent : WF.line}`,
+                  background: on ? WF.accent : WF.panel,
                   color: on ? '#fff' : WF.ink,
                   cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.12s'
                 }}>
@@ -600,12 +643,15 @@ function SupplementsSection({ selectedSupps, guests, cabins, suppAssignments, on
 
           })}
         </div>
-      </div>
+        </div>
 
       {/* Supplements list with assign-guests controls */}
-      <div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 0, border: `1px solid ${WF.line}`, borderRadius: 8, overflow: 'hidden' }}>
-          {filteredSupps.length > 0 ? filteredSupps.map((sup, idx) => {
+      <div style={{ padding: '0 11px 11px' }}>
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          gap: 8, alignItems: 'start'
+        }}>
+          {filteredSupps.length > 0 ? filteredSupps.map((sup) => {
             const suppAssign = assignments[sup.id] || {};
             const qty = suppQtys[sup.id] || 0;
             const lineTotal = sup.pricePP * qty;
@@ -617,89 +663,176 @@ function SupplementsSection({ selectedSupps, guests, cabins, suppAssignments, on
               <div
                 key={sup.id}
                 style={{
-                  // Hairline dividers carry the row separation on their own —
-                  // zebra fills on top of them added a second, competing rhythm
-                  // and made disabled/expanded states harder to distinguish.
-                  borderBottom: idx < filteredSupps.length - 1 ? `1px solid ${WF.lineSoft}` : 'none',
-                  background: expanded ? '#fff' : WF.panel
+                  border: `1px solid ${expanded ? WF.accent : qty > 0 ? WF.accentLine : WF.line}`,
+                  borderRadius: 9, overflow: 'hidden',
+                  background: expanded ? WF.accentTint : '#FFFFFF',
+                  boxShadow: '0 1px 2px rgba(15,23,42,0.04)',
+                  transition: 'border-color 0.12s, background 0.12s'
                 }}>
-                <div style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '14px 16px'
-                }}>
+                <button
+                  type="button"
+                  onClick={() => hasGuests && setExpandedSuppId(sup.id)}
+                  disabled={!hasGuests}
+                  aria-expanded={expanded}
+                  aria-haspopup="dialog"
+                  aria-label={`${qty > 0 ? 'Review assignment for' : 'Assign guests to'} ${sup.name}`}
+                  style={{
+                    width: '100%', border: 'none', background: 'transparent', fontFamily: 'inherit', textAlign: 'left',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '11px 12px', gap: 12, cursor: hasGuests ? 'pointer' : 'not-allowed',
+                    opacity: hasGuests ? 1 : 0.55, transition: 'background 0.12s'
+                  }}
+                  onMouseEnter={(e) => { if (hasGuests && !expanded) e.currentTarget.style.background = WF.fill; }}
+                  onMouseLeave={(e) => { if (!expanded) e.currentTarget.style.background = 'transparent'; }}>
                   {/* Supplement info */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
-                    <span style={{ fontSize: 18, flexShrink: 0 }}>{sup.emoji}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
+                    <span style={{
+                      width: 36, height: 36, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      border: `1px solid ${WF.line}`, borderRadius: 8, background: '#FFFFFF',
+                      fontSize: 17, flexShrink: 0
+                    }}>{sup.emoji}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 2 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: WF.ink }}>{sup.name}</div>
+                      <div style={{
+                        marginBottom: 3, fontSize: 8.5, lineHeight: 1, fontWeight: 800,
+                        letterSpacing: 0.55, textTransform: 'uppercase', color: WF.inkLabel
+                      }}>{sup.category}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div style={{ fontSize: 12.5, lineHeight: 1.2, fontWeight: 700, color: WF.ink }}>{sup.name}</div>
                         {sup.minAge != null && (
-                          <span style={{ fontSize: 9.5, fontWeight: 700, color: '#B45309', background: '#FEF3C7', borderRadius: 4, padding: '1px 6px' }}>
+                          <span style={{ fontSize: 9, fontWeight: 800, color: '#B45309', background: '#FEF3C7', borderRadius: 4, padding: '2px 5px' }}>
                             {sup.minAge}+
                           </span>
                         )}
                       </div>
-                      <div style={{ fontSize: 11, color: WF.inkSoft }}>
-                        ${sup.pricePP.toFixed(2)} pp
+                      <div style={{ marginTop: 5, minHeight: 18, display: 'flex', alignItems: 'center', fontSize: 9.5 }}>
+                        {qty > 0 ? (
+                          <span style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 4,
+                            padding: '3px 7px', borderRadius: 999,
+                            background: '#F0FDF4', border: '1px solid #BBF7D0',
+                            color: '#047857', fontSize: 9, fontWeight: 800,
+                            lineHeight: 1, whiteSpace: 'nowrap'
+                          }}>
+                            <span aria-hidden="true">✓</span>
+                            Assigned · {assignedCaption}
+                          </span>
+                        ) : (
+                          <span style={{ color: WF.inkSoft }}>No guests assigned</span>
+                        )}
                       </div>
                     </div>
                   </div>
 
-                  {/* Right side: price + assign button */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
-                    {qty > 0 && (
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: WF.ink, fontFamily: 'ui-monospace, monospace' }}>+${lineTotal.toFixed(2)}</div>
-                        <div style={{ fontSize: 10, color: S2_TEAL, fontWeight: 600 }}>{assignedCaption}</div>
+                  {/* One commercial summary per card: assigned products lead
+                      with the actual total, while unassigned products lead
+                      with their unit price. */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 9, flexShrink: 0 }}>
+                    <div style={{ minWidth: 72, textAlign: 'right' }}>
+                      <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: 0.45, color: WF.inkLabel, textTransform: 'uppercase' }}>
+                        {qty > 0 ? 'Total' : 'Per guest'}
                       </div>
-                    )}
-                    <button
-                      onClick={() => setExpandedSuppId(expanded ? null : sup.id)}
-                      disabled={!hasGuests}
-                      style={{
-                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                        width: 34, height: 34, borderRadius: '50%',
-                        border: `1px solid ${!hasGuests ? '#E2E8F0' : (expanded ? S2_TEAL : WF.line)}`,
-                        background: !hasGuests ? '#F8FAFC' : (expanded ? S2_TEAL : '#fff'),
-                        color: !hasGuests ? '#B0B8C4' : (expanded ? '#fff' : WF.inkSoft),
-                        cursor: hasGuests ? 'pointer' : 'not-allowed',
-                        boxShadow: expanded ? `0 0 0 3px ${S2_TEAL_TINT}` : '0 1px 2px rgba(15,23,42,0.05)',
-                        transition: 'all 0.15s', flexShrink: 0
-                      }}
-                      onMouseEnter={(e) => { if (hasGuests && !expanded) { e.currentTarget.style.borderColor = S2_TEAL; e.currentTarget.style.color = S2_TEAL; } }}
-                      onMouseLeave={(e) => { if (hasGuests && !expanded) { e.currentTarget.style.borderColor = WF.line; e.currentTarget.style.color = WF.inkSoft; } }}
-                      title={hasGuests ? 'Assign to guests' : 'Add guests first'}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                        <circle cx="9" cy="7" r="4" />
-                        <path d="M19 8v6M22 11h-6" />
+                      <div style={{ marginTop: 2, fontSize: 12.5, fontWeight: 800, color: WF.ink, fontFamily: 'ui-monospace, monospace', fontVariantNumeric: 'tabular-nums' }}>
+                        {qty > 0 ? `+$${lineTotal.toFixed(2)}` : `$${sup.pricePP.toFixed(2)}`}
+                      </div>
+                    </div>
+                    <span style={{
+                      minWidth: qty > 0 ? 62 : 72, height: 30, padding: '0 8px 0 10px', borderRadius: 6,
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'space-between', gap: 6,
+                      border: `1px solid ${qty > 0 ? WF.accentLine : WF.line}`,
+                      background: qty > 0 ? WF.accentTint : '#FFFFFF', color: WF.accent,
+                      fontSize: 10, fontWeight: 800, whiteSpace: 'nowrap'
+                    }}>
+                      {qty > 0 ? 'Edit' : 'Assign'}
+                      <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
+                        <path d="M4 2L8 6L4 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
-                    </button>
+                    </span>
                   </div>
-                </div>
-
-                {expanded && hasGuests && (
-                    <AssignGuestsPanel
-                      sup={sup}
-                      roster={roster}
-                      assignment={suppAssign}
-                      onGuestQty={(guestKey, v) => setGuestQty(sup.id, guestKey, v)}
-                      onAddCabin={(guestKeys) => addCabinQty(sup.id, guestKeys)}
-                      onClearCabin={(guestKeys) => clearCabinQty(sup.id, guestKeys)}
-                      onDone={() => setExpandedSuppId(null)} />
-                )}
+                </button>
               </div>);
 
           }) :
           <div style={{
             fontSize: 11.5, color: WF.inkFaint, textAlign: 'center',
-            padding: '16px 0'
+            padding: '22px 0', border: `1px dashed ${WF.line}`,
+            borderRadius: 9, gridColumn: '1 / -1'
           }}>
               No supplements match your filters.
             </div>
           }
         </div>
       </div>
+      </div>
+
+      {activeSup && hasGuests && (
+        <div
+          onClick={() => setExpandedSuppId(null)}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 500, padding: 24,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'rgba(15,23,42,0.55)', backdropFilter: 'blur(1px)'
+          }}>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Assign ${activeSup.name} to guests`}
+            onClick={(event) => event.stopPropagation()}
+            style={{
+              width: 'min(940px, 100%)', maxHeight: '86vh', display: 'flex', flexDirection: 'column',
+              background: WF.panel, border: `1px solid ${WF.line}`, borderRadius: 10,
+              overflow: 'hidden', boxShadow: '0 24px 64px rgba(15,23,42,0.28)'
+            }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', flexShrink: 0,
+              background: WF.fill, borderBottom: `1px solid ${WF.line}`
+            }}>
+              <span style={{
+                width: 38, height: 38, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                border: `1px solid ${WF.line}`, borderRadius: 8, background: '#FFFFFF', fontSize: 18, flexShrink: 0
+              }}>{activeSup.emoji}</span>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: 8.5, fontWeight: 800, letterSpacing: 0.55, color: WF.inkLabel, textTransform: 'uppercase' }}>{activeSup.category}</div>
+                <div style={{ marginTop: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: 14, fontWeight: 750, color: WF.ink }}>{activeSup.name}</span>
+                  {activeSup.minAge != null && (
+                    <span style={{ fontSize: 9, fontWeight: 800, color: '#B45309', background: '#FEF3C7', borderRadius: 4, padding: '2px 5px' }}>{activeSup.minAge}+</span>
+                  )}
+                </div>
+                <div style={{ marginTop: 2, fontSize: 9.5, color: WF.inkSoft }}>Assign quantities by cabin and eligible guest.</div>
+              </div>
+              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: 0.45, color: WF.inkLabel, textTransform: 'uppercase' }}>Per guest</div>
+                <div style={{ marginTop: 2, fontSize: 13, fontWeight: 800, color: WF.ink, fontFamily: 'ui-monospace, monospace' }}>${activeSup.pricePP.toFixed(2)}</div>
+                {activeAssignedUnits > 0 && (
+                  <div style={{ marginTop: 2, fontSize: 9, color: '#047857', fontWeight: 700 }}>
+                    {activeAssignedGuests} guest{activeAssignedGuests === 1 ? '' : 's'} · +${(activeSup.pricePP * activeAssignedUnits).toFixed(2)}
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => setExpandedSuppId(null)}
+                aria-label="Close supplement assignment"
+                style={{
+                  width: 30, height: 30, marginLeft: 4, borderRadius: 6, flexShrink: 0,
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                  border: `1px solid ${WF.line}`, background: '#FFFFFF', color: WF.inkSoft,
+                  fontSize: 16, fontFamily: 'inherit', cursor: 'pointer'
+                }}>×</button>
+            </div>
+            <div style={{ minHeight: 0, overflowY: 'auto', paddingTop: 8 }}>
+              <AssignGuestsPanel
+                sup={activeSup}
+                roster={roster}
+                assignment={activeAssignment}
+                onGuestQty={(guestKey, value) => setGuestQty(activeSup.id, guestKey, value)}
+                onAddCabin={(guestKeys) => addCabinQty(activeSup.id, guestKeys)}
+                onClearCabin={(guestKeys) => clearCabinQty(activeSup.id, guestKeys)}
+                onDone={() => setExpandedSuppId(null)} />
+            </div>
+          </div>
+        </div>
+      )}
       
       {Object.keys(suppQtys).length === 0 &&
       <div style={{
@@ -759,6 +892,7 @@ function SailingCard({ s, update, sailing, expanded, onToggle }) {
   const selectedHere = s.selectedSailingCode === sailing.code;
   const nights = sailing.nights;
   const guestCount = g.adults + (g.youngAdults || 0) + g.children + g.infants;
+  const bookingWindow = getWindowForSailing(sailing.code);
 
   // Collapsed "from" price — cheapest farecode, IS cabin, via priceQuote.
   // Falls back to double occupancy before the party is entered, so the lead-in
@@ -810,74 +944,101 @@ function SailingCard({ s, update, sailing, expanded, onToggle }) {
 
   return (
     <div style={{
-      borderLeft: selectedHere ? `3px solid ${S2_TEAL}` : '3px solid transparent',
-      background: selectedHere ? 'rgba(13,148,136,0.04)' : WF.panel,
-      transition: 'background 0.15s, border-color 0.15s',
+      border: `1px solid ${selectedHere ? WF.accent : WF.line}`,
+      borderRadius: 9,
+      background: selectedHere ? WF.accentTint : WF.panel,
+      boxShadow: selectedHere ? `0 0 0 1px ${WF.accentLine}` : '0 1px 2px rgba(15,23,42,0.05)',
+      transition: 'background 0.15s, border-color 0.15s, box-shadow 0.15s',
       overflow: 'hidden'
     }}>
-      {/* ── Collapsed header (always visible) — Row layout ── */}
+      {/* ── Collapsed header (always visible) — fixed comparison columns ── */}
       <button
         onClick={handleToggle}
+        aria-expanded={expanded}
         style={{
-          display: 'flex',
+          display: 'grid',
+          gridTemplateColumns: '54px minmax(150px, 1fr) minmax(175px, 0.95fr) 110px 28px',
           alignItems: 'center',
-          gap: 12,
+          gap: 14,
           width: '100%',
           textAlign: 'left',
-          padding: '9px 16px',
+          padding: '11px 12px',
           background: 'transparent',
           border: 'none',
           cursor: 'pointer',
           fontFamily: 'inherit'
         }} data-comment-anchor="f0c77595d9-button-605-7">
 
-        {/* Col 1: Nights pill */}
+        {/* Col 1: Duration tile */}
         <div style={{
-          flexShrink: 0,
-          background: WF.accent,
-          color: '#fff',
-          borderRadius: 5,
-          padding: '4px 8px',
-          fontSize: 10.5,
-          fontWeight: 700,
+          width: 52, minHeight: 46, display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          background: selectedHere ? '#FFFFFF' : WF.fill,
+          color: WF.ink, border: `1px solid ${selectedHere ? WF.accentLine : WF.line}`,
+          borderRadius: 7,
           textAlign: 'center',
-          minWidth: 44,
-          lineHeight: 1.2
         }}>
-          {nights}N
+          <span className="s4-money" style={{ fontSize: 15, lineHeight: 1, fontWeight: 800 }}>{nights}</span>
+          <span style={{ marginTop: 3, fontSize: 8, lineHeight: 1, fontWeight: 750, letterSpacing: 0.55, color: WF.inkLabel }}>NIGHTS</span>
         </div>
 
-        {/* Col 2: Route + ship info — route always gets its own full-width
-              line (ellipsized rather than squeezed to nothing by the ship/
-              date info sharing a line at narrower widths). */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: WF.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {routeOf(sailing)}
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
-            <div style={{ fontSize: 11, color: WF.inkSoft, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
-              {sailing.ship} <span style={{ opacity: 0.5, margin: '0 4px' }}>|</span> {sailing.code}
+        {/* Col 2: Sailing identity */}
+        <div style={{ minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 750, color: WF.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {routeOf(sailing)}
             </div>
-            {(() => {
-              const win = getWindowForSailing(sailing.code);
-              return win ?
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
-                  {win.discount && <span style={{ fontSize: 9, fontWeight: 700, background: '#FF6B35', color: '#fff', padding: '1px 5px', borderRadius: 3, letterSpacing: 0.3 }}>50% OFF</span>}
-                  <span style={{ fontSize: 10.5, fontWeight: 600, color: WF.inkLabel, background: WF.fill, border: `1px solid ${WF.line}`, borderRadius: 4, padding: '1px 6px', letterSpacing: 0.2, whiteSpace: 'nowrap' }}>
-                    {win.display}
-                  </span>
-                </div> :
-              null;
-            })()}
+            <span style={{
+              flexShrink: 0, padding: '2px 6px', borderRadius: 999,
+              background: availBgColor, color: availTextColor,
+              fontSize: 8.5, lineHeight: 1.15, fontWeight: 750,
+            }}>{avail.label}</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, minWidth: 0 }}>
+            <span style={{ fontSize: 10.5, color: WF.inkSoft, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sailing.ship}</span>
+            <span aria-hidden="true" style={{ color: WF.line, fontSize: 10 }}>•</span>
+            <span className="s4-money" style={{ fontSize: 9.5, color: WF.inkLabel, whiteSpace: 'nowrap' }}>{sailing.code}</span>
           </div>
         </div>
 
-        {/* Col 3: Price (right) */}
-        <div style={{ textAlign: 'right', flexShrink: 0, display: 'flex', alignItems: 'baseline', gap: 5 }}>
-          <div style={{ fontSize: 15, fontWeight: 800, color: WF.ink, letterSpacing: -0.3 }}>
-            ${fromPP.toLocaleString()}<span style={{ fontSize: 11, fontWeight: 600 }}>/pp</span>
+        {/* Col 3: Sailing window and offer */}
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 8.5, lineHeight: 1, fontWeight: 750, letterSpacing: 0.5, color: WF.inkLabel, textTransform: 'uppercase' }}>
+            Sailing dates
           </div>
-          <div style={{ fontSize: 10.5, color: WF.inkFaint }}>avg</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5, minWidth: 0 }}>
+            <span style={{ fontSize: 10.5, lineHeight: 1.2, fontWeight: 650, color: WF.inkSoft, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {bookingWindow ? bookingWindow.display : sailing.depart}
+            </span>
+            {bookingWindow && bookingWindow.discount && (
+              <span style={{
+                flexShrink: 0, padding: '2px 6px', borderRadius: 4,
+                background: WF.accentTint, border: `1px solid ${WF.accentLine}`,
+                color: WF.accent, fontSize: 8.5, lineHeight: 1.1, fontWeight: 750,
+              }}>50% OFF</span>
+            )}
+          </div>
+        </div>
+
+        {/* Col 4: Price */}
+        <div style={{ textAlign: 'right', minWidth: 0 }}>
+          <div style={{ fontSize: 8.5, lineHeight: 1, fontWeight: 750, letterSpacing: 0.5, color: WF.inkLabel, textTransform: 'uppercase' }}>
+            From / guest
+          </div>
+          <div className="s4-money" style={{ marginTop: 4, fontSize: 15, lineHeight: 1.1, fontWeight: 800, color: WF.ink }}>
+            ${fromPP.toLocaleString()}
+          </div>
+          <div style={{ marginTop: 2, fontSize: 8.5, color: WF.inkFaint }}>average fare</div>
+        </div>
+
+        {/* Col 5: disclosure affordance */}
+        <div aria-hidden="true" style={{
+          width: 28, height: 28, display: 'grid', placeItems: 'center',
+          borderRadius: 7, border: `1px solid ${WF.line}`, background: '#FFFFFF', color: WF.inkLabel,
+        }}>
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.18s ease' }}>
+            <path d="M4 2L8 6L4 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </div>
       </button>
 
@@ -1193,17 +1354,39 @@ function Step2App({ booking, update, navigate }) {
 
           /* ── LIST VIEW: match count + collapsed rows, both growing with the page ── */
           <div style={{
-            border: `1px solid ${WF.line}`, borderRadius: 10, background: WF.panel, padding: 14, marginBottom: 0, marginTop: 16
+            border: `1px solid ${WF.line}`, borderRadius: 10, background: WF.panel,
+            overflow: 'hidden', marginBottom: 0, marginTop: 16,
+            boxShadow: '0 1px 2px rgba(15,23,42,0.05)',
           }}>
-                <div style={{ fontSize: 12.5, color: WF.inkSoft, marginBottom: 14 }}>
-                  <strong style={{ color: WF.ink, fontWeight: 700 }}>{filteredSailings.length} sailings</strong> match · all fit your party
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                  padding: '10px 12px', background: WF.fill, borderBottom: `1px solid ${WF.line}`,
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span className="s4-money" style={{
+                      width: 22, height: 22, borderRadius: 6, display: 'grid', placeItems: 'center',
+                      background: WF.accent, color: WF.accentText, fontSize: 10.5, fontWeight: 800,
+                    }}>{filteredSailings.length}</span>
+                    <div>
+                      <div style={{ fontSize: 11.5, lineHeight: 1.15, fontWeight: 750, color: WF.ink }}>Sailing options</div>
+                      <div style={{ marginTop: 2, fontSize: 9.5, lineHeight: 1.15, color: WF.inkSoft }}>Compare itinerary, dates, and average fare</div>
+                    </div>
+                  </div>
+                  <div style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 5,
+                    padding: '4px 8px', borderRadius: 999,
+                    background: '#ECFDF5', color: '#047857',
+                    fontSize: 9.5, fontWeight: 700,
+                  }}>
+                    <span aria-hidden="true">✓</span>
+                    All fit your party
+                  </div>
                 </div>
                 {filteredSailings.length > 0 ? (
-                <div style={{ borderRadius: 10, overflow: 'hidden', background: WF.panel }}>
-                  {filteredSailings.filter((sail) => sail.code !== expandedCard).map((sail, idx, arr) =>
-              <React.Fragment key={sail.code}>
-                      {idx > 0 && <div style={{ height: 1, background: WF.line, margin: '0 16px' }} />}
-                      <SailingCard
+                <div style={{ display: 'grid', gap: 8, padding: 10, background: '#FFFFFF' }}>
+                  {filteredSailings.filter((sail) => sail.code !== expandedCard).map((sail) =>
+                    <SailingCard
+                      key={sail.code}
                   s={state}
                   update={(changes) => {
                     handleUpdate(changes);
@@ -1212,7 +1395,6 @@ function Step2App({ booking, update, navigate }) {
                   sailing={sail}
                   expanded={false}
                   onToggle={() => setExpandedCard(sail.code)} />
-                    </React.Fragment>
               )}
                 </div>
                 ) : (
