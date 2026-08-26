@@ -9,7 +9,10 @@
 
 // ── Guest Details Section ──
 // Allows manual entry or customer lookup for each guest.
-function GuestDetailsSection({ guests, guestAges, guestData, setGuestData }) {
+function GuestDetailsSection({
+  guests, guestAges, guestData, setGuestData, cabinAssignments,
+  protection, protectionGuestCount, onToggleProtection,
+}) {
   const [expandedGuestId, setExpandedGuestId] = React.useState(null);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [manualMode, setManualMode] = React.useState({}); // { guestId: true }
@@ -23,13 +26,40 @@ function GuestDetailsSection({ guests, guestAges, guestData, setGuestData }) {
 
   const guestList = [];
   for (let i = 0; i < guests.adults; i++)
-  guestList.push({ id: `A${i + 1}`, type: 'Adult', label: i === 0 ? 'Adult · primary' : 'Adult', age: ageFor('adults', i) });
+  guestList.push({ id: `A${i + 1}`, guestKey: `adults-${i}`, type: 'Adult', label: i === 0 ? 'Adult · primary' : 'Adult', age: ageFor('adults', i) });
   for (let i = 0; i < (guests.youngAdults || 0); i++)
-  guestList.push({ id: `YA${i + 1}`, type: 'Young Adult', label: guests.adults === 0 && i === 0 ? 'Young Adult · primary' : 'Young Adult', age: ageFor('youngAdults', i) });
+  guestList.push({ id: `YA${i + 1}`, guestKey: `youngAdults-${i}`, type: 'Young Adult', label: guests.adults === 0 && i === 0 ? 'Young Adult · primary' : 'Young Adult', age: ageFor('youngAdults', i) });
   for (let i = 0; i < guests.children; i++)
-  guestList.push({ id: `C${i + 1}`, type: 'Child', label: 'Child', age: ageFor('children', i) });
+  guestList.push({ id: `C${i + 1}`, guestKey: `children-${i}`, type: 'Child', label: 'Child', age: ageFor('children', i) });
   for (let i = 0; i < guests.infants; i++)
-  guestList.push({ id: `I${i + 1}`, type: 'Infant', label: 'Infant', age: ageFor('infants', i) });
+  guestList.push({ id: `I${i + 1}`, guestKey: `infants-${i}`, type: 'Infant', label: 'Infant', age: ageFor('infants', i) });
+
+  const cabins = Array.isArray(cabinAssignments) ? cabinAssignments : [];
+  const guestToCabin = buildCabinGuestMap(guests, cabins);
+  const assignedGuestKeys = new Set();
+  const cabinGroups = cabins.map((cabin, index) => {
+    const cabinKey = cabinSuppKey(cabin.id);
+    const travelers = guestList.filter((guest) => guestToCabin[guest.guestKey] === cabinKey);
+    travelers.forEach((guest) => assignedGuestKeys.add(guest.guestKey));
+    return {
+      key: cabinKey,
+      label: `Cabin ${index + 1}`,
+      room: cabin.num ? `Room ${cabin.num}` : 'Room pending',
+      category: cabinCategoryName(cabin),
+      travelers,
+    };
+  }).filter((group) => group.travelers.length > 0);
+
+  const unassignedTravelers = guestList.filter((guest) => !assignedGuestKeys.has(guest.guestKey));
+  if (unassignedTravelers.length > 0) {
+    cabinGroups.push({
+      key: 'unassigned',
+      label: cabins.length > 0 ? 'Unassigned travelers' : 'Travelers',
+      room: cabins.length > 0 ? 'Cabin not selected' : null,
+      category: null,
+      travelers: unassignedTravelers,
+    });
+  }
 
   // Drives the header's "Fill remaining/all as temp" label and whether it
   // shows at all — nothing left to do once every guest has a record.
@@ -109,13 +139,42 @@ function GuestDetailsSection({ guests, guestAges, guestData, setGuestData }) {
           </div>
         </div>
 
-        {/* Guest rows — the only overflow:hidden box; a sibling of the sticky
-            header, not an ancestor, so it can't interfere with it. */}
+        {/* Cabin groups keep room context visible while preserving compact,
+            side-by-side traveler cards within each cabin. */}
         <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
-          gap: 8, padding: 10, background: WF.fill, borderRadius: '0 0 10px 10px',
+          display: 'flex', flexDirection: 'column', gap: 10,
+          padding: 10, background: WF.fill,
         }}>
-        {guestList.map((guest) => {
+        {cabinGroups.map((group) => (
+          <section key={group.key} aria-label={group.room ? `${group.label}, ${group.room}` : group.label} style={{
+            overflow: 'hidden', border: `1px solid ${WF.line}`, borderRadius: 9, background: '#fff',
+          }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+              padding: '9px 11px', borderBottom: `1px solid ${WF.line}`, background: '#fff',
+            }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 7, minWidth: 0 }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.65, color: WF.inkLabel, textTransform: 'uppercase' }}>
+                    {group.label}
+                  </span>
+                  {group.room && <span style={{ fontSize: 12, fontWeight: 800, color: WF.ink }}>{group.room}</span>}
+                </div>
+                {group.category && <div style={{ marginTop: 2, fontSize: 10.5, color: WF.inkSoft }}>{group.category}</div>}
+              </div>
+              <span style={{
+                flexShrink: 0, padding: '4px 7px', borderRadius: 999,
+                border: `1px solid ${WF.line}`, background: WF.panel,
+                color: WF.inkSoft, fontSize: 9.5, fontWeight: 800,
+              }}>
+                {group.travelers.length} traveler{group.travelers.length === 1 ? '' : 's'}
+              </span>
+            </div>
+            <div style={{
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+              gap: 8, padding: 8, background: WF.fill,
+            }}>
+        {group.travelers.map((guest) => {
           const isExpanded = expandedGuestId === guest.id;
           const isDone = !!guestData[guest.id];
           const isManual = !!manualMode[guest.id];
@@ -301,10 +360,79 @@ function GuestDetailsSection({ guests, guestAges, guestData, setGuestData }) {
             </div>);
 
         })}
+            </div>
+          </section>
+        ))}
+        </div>
+        <div style={{ padding: '11px 14px 13px', borderTop: `1px solid ${WF.line}`, background: '#fff', borderRadius: '0 0 10px 10px' }}>
+          <GuestTripProtection
+            selected={protection}
+            guestCount={protectionGuestCount}
+            onToggle={onToggleProtection} />
         </div>
       </div>
     </div>);
 
+}
+
+function GuestTripProtection({ selected, guestCount, onToggle }) {
+  const total = guestCount * PROTECTION_PP;
+  const unavailable = guestCount === 0;
+
+  return (
+    <section aria-labelledby="guest-trip-protection-title">
+      <div id="guest-trip-protection-title" style={{
+        marginBottom: 7, fontSize: 10.5, fontWeight: 800,
+        letterSpacing: 0.75, color: WF.inkLabel, textTransform: 'uppercase',
+      }}>
+        Trip protection
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={!!selected}
+        disabled={unavailable}
+        onClick={onToggle}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
+          padding: '11px 13px', borderRadius: 9,
+          border: `1px solid ${selected ? WF.accentLine : WF.line}`,
+          background: selected ? WF.accentTint : '#fff',
+          boxShadow: '0 1px 2px rgba(15,23,42,0.04)',
+          cursor: unavailable ? 'not-allowed' : 'pointer', opacity: unavailable ? 0.55 : 1,
+          fontFamily: 'inherit', textAlign: 'left',
+        }}>
+        <span style={{ minWidth: 0 }}>
+          <span style={{ display: 'block', fontSize: 12.5, fontWeight: 800, color: WF.ink }}>
+            Add trip protection
+          </span>
+          <span style={{ display: 'block', marginTop: 3, fontSize: 10.5, color: WF.inkSoft }}>
+            Medical and cancellation coverage · ${PROTECTION_PP} per guest
+          </span>
+        </span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          <span style={{
+            fontSize: 11.5, fontWeight: 800, color: selected ? WF.ink : WF.inkSoft,
+            fontFamily: 'ui-monospace, monospace', fontVariantNumeric: 'tabular-nums',
+          }}>
+            {selected ? `+${money(total)}` : 'Not added'}
+          </span>
+          <span aria-hidden="true" style={{
+            width: 38, height: 22, borderRadius: 999,
+            background: selected ? WF.accent : '#CBD5E1',
+            position: 'relative', transition: 'background 0.18s', flexShrink: 0,
+          }}>
+            <span style={{
+              display: 'block', width: 16, height: 16, borderRadius: 999,
+              background: '#fff', position: 'absolute', top: 3,
+              left: selected ? 19 : 3, transition: 'left 0.18s',
+              boxShadow: '0 1px 3px rgba(15,23,42,0.28)',
+            }} />
+          </span>
+        </span>
+      </button>
+    </section>
+  );
 }
 
 function StepProgress3({ current, onBack }) {
@@ -410,7 +538,15 @@ function Step3App({ booking, update, navigate }) {
           </div>
 
           {/* Main content area — Guest details */}
-          <GuestDetailsSection guests={state.guests} guestAges={state.guestAges} guestData={guestData} setGuestData={setGuestData} />
+          <GuestDetailsSection
+            guests={state.guests}
+            guestAges={state.guestAges}
+            guestData={guestData}
+            setGuestData={setGuestData}
+            cabinAssignments={state.cabins}
+            protection={!!state.protection}
+            protectionGuestCount={guestCount}
+            onToggleProtection={() => update({ protection: !state.protection })} />
         </div>
       </WFAppShell>
 

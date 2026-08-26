@@ -1042,7 +1042,19 @@ function S4SupplementCount({ guest, suppIds }) {
           fontVariantNumeric: 'tabular-nums'
         }}>{items.length}</span>
         <span aria-hidden="true">assigned</span>
-        <span aria-hidden="true" style={{ color: WF.inkFaint, fontSize: 10, transform: tip ? 'rotate(180deg)' : 'none', transition: 'transform .12s' }}>⌄</span>
+        <svg
+          aria-hidden="true"
+          width="12"
+          height="12"
+          viewBox="0 0 14 14"
+          fill="none"
+          style={{
+            display: 'block', flexShrink: 0, color: tip ? WF.ink : WF.inkFaint,
+            transform: tip ? 'rotate(180deg)' : 'rotate(0deg)',
+            transformOrigin: 'center', transition: 'transform .14s ease, color .12s ease',
+          }}>
+          <path d="M3.5 5.25 7 8.75l3.5-3.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
       </button>
       {tip && ReactDOM.createPortal(
         <div
@@ -1184,6 +1196,10 @@ function Step4App({ booking, update }) {
   // Same two labels and same segmented control as the Step 1 rail, so the toggle
   // is recognised as the one pattern rather than learned twice.
   const [summaryView, setSummaryView] = React.useState('Global Details');
+  // The right rail is one commercial workspace. Order Summary is the default
+  // decision view; Price Breakdown is an alternate verification view within
+  // the same card. The nested Global/Cabin-wise switch remains pricing-only.
+  const [commercialView, setCommercialView] = React.useState('Order Summary');
 
   // Derive the real passenger roster from guests + ages (Step 2) and guest
   // names (Step 3) — never a static mock — and map each traveler's
@@ -1382,24 +1398,6 @@ function Step4App({ booking, update }) {
     window.__bookingNavigate(stepNum);
   };
 
-  // ── Things worth flagging before the agent commits. Every one of these is
-  // advisory: none of them disables Confirm, because a demo booking is often
-  // deliberately incomplete and blocking it would be worse than noting it. ──
-  const primaryGuest = passengers.find((pp) => pp.note === 'Primary') || null;
-  const tempCompanions = passengers.filter((pp) => pp.isTemp && pp.note !== 'Primary');
-  const warnings = [];
-  if (totalGuests === 0) {
-    warnings.push('No guests on this booking yet');
-  } else if (!primaryGuest) {
-    warnings.push('No primary guest selected');
-  } else if (primaryGuest.isTemp) {
-    warnings.push('Primary guest still has a placeholder name');
-  }
-  if (tempCompanions.length > 0) {
-    warnings.push(`${tempCompanions.length} other guest${tempCompanions.length === 1 ? '' : 's'} still ${tempCompanions.length === 1 ? 'has a placeholder name' : 'have placeholder names'}`);
-  }
-  if (!st.protection) warnings.push('Trip protection not selected');
-
   // Restated under the guest list so the supplements number the agent just
   // eyeballed per-person matches the one in the order summary below.
   const suppCount = (q.suppLines || []).filter((ln) => !ln.inPkg).length;
@@ -1428,20 +1426,6 @@ function Step4App({ booking, update }) {
           <div style={{ fontWeight: 700, color: WF.ink, letterSpacing: -0.3, marginBottom: 4, fontSize: 24 }}>Review &amp; confirm</div>
           <div style={{ fontSize: 13, color: WF.inkSoft, marginBottom: 20 }}>Verify every line below matches what the guest agreed to, then confirm.</div>
 
-          {/* ── Anything worth a second look before committing. Advisory only. ── */}
-          {warnings.length > 0 && (
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 9, padding: '9px 12px', marginBottom: 14, background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 8 }}>
-              <span style={{ fontSize: 12.5, lineHeight: 1.3, flexShrink: 0 }}>⚠️</span>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                <div style={{ fontSize: 11.5, fontWeight: 700, color: '#92400E' }}>Worth checking</div>
-                <div style={{ fontSize: 11.5, color: '#92400E', lineHeight: 1.45 }}>
-                  {warnings.join(' · ')}
-                  <span style={{ color: '#B45309' }}> · none of these block confirmation.</span>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Two review surfaces: the booking record on the left and its
               commercial summary on the right. Snapshot and guests belong to
               one booking record, while Order summary is an independently
@@ -1449,7 +1433,7 @@ function Step4App({ booking, update }) {
               without implying that they are one continuous container. */}
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.55fr) minmax(320px, 1fr)', gap: 16, alignItems: 'start' }}>
 
-          {/* ── Booking record: snapshot, guests and trip protection. ── */}
+          {/* ── Booking record: snapshot and guests. ── */}
           <div style={{ background: WF.panel, border: `1px solid ${WF.line}`, borderRadius: 12, overflow: 'hidden', minWidth: 0 }}>
 
             {/* ── Booking snapshot. Full width, because it describes the whole
@@ -1553,148 +1537,75 @@ function Step4App({ booking, update }) {
                 )}
               </div>
 
-              {/* Trip protection option — moved from Order summary column
-                  to be with other guest-level configuration choices. */}
-              {/* A real <button role="switch">, not a clickable <div>. This was
-                  a div with an onClick: unreachable by keyboard, invisible to
-                  assistive tech, and announcing no on/off state — on a control
-                  that adds a real charge to the booking. */}
-              <S4Option label="Trip protection" divider style={{ marginTop: 24 }}>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={!!st.protection}
-                  onClick={() => setSt({ protection: !st.protection })}
-                  className="s4-btn s4-secondary"
-                  style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, padding: '8px 11px', borderColor: WF.line, borderRadius: 8, textAlign: 'left' }}>
-                  <span style={{ minWidth: 0 }}>
-                    <span style={{ display: 'block', fontSize: 11.5, fontWeight: 700, color: WF.ink }}>Add trip protection</span>
-                    <span style={{ display: 'block', fontSize: 10.5, color: WF.inkSoft, marginTop: 1 }}>Medical &amp; cancellation · ${PROTECTION_PP}/guest</span>
-                  </span>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 9, flexShrink: 0 }}>
-                    <span style={{ fontSize: 11.5, fontWeight: 600, color: st.protection ? WF.ink : WF.inkSoft, fontFamily: 'ui-monospace, monospace' }}>
-                      {st.protection ? `+${money(q.protectionTotal)}` : '—'}
-                    </span>
-                    <span aria-hidden="true" style={{ width: 38, height: 22, borderRadius: 11, background: st.protection ? WF.accentOn : '#94A3B8', position: 'relative', transition: 'background 0.2s', flexShrink: 0, display: 'block' }}>
-                      <span style={{ display: 'block', width: 16, height: 16, borderRadius: 8, background: '#fff', position: 'absolute', top: 3, left: st.protection ? 19 : 3, transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.25)' }} />
-                    </span>
-                  </span>
-                </button>
-              </S4Option>
             </S4Section>
               </div>
 
             </div>
           </div>
 
-              {/* ═══ Independent order-summary card. ═══ */}
-
-              {/* ═══ What it costs, and the commercial decisions that move it.
-                      Narrow on purpose: every row here is a label and a number,
-                      which only reads as a pair at receipt width.
-
-                      The receipt and the decisions that produce it are one
-                      continuous read, so they share this column with dotted group
-                      rules between them rather than being split into separate
-                      boxes. Order summary comes first — it's the number the agent
-                      is here to verify, so it isn't the thing you scroll past four
-                      decisions to find. There is no Packages block of its own
-                      either — a package's contents already appear once on the
-                      Guests side, so this is only what it costs and, via its
-                      chip, the only place to drop it. ═══ */}
-              <div style={{ padding: '15px 20px 18px', background: WF.panel, border: `1px solid ${WF.line}`, borderRadius: 12, minWidth: 0 }}>
-              <S4Section title="Order summary">
-                {/* The commitment zone reads in decision order: choose the
-                    payment schedule, verify what that means in dollars, then
-                    act. Only the financial result is tinted, so the amount due
-                    becomes the focal point instead of the entire block reading
-                    as one undifferentiated blue card. */}
-                <div style={{ marginBottom: 14, paddingBottom: 14, borderBottom: S4_RULE }}>
-                  <div style={{ marginBottom: 10 }}>
-                    <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: 0.5, color: WF.inkLabel, textTransform: 'uppercase', marginBottom: 3 }}>Payment terms</div>
-                    <div style={{ fontSize: 10.5, color: WF.inkSoft, marginBottom: 7 }}>Choose what the guest pays when this booking is confirmed.</div>
-                    <S4PaymentTerms q={q} value={st.paymentMode} onChange={(m) => setSt({ paymentMode: m })} />
-                  </div>
-
-                  <S4TotalsStats q={q} />
-
-                  {/* Action hierarchy, in the order an agent decides: commit,
-                      else hold, else abandon. Confirm is the only filled action;
-                      Hold stays available without competing, and destructive
-                      styling appears only when Discard intent is shown. */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
-                    <button
-                      onClick={() => q.status === 'final' && alert('Booking submitted! (Demo only)')}
-                      disabled={q.status !== 'final'}
-                      className="s4-btn s4-primary"
-                      title={q.status !== 'final' ? 'Choose a sailing, cabin and farecode to confirm' : undefined}
-                      style={{ width: '100%', minHeight: 40, padding: '10px 14px', fontSize: 13.5, fontWeight: 700, borderRadius: 8 }}>Confirm booking</button>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      {/* Hold used to promise a duration set by a separate policy
-                          pill row above. That row is gone — the duration is now
-                          chosen at the point of holding, in a small menu off this
-                          button, so the choice and the action happen together. */}
-                      <div style={{ position: 'relative', flex: 1 }}>
-                        <button
-                          onClick={() => setShowHoldMenu((v) => !v)}
-                          className="s4-btn s4-secondary"
-                          style={{ width: '100%', minHeight: 34, padding: '8px 14px', fontSize: 12, fontWeight: 600, borderRadius: 7 }}>
-                          Hold
-                        </button>
-                        {showHoldMenu && (
-                          <>
-                            <div onClick={() => setShowHoldMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
-                            <div style={{
-                              position: 'absolute', bottom: '100%', left: 0, marginBottom: 6, zIndex: 41,
-                              width: 160, background: '#fff', border: '1px solid #E2E8F0', borderRadius: 9,
-                              boxShadow: '0 12px 32px rgba(15,31,61,0.16)', overflow: 'hidden',
-                            }}>
-                              <div style={{ padding: '8px 12px 6px', fontSize: 10.5, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                                Hold for
-                              </div>
-                              {['24h', '48h', '72h'].map((d) => (
-                                <button
-                                  key={d}
-                                  onClick={() => { setSt({ holdDur: d }); setShowHoldMenu(false); alert(`Booking held for ${d}. (Demo only)`); }}
-                                  className="s4-btn"
-                                  style={{
-                                    display: 'block', width: '100%', padding: '9px 12px', border: 'none',
-                                    background: 'transparent', color: '#0F172A', fontSize: 12.5, fontWeight: 500,
-                                    textAlign: 'left',
-                                  }}
-                                  onMouseEnter={(e) => { e.currentTarget.style.background = '#F8FAFC'; }}
-                                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
-                                  {d}
-                                </button>
-                              ))}
-                            </div>
-                          </>
-                        )}
-                      </div>
+              {/* One commercial workspace, with a primary view switch. This
+                  avoids an overly long stack while preserving both the decision
+                  surface and the detailed receipt the agent needs in a call. */}
+              <div style={{ padding: '0 20px 18px', background: WF.panel, border: `1px solid ${WF.line}`, borderRadius: 12, minWidth: 0, boxShadow: '0 1px 2px rgba(15,23,42,0.04)', overflow: 'hidden' }}>
+                <div
+                  role="tablist"
+                  aria-label="Booking financial view"
+                  style={{
+                    display: 'grid', gridTemplateColumns: '1fr 1fr',
+                    margin: '0 -20px 16px', padding: '0 12px',
+                    background: WF.fill, borderBottom: `1px solid ${WF.line}`,
+                  }}>
+                  {['Order Summary', 'Price Breakdown'].map((view) => {
+                    const active = commercialView === view;
+                    return (
                       <button
-                        onClick={discard}
-                        className="s4-btn s4-quiet"
-                        style={{ minHeight: 34, padding: '8px 12px', fontSize: 12, fontWeight: 600, borderRadius: 7 }}>Discard</button>
+                        key={view}
+                        type="button"
+                        role="tab"
+                        aria-selected={active}
+                        onClick={() => setCommercialView(view)}
+                        style={{
+                          minHeight: 44, padding: '0 8px', border: 'none',
+                          borderBottom: active ? `2px solid ${WF.accent}` : '2px solid transparent',
+                          background: 'transparent', color: active ? WF.ink : WF.inkSoft,
+                          fontSize: 11.5, fontWeight: active ? 800 : 650,
+                          letterSpacing: 0.1, cursor: 'pointer',
+                        }}>
+                        {view}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {commercialView === 'Order Summary' ? (
+                  <div role="tabpanel" aria-label="Order Summary">
+                    <div style={{ marginBottom: 14 }}>
+                      <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: 0.5, color: WF.inkLabel, textTransform: 'uppercase', marginBottom: 3 }}>Payment terms</div>
+                      <div style={{ fontSize: 10.5, color: WF.inkSoft, marginBottom: 7 }}>Choose what the guest pays when this booking is confirmed.</div>
+                      <S4PaymentTerms q={q} value={st.paymentMode} onChange={(m) => setSt({ paymentMode: m })} />
+                    </div>
+
+                    <div style={{ paddingTop: 14, borderTop: S4_RULE }}>
+                      <S4Option label="Promotions">
+                        <S4Promotions
+                          q={q}
+                          value={st.appliedCoupon}
+                          customCode={st.customCode}
+                          onSelect={(c) => setSt({ appliedCoupon: c })}
+                          onCodeChange={(customCode) => setSt({ customCode })}
+                          onApply={() => {
+                            const code = (st.customCode || '').trim();
+                            if (code) setSt({ appliedCoupon: code });
+                          }} />
+                      </S4Option>
                     </div>
                   </div>
-                </div>
-
-                {/* Promotions affect every price lens, so they sit before the
-                    Global/Cabin-wise switch rather than after one lens's rows. */}
-                <div style={{ marginBottom: 14, paddingBottom: 14, borderBottom: S4_RULE }}>
-                  <S4Option label="Promotions">
-                    <S4Promotions
-                      q={q}
-                      value={st.appliedCoupon}
-                      customCode={st.customCode}
-                      onSelect={(c) => setSt({ appliedCoupon: c })}
-                      onCodeChange={(customCode) => setSt({ customCode })}
-                      onApply={() => {
-                        const code = (st.customCode || '').trim();
-                        if (code) setSt({ appliedCoupon: code });
-                      }} />
-                  </S4Option>
-                </div>
+                ) : (
+                  <div role="tabpanel" aria-label="Price Breakdown">
+                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, marginBottom: 8 }}>
+                      <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: 0.5, color: WF.inkLabel, textTransform: 'uppercase' }}>Pricing lens</div>
+                      <div style={{ fontSize: 9.5, color: WF.inkSoft }}>Verify booking-level charges</div>
+                    </div>
 
                 {/* Global ┊ Cabin-wise — the same lens the Step 1 rail offers on
                     "Your selection", brought to the receipt. One booking has two
@@ -1705,10 +1616,6 @@ function Step4App({ booking, update }) {
                     between two blanks. */}
                 {q.status !== 'empty' && (
                   <div style={{ marginBottom: 12 }}>
-                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, marginBottom: 7 }}>
-                      <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: 0.5, color: WF.inkLabel, textTransform: 'uppercase' }}>Price breakdown</div>
-                      <div style={{ fontSize: 9.5, color: WF.inkSoft }}>Verify booking-level charges</div>
-                    </div>
                     <SPSegmented
                       options={['Global Details', 'Cabin-wise Details']}
                       value={summaryView}
@@ -1819,7 +1726,67 @@ function Step4App({ booking, update }) {
                     promotion={st.appliedCoupon} />
                 )}
 
-              </S4Section>
+                  </div>
+                )}
+
+                {/* Amount and booking actions stay available in either view,
+                    so switching to the detailed receipt never hides the next
+                    step or forces the agent to navigate back before acting. */}
+                <div style={{ marginTop: 16, paddingTop: 16, borderTop: S4_RULE }}>
+                  <S4TotalsStats q={q} />
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
+                    <button
+                      onClick={() => q.status === 'final' && alert('Booking submitted! (Demo only)')}
+                      disabled={q.status !== 'final'}
+                      className="s4-btn s4-primary"
+                      title={q.status !== 'final' ? 'Choose a sailing, cabin and farecode to confirm' : undefined}
+                      style={{ width: '100%', minHeight: 40, padding: '10px 14px', fontSize: 13.5, fontWeight: 700, borderRadius: 8 }}>Confirm booking</button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ position: 'relative', flex: 1 }}>
+                        <button
+                          onClick={() => setShowHoldMenu((v) => !v)}
+                          className="s4-btn s4-secondary"
+                          style={{ width: '100%', minHeight: 34, padding: '8px 14px', fontSize: 12, fontWeight: 600, borderRadius: 7 }}>
+                          Hold
+                        </button>
+                        {showHoldMenu && (
+                          <>
+                            <div onClick={() => setShowHoldMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
+                            <div style={{
+                              position: 'absolute', bottom: '100%', left: 0, marginBottom: 6, zIndex: 41,
+                              width: 160, background: '#fff', border: '1px solid #E2E8F0', borderRadius: 9,
+                              boxShadow: '0 12px 32px rgba(15,31,61,0.16)', overflow: 'hidden',
+                            }}>
+                              <div style={{ padding: '8px 12px 6px', fontSize: 10.5, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                                Hold for
+                              </div>
+                              {['24h', '48h', '72h'].map((d) => (
+                                <button
+                                  key={d}
+                                  onClick={() => { setSt({ holdDur: d }); setShowHoldMenu(false); alert(`Booking held for ${d}. (Demo only)`); }}
+                                  className="s4-btn"
+                                  style={{
+                                    display: 'block', width: '100%', padding: '9px 12px', border: 'none',
+                                    background: 'transparent', color: '#0F172A', fontSize: 12.5, fontWeight: 500,
+                                    textAlign: 'left',
+                                  }}
+                                  onMouseEnter={(e) => { e.currentTarget.style.background = '#F8FAFC'; }}
+                                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
+                                  {d}
+                                </button>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      <button
+                        onClick={discard}
+                        className="s4-btn s4-quiet"
+                        style={{ minHeight: 34, padding: '8px 12px', fontSize: 12, fontWeight: 600, borderRadius: 7 }}>Discard</button>
+                    </div>
+                  </div>
+                </div>
               </div>
 
             </div>
