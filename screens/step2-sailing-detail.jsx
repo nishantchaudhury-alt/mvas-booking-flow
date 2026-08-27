@@ -275,7 +275,7 @@ function SailingDetailView({ sailing, s, update, previewPkgId, onPkgPreview, onC
   const availability = availabilityOf(sailing);
   const bookingWindow = getWindowForSailing(sailing.code);
   const availabilityBg = availability.kind === 'active' ? '#D1FAE5' : availability.kind === 'draft' ? '#FEF3C7' : '#FEE2E2';
-  const availabilityText = availability.kind === 'active' ? '#065F46' : availability.kind === 'draft' ? '#92400E' : '#DC2626';
+  const availabilityText = availability.kind === 'active' ? '#065F46' : availability.kind === 'draft' ? '#92400E' : '#B91C1C';
 
   const toggleSupp = (qtyObj, assignments) => {
     // qtyObj is { suppId: qty, ... }; assignments remains guest-level even

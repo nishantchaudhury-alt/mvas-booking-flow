@@ -247,7 +247,7 @@ function CabinCard({ cabin, selected, typeLabel, onSelect }) {
 
       {/* Type label + icons — compact row */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3, minHeight: 0 }}>
-        <span style={{ fontSize: 8, fontWeight: 600, color: '#94A3B8', letterSpacing: 0.1, textTransform: 'uppercase', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <span style={{ fontSize: 8, fontWeight: 600, color: WF.inkFaint, letterSpacing: 0.1, textTransform: 'uppercase', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {typeLabel}
         </span>
         <div style={{ display: 'flex', gap: 1.5, flexShrink: 0, marginLeft: 2 }}>
@@ -259,7 +259,7 @@ function CabinCard({ cabin, selected, typeLabel, onSelect }) {
           }}>♿</div>
           }
           {cabin.linked &&
-          <span style={{ fontSize: 9, color: '#94A3B8', lineHeight: 1, flexShrink: 0 }}>🔗</span>
+          <span style={{ fontSize: 9, color: WF.inkFaint, lineHeight: 1, flexShrink: 0 }}>🔗</span>
           }
         </div>
       </div>
@@ -267,7 +267,7 @@ function CabinCard({ cabin, selected, typeLabel, onSelect }) {
       {/* Cabin number — large, centered */}
       <div style={{
         fontSize: 16, fontWeight: 800,
-        color: cabin.occupied ? '#9CA3AF' : '#1F2937',
+        color: cabin.occupied ? WF.inkSoft : '#1F2937',
         textAlign: 'center', letterSpacing: -0.4, lineHeight: 1.1, flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center'
       }}>
         {cabin.num}

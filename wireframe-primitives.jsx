@@ -6,8 +6,12 @@ const WF = {
   // ── Ink (text) ──
   ink: '#0F172A',         // primary text (navy near-black)
   inkSoft: '#475569',     // secondary text / row values
-  inkFaint: '#94A3B8',    // tertiary / placeholders / icon glyphs
-  inkLabel: '#64748B',    // section-header label grey
+  // Accessible compact-text greys. The former #94A3B8 tertiary token was only
+  // 2.45:1 on the cool-grey fill, and #64748B labels dipped below 4.5:1 on the
+  // blue selected surface. These retain the cool-grey hierarchy while clearing
+  // AA contrast on every working surface used by the flow.
+  inkFaint: '#5F6F85',    // tertiary / placeholders / icon glyphs
+  inkLabel: '#5B6B80',    // section-header label grey
   // ── Surfaces ──
   bg: '#F1F5F9',          // app background behind cards
   panel: '#FFFFFF',       // card / table surface
@@ -16,6 +20,7 @@ const WF = {
   // ── Lines ──
   line: '#E2E8F0',        // primary divider
   lineSoft: '#EEF2F6',    // soft inner row divider
+  controlLine: '#7C8B9F', // 3:1+ boundary for editable/custom controls
   // ── Brand / accent ──
   accent: '#1B2434',      // dark navy primary
   accentText: '#FFFFFF',
@@ -161,6 +166,8 @@ function WFToggle({ label, on, badge }) {
         // the accent family like every other toggle in the flow (the trip
         // protection switch was already blue while this one was green).
         background: on ? WF.accentOn : WF.fillStrong,
+        border: `1px solid ${on ? WF.accentOn : WF.controlLine}`,
+        boxSizing: 'border-box',
         position: 'relative', transition: 'background 0.15s',
       }}>
         <div style={{
@@ -178,7 +185,7 @@ function WFCheckbox({ label, on }) {
     <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, color: WF.ink, cursor: 'pointer' }}>
       <div style={{
         width: 16, height: 16, borderRadius: 4,
-        border: `1.5px solid ${on ? WF.accent : '#CBD5E1'}`,
+        border: `1.5px solid ${on ? WF.accent : WF.controlLine}`,
         background: on ? WF.accent : WF.panel,
         position: 'relative', flexShrink: 0,
       }}>
@@ -287,7 +294,9 @@ function WFMarker({ n, style = {} }) {
 // ──────────────────────────────────────────────────────────
 const MV_NAVY = '#1B2436';
 const MV_ACCENT = '#C03A2B';
-const MV_ACCENT_TEXT = '#C03A2B';
+// The deep brand red remains the active group fill. On the navy sidebar it was
+// only 2.87:1, so sub-navigation uses a lighter coral that clears AA for text.
+const MV_ACCENT_TEXT = '#FF7A6B';
 // #A8B2BE on MV_NAVY (#1B2436) is ~7.2:1 — clears WCAG AAA (7:1) for normal
 // text, not just AA (4.5:1) the previous #9CA7B4 (~6.4:1) landed on.
 const MV_INK_MUTED = '#A8B2BE';

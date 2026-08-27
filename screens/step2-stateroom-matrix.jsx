@@ -59,6 +59,47 @@ const STATEROOM_ROOMS = {
   ],
 };
 
+// Fare inventory (`row.total`) limits how many cabins can be sold under the
+// selected rate. It is not the same thing as the physical room pool an agent
+// can choose from. Model the high-density case explicitly: six decks, each
+// carrying 28 eligible rooms for every fare row. Only the active deck is
+// rendered later, so this realistic pool does not create a 168-card wall.
+const STATEROOM_DECKS = [3, 4, 5, 6, 7, 8];
+const ROOMS_PER_DECK = 28;
+const ROW_ROOM_BANDS = {
+  I6: 100, I7: 130, I8: 160,
+  O4: 200, O5: 230,
+  I8G: 300, B2: 330, B3: 360,
+  S1: 400, S3: 430, S5: 460,
+};
+
+const STATEROOM_ROOMS_BY_ROW = STATEROOM_ROWS.reduce((byRow, row) => {
+  const band = ROW_ROOM_BANDS[row.id];
+  byRow[row.id] = STATEROOM_DECKS.flatMap((deck) =>
+    Array.from({ length: ROOMS_PER_DECK }, (_, index) => {
+      const ordinal = index + 1;
+      const a11y = [];
+      if (ordinal % 11 === 0) a11y.push('wheelchair');
+      if (ordinal % 13 === 0) a11y.push('hearing');
+      if (ordinal % 17 === 0) a11y.push('visual');
+      return {
+        num: `${deck}${String(band + ordinal).padStart(3, '0')}`,
+        deck,
+        // 10 Forward, 9 Mid Ship and 9 Aft gives every deck a stable physical
+        // orientation while still exercising uneven high-density groups.
+        loc: index < 10 ? 'fwd' : index < 19 ? 'mid' : 'aft',
+        a11y,
+        infantFriendly: ordinal % 4 === 0 || ordinal % 9 === 0,
+        rollawayBed: ordinal % 3 === 0,
+        connectedRoom: ordinal % 7 === 0,
+      };
+    })
+  );
+  return byRow;
+}, {});
+
+const roomsForRow = (row) => STATEROOM_ROOMS_BY_ROW[row.id] || [];
+
 const CAT_LABELS = { IS: 'Interior', OV: 'Ocean View', BAL: 'Balcony', STE: 'Suite' };
 const LOC_LABELS = { fwd: 'Forward', mid: 'Mid Ship', aft: 'Aft Ship' };
 
@@ -165,9 +206,9 @@ const roomsTakenByOtherRows = (selections, exceptRowId, cat) => {
 const cabinSeats = (cap) => cap.berths + cap.cotInfants;
 
 
-// One source of truth for room features, consumed by BOTH the filter chips in
-// the pane header and the tags on each room card — same icon in both places,
-// so the chip row doubles as the legend for what a card's tag means.
+// One source of truth for room features, consumed by both the filter chips and
+// the tags on each room card. A shared emoji component keeps the filter legend
+// and the room-level metadata visually consistent.
 const ROOM_FEATURES = [
   { key: 'infant',     label: 'Crib',       test: (r) => !!r.infantFriendly },
   { key: 'rollaway',   label: 'Rollaway',   test: (r) => !!r.rollawayBed },
@@ -175,21 +216,38 @@ const ROOM_FEATURES = [
   { key: 'connected',  label: 'Connecting', test: (r) => !!r.connectedRoom },
 ];
 
-// Line-style SVG icons, not emoji: emoji rendered as loud, platform-dependent
-// multicolour glyphs (♿ becomes a saturated blue box on some systems) that
-// fought the rest of this flat UI. `currentColor` stroke means each icon just
-// inherits whatever color its chip or tag already uses — active teal, resting
-// grey — with no separate color prop to keep in sync.
-function RoomFeatureIcon({ feature, size = 14 }) {
-  const emojiMap = {
-    'infant': '👶',
-    'rollaway': '🛏️',
-    'wheelchair': '♿',
-    'connected': '🔗'
-  };
-  const emoji = emojiMap[feature];
-  if (!emoji) return null;
-  return <span style={{ fontSize: size, lineHeight: 1 }}>{emoji}</span>;
+const ROOM_FEATURE_EMOJIS = {
+  infant: '👶',
+  rollaway: '🛏️',
+  wheelchair: '♿',
+  connected: '🔗',
+};
+
+function RoomFeatureEmoji({ feature, size = 13 }) {
+  return (
+    <span aria-hidden="true" style={{ fontSize: size, lineHeight: 1, flexShrink: 0 }}>
+      {ROOM_FEATURE_EMOJIS[feature]}
+    </span>
+  );
+}
+
+function AutoAssignIcon({ size = 14 }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false">
+      <path d="M2.25 4.25h7.5M2.25 8h5.5M2.25 11.75h7.5" />
+      <path d="m11.25 2.75 2.5 2.5-2.5 2.5M9.25 8.25l2.5 2.5-2.5 2.5" />
+    </svg>
+  );
 }
 
 // ── Quantity control. `max` is the category's remaining inventory; without it
@@ -235,7 +293,7 @@ function NumCell({ val }) {
   return (
     <span style={{
       fontSize: 12, fontWeight: 600,
-      color: isZero ? '#9CA3AF' : WF.accentInk,
+      color: isZero ? WF.inkSoft : WF.accentInk,
       fontFamily: 'ui-monospace, monospace'
     }}>{val}</span>
   );
@@ -557,14 +615,15 @@ function CabinAssignmentTable({ qty, roomsBySlot, cabinGuests, activeSlot, party
 function FeatureChip({ icon, label, active, onClick }) {
   return (
     <button
+      type="button"
       onClick={onClick}
       aria-pressed={!!active}
       aria-label={label}
       title={label}
       style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        gap: 5, height: 28, padding: '0 9px', borderRadius: 6,
-        fontSize: 10, fontWeight: active ? 750 : 600, whiteSpace: 'nowrap', fontFamily: 'inherit',
+        gap: 5, height: 30, padding: '0 9px', borderRadius: 6,
+        fontSize: 11, fontWeight: active ? 750 : 600, whiteSpace: 'nowrap', fontFamily: 'inherit',
         border: `1px solid ${active ? TEAL.border : WF.line}`,
         background: active ? TEAL.tint : WF.panel,
         color: active ? TEAL.base : WF.inkSoft,
@@ -572,7 +631,7 @@ function FeatureChip({ icon, label, active, onClick }) {
       }}
       onMouseEnter={(e) => { if (!active) e.currentTarget.style.borderColor = TEAL.border; }}
       onMouseLeave={(e) => { if (!active) e.currentTarget.style.borderColor = WF.line; }}>
-      {icon && <RoomFeatureIcon feature={icon} size={13} />}
+      {icon && <RoomFeatureEmoji feature={icon} />}
       {label}
     </button>
   );
@@ -583,56 +642,96 @@ function FeatureChip({ icon, label, active, onClick }) {
 // width and height regardless of how many feature tags it carries, so the
 // grid actually aligns. ──
 const ROOM_STATE_STYLE = {
-  selected:  { border: TEAL.base,    bg: TEAL.tint, num: TEAL.base,   opacity: 1 },
+  selected:  { border: WF.accent,    bg: WF.accentTint, num: WF.accent, opacity: 1 },
   taken:     { border: WF.line,      bg: WF.fill,   num: WF.inkFaint, opacity: 1 },
   available: { border: WF.line,      bg: WF.panel,  num: WF.ink,      opacity: 1 },
-  filtered:  { border: WF.lineSoft,  bg: WF.fill,   num: WF.inkFaint, opacity: 0.4 },
+  filtered:  { border: WF.lineSoft,  bg: WF.fill,   num: WF.inkFaint, opacity: 0.58 },
 };
 function RoomCard({ room, state, ownerSlot, onClick, disabled }) {
   const s = ROOM_STATE_STYLE[state];
   const tags = ROOM_FEATURES.filter((f) => f.test(room));
-  const statusLabel = state === 'selected' ? `✓ Cabin ${ownerSlot + 1}` : state === 'taken' ? `Cabin ${ownerSlot + 1}` : state === 'filtered' ? 'Filtered' : 'Available';
-  const statusBg = state === 'selected' ? WF.accent : state === 'taken' ? WF.fillStrong : state === 'filtered' ? WF.fillStrong : '#F0FDF4';
-  const statusColor = state === 'selected' ? '#FFFFFF' : state === 'taken' || state === 'filtered' ? WF.inkSoft : '#047857';
+  const statusLabel = state === 'selected'
+    ? `✓ Cabin ${ownerSlot + 1}`
+    : state === 'taken'
+      ? `Cabin ${ownerSlot + 1}`
+      : state === 'filtered'
+        ? 'Doesn’t match'
+        : 'Available';
+  const statusColor = state === 'selected'
+    ? WF.accent
+    : state === 'taken' || state === 'filtered'
+      ? WF.inkSoft
+      : '#047857';
   return (
     <button
       onClick={onClick}
       disabled={disabled}
       aria-pressed={state === 'selected'}
-      aria-label={`Room ${room.num}, deck ${room.deck}${
+      aria-label={`Room ${room.num}, deck ${room.deck}, ${LOC_LABELS[room.loc]}, ${statusLabel}${
         tags.length ? `, ${tags.map((f) => f.label).join(', ')}` : ''
-      }${state === 'taken' ? `, already in cabin ${ownerSlot + 1}` : ''}`}
+      }`}
       style={{
-        display: 'block', textAlign: 'left', width: '100%',
-        minHeight: 62, padding: '7px 8px', borderRadius: RD.sm, fontFamily: 'inherit',
+        display: 'flex', flexDirection: 'column', textAlign: 'left', width: '100%', height: '100%',
+        minHeight: 90, padding: '9px 10px', borderRadius: RD.sm, fontFamily: 'inherit',
         border: `1px solid ${s.border}`, background: s.bg, opacity: s.opacity,
         cursor: disabled ? 'not-allowed' : 'pointer',
         // Inset ring instead of an outer glow: it thickens the selected edge
         // without changing the tile's footprint, so the grid stays on its rhythm.
-        boxShadow: state === 'selected' ? `inset 0 0 0 1px ${TEAL.base}` : 'none',
-        transition: 'all 0.12s'
+        boxShadow: state === 'selected' ? `inset 0 0 0 1px ${WF.accent}` : '0 1px 1px rgba(15,23,42,0.03)',
+        transition: 'background-color 0.12s, border-color 0.12s, box-shadow 0.12s'
       }}
-      onMouseEnter={(e) => { if (!disabled && state !== 'selected') e.currentTarget.style.borderColor = TEAL.border; }}
-      onMouseLeave={(e) => { if (!disabled && state !== 'selected') e.currentTarget.style.borderColor = s.border; }}>
+      onMouseEnter={(e) => {
+        if (!disabled && state !== 'selected') {
+          e.currentTarget.style.borderColor = WF.accent;
+          e.currentTarget.style.background = WF.accentTint;
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!disabled && state !== 'selected') {
+          e.currentTarget.style.borderColor = s.border;
+          e.currentTarget.style.background = s.bg;
+        }
+      }}>
 
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 6 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, width: '100%' }}>
         <div style={{
-          fontSize: 14, fontWeight: 800, lineHeight: 1.15, letterSpacing: -0.2,
+          fontSize: 15, fontWeight: 800, lineHeight: 1.15, letterSpacing: -0.2,
           color: s.num, fontFamily: 'ui-monospace, monospace'
         }}>{room.num}</div>
         <span style={{
-          padding: '2px 5px', borderRadius: 4, whiteSpace: 'nowrap',
-          background: statusBg, color: statusColor,
-          fontSize: 7.5, fontWeight: 800, letterSpacing: 0.25, textTransform: 'uppercase'
-        }}>{statusLabel}</span>
+          display: 'inline-flex', alignItems: 'center', gap: 4, minWidth: 0,
+          color: statusColor, fontSize: 11, fontWeight: 750, whiteSpace: 'nowrap'
+        }}>
+          <span aria-hidden="true" style={{
+            width: 6, height: 6, borderRadius: 999, flexShrink: 0,
+            background: state === 'selected' ? WF.accent : state === 'available' ? '#059669' : WF.inkFaint
+          }} />
+          {statusLabel}
+        </span>
       </div>
 
-      <div style={{ height: 14, marginTop: 7, display: 'flex', alignItems: 'center', gap: 5, overflow: 'hidden' }}>
-        <span style={{ fontSize: 8.5, color: WF.inkFaint, whiteSpace: 'nowrap' }}>{LOC_LABELS[room.loc]}</span>
-        {tags.length > 0 && <span style={{ width: 1, height: 10, background: WF.line, flexShrink: 0 }} />}
+      <div style={{ marginTop: 7, fontSize: 11, fontWeight: 600, color: WF.inkSoft }}>
+        {LOC_LABELS[room.loc]}
+      </div>
+
+      <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4, width: '100%' }}>
+        {tags.length === 0 && (
+          <span style={{ fontSize: 11, color: WF.inkFaint }}>Standard room</span>
+        )}
         {tags.map((f) => (
-          <span key={f.key} title={f.label} style={{ display: 'inline-flex', color: WF.inkFaint }}>
-            <RoomFeatureIcon feature={f.key} size={10.5} />
+          <span
+            key={f.key}
+            title={f.label}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 3,
+              minHeight: 20, padding: '2px 5px', borderRadius: 4,
+              border: `1px solid ${state === 'selected' ? WF.accentLine : WF.line}`,
+              background: state === 'selected' ? '#FFFFFF' : WF.fill,
+              color: state === 'selected' ? WF.accent : WF.inkSoft,
+              fontSize: 11, fontWeight: 600, lineHeight: 1, whiteSpace: 'nowrap'
+            }}>
+            <RoomFeatureEmoji feature={f.key} size={12} />
+            {f.label}
           </span>
         ))}
       </div>
@@ -654,36 +753,33 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
   // Joined rather than passed as an array so the memo has a stable dependency —
   // a fresh array literal every render would rebuild this list each time.
   const takenKey = (takenRooms || []).join(',');
+  const selectedRoomKey = Object.values(roomsBySlot || {}).filter(Boolean).sort().join(',');
   const rooms = React.useMemo(() => {
     const taken = new Set(takenKey ? takenKey.split(',') : []);
-    return (STATEROOM_ROOMS[row.cat] || []).filter(r => !taken.has(r.num)).map(r => ({
+    const selected = new Set(selectedRoomKey ? selectedRoomKey.split(',') : []);
+    const rowPool = roomsForRow(row);
+    // Keep a previously-saved room visible if it predates row-level inventory.
+    // That lets an agent release or replace it instead of stranding an invisible
+    // assignment after this normalization.
+    const legacySelected = (STATEROOM_ROOMS[row.cat] || []).filter((room) =>
+      selected.has(room.num) && !rowPool.some((candidate) => candidate.num === room.num));
+    return [...rowPool, ...legacySelected].filter(r => !taken.has(r.num)).map(r => ({
       ...r,
+      loc: r.loc || row.location,
       rollawayBed: r.rollawayBed !== undefined ? r.rollawayBed : parseInt(r.num, 10) % 4 === 0,
       connectedRoom: r.connectedRoom !== undefined ? r.connectedRoom : parseInt(r.num, 10) % 5 === 0,
     }));
-  }, [row.cat, takenKey]);
-  // Rooms for a category can span more than one deck — group into one
-  // labelled container per deck instead of a single flat grid.
-  //
-  // Ship position is derived here rather than stored per room: a deck's rooms
-  // run bow-to-stern in numbering order, so the first third of a deck reads as
-  // Forward, the middle third Mid Ship and the last third Aft — the same rule
-  // screens/step2-deck-map.jsx already uses to place its cabins. Proportional
-  // (`i * 3 / n`) rather than `floor(n/3)` thresholds so a deck carrying only
-  // one or two rooms still starts at Forward instead of collapsing to Aft.
+  }, [row.id, selectedRoomKey, takenKey]);
+  // Group by deck without recalculating position. Position belongs to the
+  // row-level inventory above; deriving it from the remaining list made rooms
+  // jump between Forward/Mid/Aft whenever another cabin claimed a room.
   const roomsByDeck = React.useMemo(() => {
     const groups = {};
     rooms.forEach(r => { (groups[r.deck] = groups[r.deck] || []).push(r); });
-    return Object.keys(groups).map(Number).sort((a, b) => a - b).map(deck => {
-      const deckRooms = groups[deck];
-      return {
-        deck,
-        rooms: deckRooms.map((r, i) => ({
-          ...r,
-          loc: ['fwd', 'mid', 'aft'][Math.floor(i * 3 / deckRooms.length)],
-        })),
-      };
-    });
+    return Object.keys(groups).map(Number).sort((a, b) => a - b).map(deck => ({
+      deck,
+      rooms: groups[deck].slice().sort((a, b) => a.num.localeCompare(b.num, undefined, { numeric: true })),
+    }));
   }, [rooms]);
   // One set of active feature keys replaces four parallel booleans, which is
   // what makes the "All" reset and the chip row a one-liner each.
@@ -692,6 +788,7 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
   // below, where an agent is actually choosing a physical room, rather than
   // narrowing the category table. null = All.
   const [locFilter, setLocFilter] = React.useState(null);
+  const [activeDeck, setActiveDeck] = React.useState(() => roomsByDeck[0]?.deck || STATEROOM_DECKS[0]);
   const [switcherOpen, setSwitcherOpen] = React.useState(false);
 
   const toggleFilter = (key) => setActiveFilters((prev) => {
@@ -707,10 +804,18 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  // Unchanged semantics: filters AND together, so stacking them narrows hard.
-  // Location joins the feature chips in the same conjunction, and dims rather
-  // than hides for the same reason they do — an already-picked room stays
-  // reachable so it can always be released.
+  // A fare-row switch is a new inventory context. Return to the first deck and
+  // clear stale filters instead of carrying a hidden Deck 8 / room-number query
+  // into a category that has just opened.
+  React.useEffect(() => {
+    setActiveDeck(roomsByDeck[0]?.deck || STATEROOM_DECKS[0]);
+    setLocFilter(null);
+    setActiveFilters(new Set());
+  }, [row.id]);
+
+  // Filters AND together. Non-matches are hidden in the high-density deck
+  // pane, while assigned rooms are re-added below so a filter can never strand
+  // a room that still needs to be released or replaced.
   const isRoomActive = (room) => (!locFilter || room.loc === locFilter)
     && ROOM_FEATURES.every((f) => !activeFilters.has(f.key) || f.test(room));
 
@@ -750,6 +855,32 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
   // configured. There is no per-cabin capacity check — a cabin holding more
   // guests than its nominal berths is not an error.
   const canConfirm = filledCount === qty && !overAssigned;
+  const filtersActive = !!locFilter || activeFilters.size > 0;
+  const matchingRoomCount = rooms.filter(isRoomActive).length;
+  const assignedRoomNums = new Set(Object.values(roomsBySlot).filter(Boolean));
+  const activeDeckGroup = roomsByDeck.find((group) => group.deck === activeDeck) || roomsByDeck[0] || { deck: activeDeck, rooms: [] };
+  const activeDeckRooms = activeDeckGroup.rooms;
+  const activeDeckMatches = activeDeckRooms.filter(isRoomActive);
+  const visibleActiveDeckRooms = activeDeckRooms.filter((room) => isRoomActive(room) || assignedRoomNums.has(room.num));
+  const activeDeckAssignedCount = activeDeckRooms.filter((room) => assignedRoomNums.has(room.num)).length;
+
+  const renderRoomOption = (room) => {
+    const active = isRoomActive(room);
+    const ownerSlotEntry = Object.entries(roomsBySlot).find(([, num]) => num === room.num);
+    const ownerSlot = ownerSlotEntry ? parseInt(ownerSlotEntry[0], 10) : null;
+    const selected = ownerSlot != null;
+    const isCurrentSlot = ownerSlot === activeSlot;
+    const state = isCurrentSlot ? 'selected' : selected ? 'taken' : active ? 'available' : 'filtered';
+    return (
+      <RoomCard
+        key={room.num}
+        room={room}
+        state={state}
+        ownerSlot={ownerSlot}
+        disabled={!active && !selected}
+        onClick={() => (active || selected) && onToggleRoom(room.num)} />
+    );
+  };
 
   return (
     <div
@@ -757,12 +888,17 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
       style={{
         position: 'fixed', inset: 0, zIndex: 400,
         background: 'rgba(15,23,42,0.55)', backdropFilter: 'blur(1px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24
+        display: 'grid', placeItems: 'center', padding: 24
       }}>
       <div
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="assign-staterooms-title"
+        aria-describedby="assign-staterooms-description"
         style={{
-          width: 'min(1120px, 100%)', maxHeight: '90vh', display: 'flex', flexDirection: 'column',
+          width: 'min(1120px, 100%)', maxHeight: '90vh', margin: 'auto',
+          display: 'flex', flexDirection: 'column',
           background: WF.panel, borderRadius: RD.lg, overflow: 'hidden',
           boxShadow: '0 24px 64px rgba(15,23,42,0.28)', border: `1px solid ${WF.line}`
         }}>
@@ -776,8 +912,8 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
         }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: SP.lg }}>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 15.5, fontWeight: 750, color: WF.ink, letterSpacing: -0.25 }}>Assign staterooms</div>
-              <div style={{ marginTop: 2, fontSize: 10.5, color: WF.inkSoft }}>Choose the category, place guests, then confirm a room for each cabin.</div>
+              <div id="assign-staterooms-title" style={{ fontSize: 15.5, fontWeight: 750, color: WF.ink, letterSpacing: -0.25 }}>Assign staterooms</div>
+              <div id="assign-staterooms-description" style={{ marginTop: 2, fontSize: 10.5, color: WF.inkSoft }}>Choose the category, place guests, then confirm a room for each cabin.</div>
             </div>
             <button
               onClick={onClose}
@@ -793,10 +929,14 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
               onMouseLeave={(e) => { e.currentTarget.style.background = WF.panel; }}>×</button>
           </div>
 
-          <div style={{
-            display: 'grid', gridTemplateColumns: 'minmax(280px, 1.55fr) 150px 190px 130px',
-            gap: SP.sm, marginTop: SP.md
-          }}>
+          <div
+            role="group"
+            aria-label="Stateroom assignment settings"
+            style={{
+              display: 'grid', gridTemplateColumns: 'minmax(300px, 1fr) 1px 116px 1px 132px auto',
+              alignItems: 'center', gap: 12, marginTop: SP.md, padding: 8,
+              border: `1px solid ${WF.line}`, borderRadius: RD.md, background: WF.fill
+            }}>
             {/* Category identity — click to switch to a different category */}
             <div style={{ position: 'relative', minWidth: 0, alignSelf: 'center' }}>
               <button
@@ -804,21 +944,21 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
                 aria-expanded={switcherOpen}
                 aria-haspopup="listbox"
                 style={{
-                  width: '100%', minHeight: 46,
+                  width: '100%', minHeight: 50,
                   display: 'flex', alignItems: 'center', gap: 8,
-                  padding: '6px 7px 6px 9px', borderRadius: RD.sm,
+                  padding: '7px 8px 7px 10px', borderRadius: RD.sm,
                   border: `1px solid ${switcherOpen ? WF.accent : WF.line}`,
-                  background: switcherOpen ? WF.accentTint : WF.fill,
+                  background: switcherOpen ? WF.accentTint : WF.panel,
                   cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left'
                 }}
                 onMouseEnter={(e) => { if (!switcherOpen) e.currentTarget.style.borderColor = WF.accentLine; }}
                 onMouseLeave={(e) => { if (!switcherOpen) e.currentTarget.style.borderColor = WF.line; }}>
                 <div style={{ width: 10, height: 10, borderRadius: 3, background: row.color, flexShrink: 0 }} />
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: 0.55, color: WF.inkLabel, textTransform: 'uppercase' }}>Stateroom category</div>
+                  <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 0.55, color: WF.inkLabel, textTransform: 'uppercase' }}>Stateroom category</div>
                   <div style={{ marginTop: 2, display: 'flex', alignItems: 'baseline', gap: 6, minWidth: 0 }}>
                     <span style={{ minWidth: 0, fontSize: 12.5, fontWeight: 750, color: WF.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.label}</span>
-                    <span style={{ fontSize: 9, color: WF.inkSoft, whiteSpace: 'nowrap', flexShrink: 0 }}>{CAT_LABELS[row.cat]} · {LOC_LABELS[row.location]}</span>
+                    <span style={{ fontSize: 11, color: WF.inkSoft, whiteSpace: 'nowrap', flexShrink: 0 }}>{CAT_LABELS[row.cat]} · {LOC_LABELS[row.location]}</span>
                   </div>
                 </div>
                 <span style={{
@@ -867,7 +1007,7 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
                           </div>
                           <div style={{ textAlign: 'right', flexShrink: 0 }}>
                             <div style={{ fontSize: 12, fontWeight: 700, color: WF.ink, fontFamily: 'ui-monospace, monospace' }}>${r.price.toLocaleString()}</div>
-                            <div style={{ fontSize: 9.5, fontWeight: 600, color: soldOut ? BAD : OK, marginTop: 1 }}>{soldOut ? 'Sold out' : `${r.total} available`}</div>
+                            <div style={{ fontSize: 9.5, fontWeight: 600, color: soldOut ? BAD : OK, marginTop: 1 }}>{soldOut ? 'Sold out' : `${r.total} fare units`}</div>
                           </div>
                           {isCurrent && <span style={{ fontSize: 12, color: WF.accentInk, flexShrink: 0 }}>✓</span>}
                         </button>
@@ -878,21 +1018,18 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
               )}
             </div>
 
-            <div style={{
-              minHeight: 58, padding: '8px 10px', border: `1px solid ${WF.line}`,
-              borderRadius: RD.sm, background: '#FFFFFF'
-            }}>
-              <div style={{ fontSize: 8.5, fontWeight: 800, letterSpacing: 0.55, color: WF.inkLabel, textTransform: 'uppercase' }}>Fare per room</div>
-              <div style={{ marginTop: 6, fontSize: 14, fontWeight: 800, color: WF.ink, fontFamily: 'ui-monospace, monospace' }}>${row.price.toLocaleString()}.00</div>
-              <div style={{ marginTop: 1, fontSize: 9, color: WF.inkFaint }}>Selected category</div>
+            <div aria-hidden="true" style={{ width: 1, height: 36, background: WF.line }} />
+
+            <div style={{ minWidth: 0, padding: '2px 4px' }}>
+              <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 0.55, color: WF.inkLabel, textTransform: 'uppercase' }}>Fare per room</div>
+              <div style={{ marginTop: 5, fontSize: 14, fontWeight: 800, color: WF.ink, fontFamily: 'ui-monospace, monospace' }}>${row.price.toLocaleString()}.00</div>
             </div>
 
-            <div style={{
-              minHeight: 58, padding: '8px 10px', border: `1px solid ${WF.line}`,
-              borderRadius: RD.sm, background: '#FFFFFF'
-            }}>
-              <div style={{ fontSize: 8.5, fontWeight: 800, letterSpacing: 0.55, color: WF.inkLabel, textTransform: 'uppercase' }}>Total staterooms</div>
-              <div style={{ marginTop: 7 }}>
+            <div aria-hidden="true" style={{ width: 1, height: 36, background: WF.line }} />
+
+            <div style={{ minWidth: 0, padding: '2px 4px' }}>
+              <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 0.55, color: WF.inkLabel, textTransform: 'uppercase' }}>Staterooms</div>
+              <div style={{ marginTop: 5 }}>
                 <QtyControl
                   value={qty}
                   max={row.total}
@@ -900,15 +1037,21 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
               </div>
             </div>
 
-            <div style={{
-              minHeight: 58, padding: '8px 10px',
+            <div role="status" style={{
+              display: 'flex', alignItems: 'center', gap: 8, padding: '7px 9px',
               border: `1px solid ${filledCount === qty ? '#BBF7D0' : WF.accentLine}`,
               borderRadius: RD.sm, background: filledCount === qty ? '#F0FDF4' : WF.accentTint
             }}>
-              <div style={{ fontSize: 8.5, fontWeight: 800, letterSpacing: 0.55, color: filledCount === qty ? '#047857' : WF.inkLabel, textTransform: 'uppercase' }}>Rooms selected</div>
-              <div style={{ marginTop: 5, fontSize: 14, fontWeight: 800, color: WF.ink, fontFamily: 'ui-monospace, monospace' }}>{filledCount} / {qty}</div>
-              <div style={{ marginTop: 1, fontSize: 9, fontWeight: 650, color: filledCount === qty ? '#047857' : WF.inkSoft }}>
-                {filledCount === qty ? 'Ready to confirm' : `${qty - filledCount} remaining`}
+              <span aria-hidden="true" style={{
+                width: 20, height: 20, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                borderRadius: 999, flexShrink: 0, background: filledCount === qty ? '#047857' : WF.accent,
+                color: '#FFFFFF', fontSize: 11, fontWeight: 800
+              }}>{filledCount === qty ? '✓' : '!'}</span>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 11.5, fontWeight: 750, color: filledCount === qty ? '#047857' : WF.ink }}>
+                  {filledCount === qty ? 'Ready to confirm' : `${qty - filledCount} remaining`}
+                </div>
+                <div style={{ marginTop: 1, fontSize: 11, color: WF.inkSoft, whiteSpace: 'nowrap' }}>{filledCount} of {qty} rooms assigned</div>
               </div>
             </div>
           </div>
@@ -922,7 +1065,9 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
             Stacked rather than two panes: guest distribution has to be read
             *across* cabins, and a 344px rail could only ever show one cabin's
             steppers at a time. Here every cabin is a column of one table. ── */}
-        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', background: WF.panel }}>
+        <div
+          className="stateroom-modal-scroll"
+          style={{ flex: 1, minHeight: 0, overflowY: 'auto', scrollbarGutter: 'auto', background: WF.panel }}>
 
           {/* ══ Party progress — the per-type got/need banner ══ */}
           <div style={{ padding: `${SP.md}px ${SP.lg}px 0` }}>
@@ -971,7 +1116,11 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
                 }}>{activeSlot + 1}</div>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: 12.5, fontWeight: 750, color: WF.ink }}>Room inventory for Cabin {activeSlot + 1}</div>
-                  <div style={{ marginTop: 2, fontSize: 9.5, color: WF.inkSoft }}>{rooms.length} rooms in {CAT_LABELS[row.cat]} · select one room for this cabin</div>
+                  <div style={{ marginTop: 2, fontSize: 11, color: WF.inkSoft }}>
+                    {filtersActive
+                      ? `${matchingRoomCount} of ${rooms.length} eligible rooms match across ${roomsByDeck.length} decks`
+                      : `${rooms.length} eligible rooms across ${roomsByDeck.length} decks · ${activeDeckRooms.length} on Deck ${activeDeck}`}
+                  </div>
                 </div>
                 <div style={{ marginLeft: 'auto', textAlign: 'right', flexShrink: 0 }}>
                   <div style={{ fontSize: 11, fontWeight: 800, color: filledCount === qty ? '#047857' : WF.ink, fontFamily: 'ui-monospace, monospace' }}>{filledCount} / {qty}</div>
@@ -984,14 +1133,24 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
                 padding: '8px 11px', borderBottom: `1px solid ${WF.line}`, background: '#FFFFFF'
               }}>
                 <button
-                  onClick={onAutoAssign}
-                  title="Spread the party across cabins by capacity, then fill each with the first available room"
+                  onClick={() => onAutoAssign(activeDeckMatches.map((room) => room.num))}
+                  disabled={activeDeckMatches.length < qty}
+                  title={activeDeckMatches.length < qty
+                    ? `Only ${activeDeckMatches.length} rooms match on Deck ${activeDeck}—clear a filter or choose another deck`
+                    : `Spread the party across cabins, then choose matching rooms from Deck ${activeDeck}`}
                   style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 5,
-                    height: 30, padding: '0 10px', borderRadius: 6, fontSize: 10.5, fontWeight: 750,
-                    border: `1px solid ${WF.accentLine}`, background: WF.accentTint, color: WF.accent,
-                    cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap'
-                  }}>✨ Auto-assign rooms</button>
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                    height: 30, padding: '0 10px', borderRadius: 6, fontSize: 11, fontWeight: 750,
+                    border: `1px solid ${activeDeckMatches.length < qty ? WF.line : WF.accentLine}`,
+                    background: activeDeckMatches.length < qty ? WF.fill : WF.accentTint,
+                    color: activeDeckMatches.length < qty ? WF.inkFaint : WF.accent,
+                    cursor: activeDeckMatches.length < qty ? 'not-allowed' : 'pointer',
+                    fontFamily: 'inherit', whiteSpace: 'nowrap'
+                  }}>
+                  <AutoAssignIcon size={13} />
+                  Auto-assign rooms
+                </button>
+                <div style={{ width: 1, height: 20, background: WF.line }} />
                 <SegmentedFilter
                   label="Ship position"
                   value={locFilter}
@@ -1000,7 +1159,7 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
                   options={['fwd', 'mid', 'aft'].map(loc => ({ key: loc, label: LOC_LABELS[loc] }))} />
                 <div style={{ width: 1, height: 20, background: WF.line }} />
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
-                  <span style={{ marginRight: 2, fontSize: 9, fontWeight: 800, letterSpacing: 0.4, color: WF.inkLabel, textTransform: 'uppercase' }}>Features</span>
+                  <span style={{ marginRight: 2, fontSize: 11, fontWeight: 600, color: WF.inkSoft, whiteSpace: 'nowrap' }}>Filters</span>
                   <FeatureChip
                     label="All"
                     active={activeFilters.size === 0}
@@ -1014,48 +1173,111 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
                       onClick={() => toggleFilter(f.key)} />
                   ))}
                 </div>
+                {filtersActive && (
+                  <button
+                    onClick={() => { setLocFilter(null); setActiveFilters(new Set()); }}
+                    style={{
+                      minHeight: 30, padding: '0 8px', border: 'none', background: 'transparent',
+                      color: WF.accent, fontSize: 11, fontWeight: 700,
+                      cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap'
+                    }}>Clear filters</button>
+                )}
               </div>
 
-              <div style={{ padding: 10, background: WF.fill }}>
-                {roomsByDeck.map(({ deck, rooms: deckRooms }) => (
-                  <div key={deck} style={{
-                    marginBottom: deck === roomsByDeck[roomsByDeck.length - 1].deck ? 0 : 8,
-                    border: `1px solid ${WF.line}`, borderRadius: 8, overflow: 'hidden', background: '#FFFFFF'
+              <div style={{ background: WF.fill }}>
+                <div
+                  role="tablist"
+                  aria-label="Available decks"
+                  style={{
+                    display: 'grid', gridTemplateColumns: `repeat(${roomsByDeck.length}, minmax(0, 1fr))`,
+                    gap: 6, padding: 8, borderBottom: `1px solid ${WF.line}`, background: '#FFFFFF'
                   }}>
-                    <div style={{
-                      display: 'flex', alignItems: 'center', gap: SP.sm,
-                      padding: '6px 8px', background: WF.fill, borderBottom: `1px solid ${WF.line}`
-                    }}>
-                      <div style={{ fontSize: 10.5, fontWeight: 750, color: WF.ink }}>Deck {deck}</div>
-                      <div style={{ flex: 1, height: 1, background: WF.lineSoft }} />
-                      <div style={{ fontSize: 9, color: WF.inkFaint }}>
-                        {deckRooms.length} {deckRooms.length === 1 ? 'room' : 'rooms'} on deck
-                      </div>
+                  {roomsByDeck.map(({ deck, rooms: deckRooms }) => {
+                    const selected = deck === activeDeck;
+                    const deckMatches = deckRooms.filter(isRoomActive).length;
+                    const deckAssigned = deckRooms.filter((room) => assignedRoomNums.has(room.num)).length;
+                    return (
+                      <button
+                        key={deck}
+                        id={`deck-tab-${row.id}-${deck}`}
+                        role="tab"
+                        aria-selected={selected}
+                        aria-controls={`deck-panel-${row.id}-${deck}`}
+                        onClick={() => setActiveDeck(deck)}
+                        style={{
+                          minHeight: 48, padding: '7px 9px', borderRadius: RD.sm,
+                          border: `1px solid ${selected ? WF.accent : WF.line}`,
+                          background: selected ? WF.accent : WF.panel,
+                          color: selected ? '#FFFFFF' : WF.ink, cursor: 'pointer',
+                          fontFamily: 'inherit', textAlign: 'left'
+                        }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+                          <span style={{ fontSize: 12, fontWeight: 750 }}>Deck {deck}</span>
+                          <span style={{
+                            minWidth: 22, padding: '2px 5px', borderRadius: 999, textAlign: 'center',
+                            background: selected ? 'rgba(255,255,255,0.14)' : WF.fill,
+                            fontSize: 10.5, fontWeight: 750, fontFamily: 'ui-monospace, monospace'
+                          }}>{filtersActive ? `${deckMatches}/${deckRooms.length}` : deckRooms.length}</span>
+                        </div>
+                        <div style={{ marginTop: 3, minHeight: 13, fontSize: 10.5, color: selected ? '#CBD5E1' : WF.inkSoft }}>
+                          {deckAssigned > 0 ? `✓ ${deckAssigned} assigned` : filtersActive ? `${deckMatches} matching` : 'Available rooms'}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <section
+                  id={`deck-panel-${row.id}-${activeDeck}`}
+                  role="tabpanel"
+                  aria-labelledby={`deck-tab-${row.id}-${activeDeck}`}
+                  style={{
+                    width: 'auto', margin: '10px 16px 12px',
+                    border: `1px solid ${WF.line}`, borderRadius: RD.sm,
+                    background: '#FFFFFF', overflow: 'hidden',
+                    boxShadow: '0 1px 2px rgba(15,23,42,0.08)'
+                  }}>
+                  <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
+                    padding: '9px 11px', borderBottom: `1px solid ${WF.line}`, background: WF.panel
+                  }}>
+                    <div>
+                      <span style={{ fontSize: 12.5, fontWeight: 750, color: WF.ink }}>Deck {activeDeck}</span>
+                      <span style={{ marginLeft: 7, fontSize: 11, color: WF.inkSoft }}>
+                        {filtersActive ? `${activeDeckMatches.length} matching · ${activeDeckRooms.length} total` : `${activeDeckRooms.length} eligible rooms`}
+                      </span>
                     </div>
-                    <div style={{
-                      display: 'grid', gap: 6, padding: 8,
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(108px, 1fr))'
-                    }}>
-                      {deckRooms.map(room => {
-                        const active = isRoomActive(room);
-                        const ownerSlotEntry = Object.entries(roomsBySlot).find(([, num]) => num === room.num);
-                        const ownerSlot = ownerSlotEntry ? parseInt(ownerSlotEntry[0], 10) : null;
-                        const sel = ownerSlot != null;
-                        const isCurrentSlot = ownerSlot === activeSlot;
-                        const state = isCurrentSlot ? 'selected' : sel ? 'taken' : active ? 'available' : 'filtered';
-                        return (
-                          <RoomCard
-                            key={room.num}
-                            room={room}
-                            state={state}
-                            ownerSlot={ownerSlot}
-                            disabled={!active && !sel}
-                            onClick={() => (active || sel) && onToggleRoom(room.num)} />
-                        );
-                      })}
+                    <div style={{ fontSize: 10.5, color: WF.inkSoft }}>
+                      10 Forward · 9 Mid Ship · 9 Aft Ship
+                      {activeDeckAssignedCount > 0 ? ` · ${activeDeckAssignedCount} assigned` : ''}
                     </div>
                   </div>
-                ))}
+
+                  <div
+                    className="stateroom-deck-scroll"
+                    style={{ maxHeight: 330, overflowY: 'auto', scrollbarGutter: 'auto', padding: 10, background: WF.fill }}>
+                    {visibleActiveDeckRooms.length > 0 ? (
+                      <div
+                        role="group"
+                        aria-label={`Rooms on deck ${activeDeck}`}
+                        style={{
+                          display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
+                          gap: 8, alignItems: 'stretch'
+                        }}>
+                        {visibleActiveDeckRooms.map(renderRoomOption)}
+                      </div>
+                    ) : (
+                      <div role="status" style={{
+                        minHeight: 116, display: 'flex', flexDirection: 'column',
+                        alignItems: 'center', justifyContent: 'center', textAlign: 'center',
+                        border: `1px dashed ${WF.line}`, borderRadius: RD.sm, background: '#FFFFFF'
+                      }}>
+                        <div style={{ fontSize: 12.5, fontWeight: 700, color: WF.ink }}>No rooms match on Deck {activeDeck}</div>
+                        <div style={{ marginTop: 4, fontSize: 11, color: WF.inkSoft }}>Choose another deck or clear the current filters.</div>
+                      </div>
+                    )}
+                  </div>
+                </section>
               </div>
             </div>
           </div>
@@ -1104,9 +1326,14 @@ function SegmentedFilter({ label, options, value, onChange, activeColor }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
       <span style={{ fontSize: 11, color: WF.inkSoft, fontWeight: 600, whiteSpace: 'nowrap' }}>{label}</span>
-      <div style={{ display: 'inline-flex', border: `1px solid ${WF.line}`, borderRadius: 7, overflow: 'hidden', background: WF.panel }}>
+      <div
+        role="group"
+        aria-label={`${label} filter`}
+        style={{ display: 'inline-flex', border: `1px solid ${WF.line}`, borderRadius: 7, overflow: 'hidden', background: WF.panel }}>
         <button
+          type="button"
           onClick={() => onChange(null)}
+          aria-pressed={value === null}
           style={{
             padding: '5px 11px', fontSize: 11.5, fontWeight: value === null ? 700 : 500,
             border: 'none', borderRight: `1px solid ${WF.line}`,
@@ -1119,7 +1346,9 @@ function SegmentedFilter({ label, options, value, onChange, activeColor }) {
           return (
             <button
               key={key}
+              type="button"
               onClick={() => onChange(on ? null : key)}
+              aria-pressed={on}
               style={{
                 padding: '5px 11px', fontSize: 11.5, fontWeight: on ? 700 : 500,
                 border: 'none', borderRight: i < options.length - 1 ? `1px solid ${WF.line}` : 'none',
@@ -1193,8 +1422,6 @@ function StateRoomMatrix({ update, s, onConfirmRooms }) {
   const [confirmedRooms, setConfirmedRooms] = React.useState(() => deriveMatrixStateFromCabins(s.cabins).confirmedRooms);
 
   const filteredRows = STATEROOM_ROWS.filter(r => !catFilter || r.cat === catFilter);
-  const visibleInventory = filteredRows.reduce((sum, row) => sum + row.total, 0);
-  const bookableCategoryCount = filteredRows.filter((row) => row.total > 0).length;
   const categoryInventory = ['IS', 'OV', 'BAL', 'STE'].reduce((totals, cat) => {
     totals[cat] = STATEROOM_ROWS.filter((row) => row.cat === cat).reduce((sum, row) => sum + row.total, 0);
     return totals;
@@ -1378,7 +1605,9 @@ function StateRoomMatrix({ update, s, onConfirmRooms }) {
   // stateroom qty and resetting the abandoned category back to zero.
   const handleSwitchCategory = (fromRowId, newRowId) => {
     if (newRowId === fromRowId) return;
-    const carryQty = Math.max(1, qtys[fromRowId] || 1);
+    const nextRow = STATEROOM_ROWS.find((candidate) => candidate.id === newRowId);
+    if (!nextRow || nextRow.total < 1) return;
+    const carryQty = Math.min(nextRow.total, Math.max(1, qtys[fromRowId] || 1));
     setQtys(q => { const n = { ...q }; delete n[fromRowId]; n[newRowId] = carryQty; return n; });
     setSelections(sel => {
       const n = { ...sel };
@@ -1412,26 +1641,29 @@ function StateRoomMatrix({ update, s, onConfirmRooms }) {
           <div style={{ fontSize: 13.5, fontWeight: 750, letterSpacing: -0.15, color: WF.ink }}>
             Choose a stateroom category
           </div>
-          <div style={{ marginTop: 3, fontSize: 10, color: WF.inkSoft }}>Live availability by category and occupancy · select a quantity to assign exact rooms</div>
+          <div style={{ marginTop: 3, fontSize: 10, color: WF.inkSoft }}>Live fare inventory by category and occupancy · select a quantity, then choose exact rooms</div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(76px, 1fr))', gap: 6, flexShrink: 0 }}>
-          {[
-            [`${visibleInventory}`, 'Rooms available', catFilter ? CAT_LABELS[catFilter] : 'All categories'],
-            [`${bookableCategoryCount}/${filteredRows.length}`, 'Bookable', 'Category options'],
-            [`${assignedRoomCount}`, 'Rooms assigned', assignedRoomCount ? 'Saved selection' : 'None selected'],
-          ].map(([value, label, helper]) => (
-            <div key={label} style={{
-              minWidth: 86, padding: '6px 8px',
-              border: `1px solid ${label === 'Rooms assigned' && assignedRoomCount ? WF.accentLine : WF.line}`,
-              borderRadius: 7, background: label === 'Rooms assigned' && assignedRoomCount ? WF.accentTint : '#FFFFFF',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 5 }}>
-                <div className="s4-money" style={{ fontSize: 13, lineHeight: 1, fontWeight: 800, color: WF.ink }}>{value}</div>
-                <div style={{ fontSize: 8, lineHeight: 1, fontWeight: 800, letterSpacing: 0.35, color: WF.inkLabel, textTransform: 'uppercase' }}>{label}</div>
-              </div>
-              <div style={{ marginTop: 4, fontSize: 8.5, lineHeight: 1, color: WF.inkFaint }}>{helper}</div>
-            </div>
-          ))}
+        {/* Availability is already exposed by the cabin-type counts and each
+            category row. Keep only completion progress here so the header
+            answers one question: has the agent assigned the requested rooms? */}
+        <div
+          role="status"
+          aria-label={assignedRoomCount > 0 ? `${assignedRoomCount} rooms assigned` : 'No rooms assigned'}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 7, flexShrink: 0,
+            padding: '6px 9px', borderRadius: 7,
+            border: `1px solid ${assignedRoomCount > 0 ? WF.accentLine : WF.line}`,
+            background: assignedRoomCount > 0 ? WF.accentTint : '#FFFFFF', color: WF.ink
+          }}>
+          <span aria-hidden="true" style={{
+            width: 17, height: 17, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            borderRadius: 999, background: assignedRoomCount > 0 ? WF.accent : WF.fillStrong,
+            color: assignedRoomCount > 0 ? '#FFFFFF' : WF.inkSoft,
+            fontSize: 10.5, fontWeight: 800, lineHeight: 1
+          }}>{assignedRoomCount > 0 ? '✓' : '—'}</span>
+          <span style={{ fontSize: 11.5, fontWeight: 650, color: WF.inkSoft, whiteSpace: 'nowrap' }}>
+            {assignedRoomCount > 0 ? <><strong style={{ color: WF.ink }}>{assignedRoomCount}</strong> rooms assigned</> : 'No rooms assigned'}
+          </span>
         </div>
       </div>
       {/* Inventory-aware category filters: counts explain the effect of a
@@ -1468,7 +1700,7 @@ function StateRoomMatrix({ update, s, onConfirmRooms }) {
             );
           })}
         </div>
-        <div style={{ fontSize: 9.5, color: WF.inkFaint }}>Counts show rooms currently available</div>
+        <div style={{ fontSize: 9.5, color: WF.inkFaint }}>Counts show fare inventory currently bookable</div>
       </div>
 
       {/* ── Table — grows to its full height with the page. overflowX stays so the
@@ -1480,7 +1712,7 @@ function StateRoomMatrix({ update, s, onConfirmRooms }) {
               <TH>Category &amp; status</TH>
               <TH>Rooms to add</TH>
               <TH right>Fare / room</TH>
-              <TH right>Availability</TH>
+              <TH right>Fare inventory</TH>
               <TH right>Sleeps 1</TH>
               <TH right>Sleeps 2</TH>
               <TH right>2 + infant</TH>
@@ -1550,7 +1782,7 @@ function StateRoomMatrix({ update, s, onConfirmRooms }) {
                         display: 'inline-flex', minWidth: 52, justifyContent: 'center', padding: '3px 6px', borderRadius: 999,
                         background: soldOut ? '#FEF2F2' : '#F0FDF4', color: soldOut ? BAD : '#047857',
                         fontSize: 9.5, fontWeight: 800
-                      }}>{soldOut ? 'Sold out' : `${row.total} available`}</span>
+                      }}>{soldOut ? 'Sold out' : `${row.total} bookable`}</span>
                     </td>
                     <td style={{ padding: '7px 12px', borderBottom: `1px solid ${WF.lineSoft}`, textAlign: 'center' }}><NumCell val={row.single} /></td>
                     <td style={{ padding: '7px 12px', borderBottom: `1px solid ${WF.lineSoft}`, textAlign: 'center' }}><NumCell val={row.double} /></td>
@@ -1577,7 +1809,7 @@ function StateRoomMatrix({ update, s, onConfirmRooms }) {
         // off the table here — for the picker and for auto-assign alike.
         const taken = roomsTakenByOtherRows(selections, row.id, row.cat);
         const takenSet = new Set(taken);
-        const rooms = (STATEROOM_ROOMS[row.cat] || []).filter((r) => !takenSet.has(r.num));
+        const rooms = roomsForRow(row).filter((room) => !takenSet.has(room.num));
         return (
           <SelectRoomPanel
             row={row}
@@ -1589,7 +1821,7 @@ function StateRoomMatrix({ update, s, onConfirmRooms }) {
             otherAssigned={assignedInOtherRows(selections, row.id)}
             takenRooms={taken}
             onToggleRoom={(roomNum) => handleToggleRoom(row.id, roomNum, qty)}
-            onAutoAssign={() => handleAutoAssign(row.id, row, qty, rooms.map(r => r.num))}
+            onAutoAssign={(roomNums) => handleAutoAssign(row.id, row, qty, roomNums)}
             onSelectSlot={(slotIdx) => handleSelectSlot(row.id, slotIdx)}
             onGuestChange={(slotIdx, field, val) => handleGuestChange(row.id, slotIdx, field, val)}
             onConfirm={() => handleConfirmRoom(row.id, row, qty)}

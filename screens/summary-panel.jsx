@@ -908,6 +908,8 @@ function BookingSummaryPanel({
                   </div>
                   <div style={{
                     width: 38, height: 22, borderRadius: 11, background: b.protection ? WF.accentOn : '#CBD5E1',
+                    border: `1px solid ${b.protection ? WF.accentOn : WF.controlLine}`,
+                    boxSizing: 'border-box',
                     position: 'relative', transition: 'background 0.2s', flexShrink: 0,
                   }}>
                     <div style={{

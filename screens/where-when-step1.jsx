@@ -13,6 +13,7 @@
 
 const FP_NAVY = '#1B2434';
 const FP_BORDER = '#E2E8F0';
+const FP_CONTROL_BORDER = '#7C8B9F';
 const FP_BG = '#F1F5F9';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -93,7 +94,7 @@ function FPListRow({ label, icon, selected, onClick, multiSelect = false }) {
         <span aria-hidden="true" style={{
           width: 16, height: 16, flexShrink: 0, borderRadius: 4,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          border: `1.5px solid ${selected ? FP_NAVY : '#94A3B8'}`,
+          border: `1.5px solid ${selected ? FP_NAVY : FP_CONTROL_BORDER}`,
           background: selected ? FP_NAVY : '#fff', color: '#fff',
           fontSize: 10, fontWeight: 800, lineHeight: 1
         }}>
@@ -126,7 +127,7 @@ function FPSegmented({ options, value, onChange }) {
             style={{
               flex: 1, padding: '6px 8px', fontSize: 11.5, fontWeight: on ? 700 : 500,
               border: 'none', borderRadius: 6,
-              background: on ? '#fff' : 'transparent', color: on ? FP_NAVY : '#64748B',
+              background: on ? '#fff' : 'transparent', color: on ? FP_NAVY : WF.inkLabel,
               boxShadow: on ? '0 1px 2px rgba(15,31,61,0.14)' : 'none',
               cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s'
             }}>
@@ -163,7 +164,7 @@ function FPPortRow({ label, selected, count, onClick }) {
       <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: selected ? 600 : 500, color: FP_NAVY, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {label}
       </span>
-      <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 600, color: count === 0 ? '#CBD5E1' : '#64748B', fontFamily: 'ui-monospace, monospace', minWidth: 16, textAlign: 'right' }}>
+      <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 600, color: count === 0 ? '#CBD5E1' : WF.inkLabel, fontFamily: 'ui-monospace, monospace', minWidth: 16, textAlign: 'right' }}>
         {count}
       </span>
       {selected && <span style={{ color: FP_NAVY, fontSize: 13, fontWeight: 700, flexShrink: 0 }}>✓</span>}
@@ -246,7 +247,7 @@ function FPDropdown({ label, trigger, open, onToggle, onClose, footer, width = 2
         style={{
           display: 'flex', alignItems: 'center', gap: 8, width: '100%',
           minHeight: 48, padding: '7px 11px', borderRadius: 8,
-          border: `1px solid ${open ? FP_NAVY : FP_BORDER}`,
+          border: `1px solid ${open ? FP_NAVY : FP_CONTROL_BORDER}`,
           background: open ? '#EFF6FF' : '#fff', color: FP_NAVY,
           cursor: 'pointer', fontFamily: 'inherit',
           transition: 'border-color 0.15s, background 0.15s', outline: 'none', textAlign: 'left'
@@ -255,7 +256,7 @@ function FPDropdown({ label, trigger, open, onToggle, onClose, footer, width = 2
           {label && (
             <span style={{
               fontSize: 9, lineHeight: 1, fontWeight: 750, letterSpacing: 0.45,
-              textTransform: 'uppercase', color: '#64748B',
+              textTransform: 'uppercase', color: WF.inkLabel,
             }}>{label}</span>
           )}
           <span style={{
@@ -454,7 +455,7 @@ function SearchFilterPanel({ state, onUpdate }) {
                 <span aria-hidden="true" style={{
                   width: 12, height: 12, borderRadius: 999, flexShrink: 0,
                   display: 'grid', placeItems: 'center',
-                  border: `1px solid ${selected ? 'rgba(255,255,255,0.72)' : WF.line}`,
+                  border: `1px solid ${selected ? 'rgba(255,255,255,0.72)' : FP_CONTROL_BORDER}`,
                   background: selected ? 'rgba(255,255,255,0.14)' : '#FFFFFF',
                   color: selected ? '#FFFFFF' : 'transparent', fontSize: 9, fontWeight: 800,
                 }}>{selected ? '✓' : ''}</span>
@@ -477,12 +478,12 @@ function SearchFilterPanel({ state, onUpdate }) {
         {/* Search input — clearly typeable */}
         <div style={{
           flex: 1, display: 'flex', alignItems: 'center', gap: 8,
-          background: '#FFFFFF', border: `1px solid ${FP_BORDER}`,
+          background: '#FFFFFF', border: `1px solid ${FP_CONTROL_BORDER}`,
           height: 40, borderRadius: 8, padding: '0 12px',
           transition: 'border-color 0.15s'
         }}
         onFocusCapture={(e) => e.currentTarget.style.borderColor = FP_NAVY}
-        onBlurCapture={(e) => e.currentTarget.style.borderColor = FP_BORDER}>
+        onBlurCapture={(e) => e.currentTarget.style.borderColor = FP_CONTROL_BORDER}>
           <svg width="15" height="15" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, color: '#94A3B8' }}>
             <circle cx="7" cy="7" r="4.5" stroke="currentColor" strokeWidth="1.5" />
             <path d="M10.5 10.5L13.5 13.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -505,7 +506,7 @@ function SearchFilterPanel({ state, onUpdate }) {
           title={isExpanded ? 'Collapse filters' : 'Expand filters'}
           style={{
             width: 36, height: 36, borderRadius: 8, flexShrink: 0,
-            border: `1px solid ${FP_BORDER}`, background: WF.fill,
+            border: `1px solid ${FP_CONTROL_BORDER}`, background: WF.fill,
             cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             color: '#64748B',
@@ -673,7 +674,7 @@ function SearchFilterPanel({ state, onUpdate }) {
             ) : (
               MVAS_PORT_GROUPS.map((g) => (
                 <div key={g.group}>
-                  <div style={{ padding: '6px 14px 2px', fontSize: 8.5, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', color: '#B8C2D4' }}>{g.group}</div>
+                  <div style={{ padding: '6px 14px 2px', fontSize: 8.5, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', color: WF.inkLabel }}>{g.group}</div>
                   {g.ports.map((p) => (
                     <FPPortRow
                       key={p.id}
@@ -735,7 +736,7 @@ function SearchFilterPanel({ state, onUpdate }) {
           <div style={{ flex: '1 1 220px', display: 'flex', gap: 6, minWidth: 200 }}>
             <div style={{
               flex: 1, minWidth: 0, minHeight: 40, display: 'flex', alignItems: 'center', gap: 8,
-              padding: '6px 11px', border: `1px solid ${FP_BORDER}`, borderRadius: 8,
+              padding: '6px 11px', border: `1px solid ${FP_CONTROL_BORDER}`, borderRadius: 8,
               color: FP_NAVY, background: '#fff',
             }}>
               <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
@@ -753,12 +754,12 @@ function SearchFilterPanel({ state, onUpdate }) {
             </div>
             <button style={{
               minHeight: 40, padding: '9px 16px', fontSize: 12, fontWeight: 650, fontFamily: 'inherit',
-              border: `1px solid ${FP_BORDER}`, borderRadius: 8,
+              border: `1px solid ${FP_CONTROL_BORDER}`, borderRadius: 8,
               background: '#fff', color: FP_NAVY, cursor: 'pointer',
               transition: 'all 0.12s', whiteSpace: 'nowrap'
             }}
             onMouseEnter={(e) => {e.currentTarget.style.borderColor = FP_NAVY;e.currentTarget.style.background = FP_NAVY;e.currentTarget.style.color = '#fff';}}
-            onMouseLeave={(e) => {e.currentTarget.style.borderColor = FP_BORDER;e.currentTarget.style.background = '#fff';e.currentTarget.style.color = FP_NAVY;}}>
+            onMouseLeave={(e) => {e.currentTarget.style.borderColor = FP_CONTROL_BORDER;e.currentTarget.style.background = '#fff';e.currentTarget.style.color = FP_NAVY;}}>
               Apply
             </button>
           </div>

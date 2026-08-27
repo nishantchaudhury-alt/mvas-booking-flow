@@ -89,7 +89,7 @@ function SourcePill2({ source, onChange, fullWidth = false }) {
         display: 'inline-flex', alignItems: 'center', gap: 8,
         width: fullWidth ? '100%' : 'auto', height: fullWidth ? 40 : 38,
         padding: fullWidth ? '6px 11px' : '0 14px', borderRadius: fullWidth ? 8 : 10, whiteSpace: 'nowrap',
-        cursor: 'pointer', border: `${fullWidth ? 1 : 1.5}px solid ${open ? WF.accent : WF.line}`,
+        cursor: 'pointer', border: `${fullWidth ? 1 : 1.5}px solid ${open ? WF.accent : WF.controlLine}`,
         background: open && fullWidth ? WF.accentTint : WF.panel,
         fontFamily: 'inherit', fontSize: 13, color: WF.ink, outline: 'none',
         transition: 'border-color 0.15s, background 0.15s',

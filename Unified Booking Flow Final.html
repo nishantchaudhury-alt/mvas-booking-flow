@@ -10,9 +10,98 @@
   * { box-sizing: border-box; }
   #root { height: 100vh; }
   button { font-family: inherit; }
+
+  /* Accessibility floor for the compact operations UI. WCAG does not mandate
+     a single minimum pixel size, but text must remain usable when enlarged to
+     200%. The previous 8–10.5px metadata was difficult to read before zoom and
+     became fragile at higher magnification, so visible UI copy now starts at
+     11px while headings and standard controls retain their larger sizes. */
+  [style*="font-size: 7.5px"], [style*="font-size: 8px"], [style*="font-size: 8.5px"],
+  [style*="font-size: 9px"], [style*="font-size: 9.5px"],
+  [style*="font-size: 10px"], [style*="font-size: 10.5px"] {
+    font-size: 11px !important;
+  }
+
+  /* Inputs must remain identifiable without relying on a low-contrast hairline.
+     Keep the normal structural line token for cards and rows; use this stronger
+     boundary only where the line communicates an editable control. */
+  input:not([type="checkbox"]):not([type="radio"]), textarea, select {
+    border-color: #7C8B9F !important;
+  }
+  input::placeholder, textarea::placeholder {
+    color: #5F6F85;
+    opacity: 1;
+  }
+  button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible,
+  [role="button"]:focus-visible, [role="switch"]:focus-visible, [role="tab"]:focus-visible {
+    outline: 2px solid #1B2434;
+    outline-offset: 2px;
+  }
+
+  /* Traveler cards are disclosure controls: the whole summary opens the
+     profile editor. Hover/focus belongs to the full row, not a detached CTA. */
+  .traveler-card-trigger {
+    transition: background-color 140ms ease, box-shadow 140ms ease;
+  }
+  .traveler-card-trigger:hover {
+    background: #F8FAFC !important;
+  }
+  .traveler-card-trigger[aria-expanded="true"] {
+    background: #EFF6FF !important;
+  }
+  .traveler-card-trigger:focus-visible {
+    outline: 2px solid #1B2434;
+    outline-offset: -2px;
+    box-shadow: inset 0 0 0 1px #DBEAFE;
+  }
+
+  /* At 200% page zoom the browser exposes roughly half the CSS viewport.
+     This is a desktop operations workspace, so preserve its three-column
+     information architecture and make it horizontally pannable instead of
+     allowing the fixed navigation and summary rail to crush the work area. */
+  @media (max-width: 1100px) {
+    html, body, #root {
+      min-width: 1180px;
+      overflow-x: auto;
+    }
+  }
   /* Hide scrollbars globally while preserving scroll */
   * { scrollbar-width: none; -ms-overflow-style: none; }
   *::-webkit-scrollbar { width: 0; height: 0; display: none; }
+
+  /* The stateroom dialog can exceed the viewport. Unlike passive page rails,
+     that task scroll must stay discoverable so the deck inventory and fixed
+     footer never appear clipped. */
+  .stateroom-modal-scroll,
+  .stateroom-deck-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: #CBD5E1 transparent;
+  }
+  .stateroom-modal-scroll::-webkit-scrollbar {
+    display: block;
+    width: 6px;
+  }
+  .stateroom-deck-scroll::-webkit-scrollbar {
+    display: block;
+    width: 5px;
+  }
+  .stateroom-modal-scroll::-webkit-scrollbar-track,
+  .stateroom-deck-scroll::-webkit-scrollbar-track {
+    background: transparent;
+    margin-block: 7px;
+  }
+  .stateroom-modal-scroll::-webkit-scrollbar-thumb,
+  .stateroom-deck-scroll::-webkit-scrollbar-thumb {
+    background: rgba(100, 116, 139, 0.38);
+    background-clip: padding-box;
+    border: 1px solid transparent;
+    border-radius: 999px;
+  }
+  .stateroom-modal-scroll::-webkit-scrollbar-thumb:hover,
+  .stateroom-deck-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(71, 85, 105, 0.62);
+    background-clip: padding-box;
+  }
 </style>
 
 <!-- Navigation is handled directly via window.__bookingNavigate in each step component -->
@@ -45,19 +134,19 @@
 <div id="root"></div>
 
 <!-- 1 · WF design tokens, primitives, WFAppShell ──────────────────────── -->
-<script type="text/babel" src="wireframe-primitives.jsx?v=121"></script>
+<script type="text/babel" src="wireframe-primitives.jsx?v=123"></script>
 
 <!-- 2 · Data model: SAILINGS, INTENTS, priceQuote, getSailing, money… ─── -->
-<script type="text/babel" src="screens/intent-data.jsx?v=121"></script>
+<script type="text/babel" src="screens/intent-data.jsx?v=123"></script>
 
 <!-- 2b · Booking store: one state shape, one storage key, one pricing fn ── -->
-<script type="text/babel" src="screens/booking-store.jsx?v=121"></script>
+<script type="text/babel" src="screens/booking-store.jsx?v=123"></script>
 
 <!-- 2c · The single right-rail summary panel shared by all four steps ───── -->
-<script type="text/babel" src="screens/summary-panel.jsx?v=121"></script>
+<script type="text/babel" src="screens/summary-panel.jsx?v=123"></script>
 
 <!-- 3 · Shared Step-2 atoms: FLOW4, StepProgress2, SourcePill2, ContextBar -->
-<script type="text/babel" src="screens/step2-common.jsx?v=121"></script>
+<script type="text/babel" src="screens/step2-common.jsx?v=123"></script>
 
 <script type="text/babel">
 // MiniStep — proper +/- stepper control
@@ -94,23 +183,23 @@ window.MiniStep = MiniStep;
 
 <!-- 4 · Search filter panel — exports SearchFilterPanel + FPInventorySection,
      both consumed by Step 1 below. Not a step of its own any more.  ───────  -->
-<script type="text/babel" src="screens/where-when-step1.jsx?v=121"></script>
+<script type="text/babel" src="screens/where-when-step1.jsx?v=123"></script>
 
 <!-- 5 · Step 1 — Sailing, fare & cabin (defines Step2App globally) ──────  -->
-<script type="text/babel" src="screens/step2-sailing.jsx?v=121"></script>
+<script type="text/babel" src="screens/step2-sailing.jsx?v=123"></script>
 
 <!-- 5b · Step 2 Deck Map — ship orientation + structural deck picker ─────  -->
-<script type="text/babel" src="screens/step2-deck-map.jsx?v=121"></script>
+<script type="text/babel" src="screens/step2-deck-map.jsx?v=123"></script>
 
 <!-- 5c · Step 2 Sailing Detail — redesigned detail view with tabs ────── -->
-<script type="text/babel" src="screens/step2-sailing-detail.jsx?v=121"></script>
+<script type="text/babel" src="screens/step2-sailing-detail.jsx?v=123"></script>
 
 <!-- 5d · Step 2 Stateroom Matrix — availability table + room panel ──────  -->
-<script type="text/babel" src="screens/step2-stateroom-matrix.jsx?v=121"></script>
+<script type="text/babel" src="screens/step2-stateroom-matrix.jsx?v=137"></script>
 
 <!-- 6 · Step 2 — Add guests (exports window.Step3App) ───────────────────  -->
 <!-- Note: duplicate S2_CAB / S2_FC / FLOW4 consts removed from this file   -->
-<script type="text/babel" src="screens/step3-guests.jsx?v=121"></script>
+<script type="text/babel" src="screens/step3-guests.jsx?v=126"></script>
 
 <!-- 7 · Step 3 — Review & confirm ───────────────────────────────────────  -->
 <!-- Extracted from Review & Confirm - Step 4.html; self-contained below.    -->
@@ -428,6 +517,8 @@ function S4EditModal({ target, draftSupps, setDraftQty, draftGuest, setDraftGues
                     <span aria-hidden="true" style={{
                       width: 38, height: 22, borderRadius: 999, flexShrink: 0,
                       position: 'relative', background: draftGuest.isPrimary ? WF.accentInk : '#CBD5E1',
+                      border: `1px solid ${draftGuest.isPrimary ? WF.accentInk : WF.controlLine}`,
+                      boxSizing: 'border-box',
                       transition: 'background .15s'
                     }}>
                       <span style={{
@@ -582,22 +673,63 @@ function S4EditModal({ target, draftSupps, setDraftQty, draftGuest, setDraftGues
             const on = qty > 0;
             const lineTotal = su.pricePP * qty;
             return (
-              <div key={su.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, padding: '14px 16px', border: `1.5px solid ${on ? S4_ACCENT : WF.line}`, borderRadius: 10, background: '#fff', transition: 'border-color 0.12s' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
-                  <span style={{ fontSize: 22, flexShrink: 0 }}>{su.emoji}</span>
+              <div key={su.id} style={{
+                display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', alignItems: 'center', gap: 14,
+                padding: '11px 12px', border: `1px solid ${on ? WF.accentLine : WF.line}`,
+                borderRadius: 10, background: on ? WF.accentTint : '#fff',
+                boxShadow: on ? `inset 3px 0 0 ${WF.accentInk}` : 'none',
+                transition: 'border-color 0.12s, background 0.12s'
+              }}>
+                {/* Identity stays together: category explains the catalogue grouping,
+                    while price remains supporting information rather than competing
+                    with the product name. */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 11, minWidth: 0 }}>
+                  <span aria-hidden="true" style={{
+                    width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0, fontSize: 20, borderRadius: 8, background: '#fff', border: `1px solid ${WF.line}`
+                  }}>{su.emoji}</span>
                   <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: WF.ink, lineHeight: 1.2 }}>{su.name}</div>
-                    <div style={{ fontSize: 12, color: WF.inkSoft, marginTop: 2 }}>${su.pricePP.toFixed(2)} pp</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 10.5, fontWeight: 700, color: WF.inkLabel, letterSpacing: 0.55, textTransform: 'uppercase' }}>{su.category}</span>
+                      {su.minAge && <span style={{ fontSize: 10.5, fontWeight: 700, color: '#92400E', background: '#FEF3C7', borderRadius: 4, padding: '1px 5px' }}>{su.minAge}+</span>}
+                    </div>
+                    <div style={{ fontSize: 14, fontWeight: 750, color: WF.ink, lineHeight: 1.25, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis' }}>{su.name}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap', marginTop: 3 }}>
+                      <span style={{ fontSize: 11.5, color: WF.inkSoft }}>${su.pricePP.toFixed(2)} per guest</span>
+                      {on && (
+                        <span style={{ fontSize: 10.5, fontWeight: 700, color: WF.accentInk, background: '#fff', border: `1px solid ${WF.accentLine}`, borderRadius: 999, padding: '1px 6px' }}>✓ Assigned</span>
+                      )}
+                    </div>
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: on ? S4_ACCENT : WF.inkFaint, fontFamily: 'ui-monospace, monospace', minWidth: 64, textAlign: 'right' }}>
-                    +${lineTotal.toFixed(2)}
+
+                {/* A stable two-column action block makes every row comparable.
+                    Zero-value lines say what they mean instead of promoting +$0.00. */}
+                <div style={{ display: 'grid', gridTemplateColumns: '78px 96px', alignItems: 'end', gap: 10, flexShrink: 0 }}>
+                  <div style={{ minWidth: 0, textAlign: 'right' }}>
+                    <div style={{ fontSize: 10.5, fontWeight: 700, color: WF.inkLabel, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 4 }}>{on ? 'Line total' : 'Status'}</div>
+                    <div style={{ fontSize: on ? 13 : 11.5, fontWeight: 700, color: on ? WF.ink : WF.inkSoft, fontFamily: on ? 'ui-monospace, monospace' : 'inherit', whiteSpace: 'nowrap' }}>
+                      {on ? `+$${lineTotal.toFixed(2)}` : 'Not assigned'}
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <button onClick={() => setDraftQty(su.id, qty - 1)} disabled={qty === 0} style={{ width: 30, height: 30, border: `1px solid ${WF.line}`, borderRadius: '6px 0 0 6px', background: qty === 0 ? WF.fill : '#fff', color: qty === 0 ? WF.inkFaint : WF.ink, cursor: qty === 0 ? 'default' : 'pointer', fontFamily: 'inherit', fontSize: 17, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>−</button>
-                    <div style={{ width: 40, height: 30, border: `1px solid ${WF.line}`, borderLeft: 'none', borderRight: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: WF.ink, background: '#fff' }}>{qty}</div>
-                    <button onClick={() => setDraftQty(su.id, qty + 1)} style={{ width: 30, height: 30, border: `1px solid ${WF.line}`, borderRadius: '0 6px 6px 0', background: '#fff', color: WF.ink, cursor: 'pointer', fontFamily: 'inherit', fontSize: 17, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>+</button>
+                  <div>
+                    <div style={{ fontSize: 10.5, fontWeight: 700, color: WF.inkLabel, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 4 }}>Quantity</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '32px 32px 32px', alignItems: 'center' }}>
+                      <button
+                        type="button"
+                        aria-label={`Decrease ${su.name} quantity`}
+                        title={`Decrease ${su.name} quantity`}
+                        onClick={() => setDraftQty(su.id, qty - 1)}
+                        disabled={qty === 0}
+                        style={{ width: 32, height: 32, border: `1px solid ${WF.controlLine}`, borderRadius: '6px 0 0 6px', background: qty === 0 ? WF.fill : '#fff', color: qty === 0 ? WF.inkFaint : WF.ink, cursor: qty === 0 ? 'default' : 'pointer', fontFamily: 'inherit', fontSize: 17, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>−</button>
+                      <div aria-live="polite" aria-label={`${su.name} quantity ${qty}`} style={{ width: 32, height: 32, borderTop: `1px solid ${WF.controlLine}`, borderBottom: `1px solid ${WF.controlLine}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 750, color: WF.ink, background: '#fff', boxSizing: 'border-box' }}>{qty}</div>
+                      <button
+                        type="button"
+                        aria-label={`Increase ${su.name} quantity`}
+                        title={`Increase ${su.name} quantity`}
+                        onClick={() => setDraftQty(su.id, qty + 1)}
+                        style={{ width: 32, height: 32, border: `1px solid ${WF.controlLine}`, borderRadius: '0 6px 6px 0', background: '#fff', color: WF.ink, cursor: 'pointer', fontFamily: 'inherit', fontSize: 17, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>+</button>
+                    </div>
                   </div>
                 </div>
               </div>

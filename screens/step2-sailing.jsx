@@ -244,7 +244,7 @@ function FarecodesSection2({ farecodeId, onSelect }) {
                   'rgba(255,255,255,0.10)' :
                   f.refundable ? S2_TEAL_TINT : '#F3F4F6',
                   color: on ?
-                  f.refundable ? '#7DD3D3' : '#94A3B8' :
+                  f.refundable ? '#7DD3D3' : '#CBD5E1' :
                   f.refundable ? S2_TEAL : '#6B7280'
                 }}>
                   {f.refundable ? 'REFUNDABLE' : 'NON-REFUND'}
@@ -258,7 +258,7 @@ function FarecodesSection2({ farecodeId, onSelect }) {
           })}
         </div>
         {active &&
-        <div style={{ fontSize: 12, color: '#9CA3AF', paddingTop: 8, borderTop: `1px solid ${WF.lineSoft}` }}>
+        <div style={{ fontSize: 12, color: WF.inkSoft, paddingTop: 8, borderTop: `1px solid ${WF.lineSoft}` }}>
             <span style={{ color: WF.inkSoft, fontWeight: 500 }}>Selected Rate Plan</span>
             {' · '}{active.note}
           </div>
@@ -940,7 +940,7 @@ function SailingCard({ s, update, sailing, expanded, onToggle }) {
 
   // Get availability badge color
   const availBgColor = avail.kind === 'active' ? '#D1FAE5' : avail.kind === 'draft' ? '#FEF3C7' : '#FEE2E2';
-  const availTextColor = avail.kind === 'active' ? '#065F46' : avail.kind === 'draft' ? '#92400E' : '#DC2626';
+  const availTextColor = avail.kind === 'active' ? '#065F46' : avail.kind === 'draft' ? '#92400E' : '#B91C1C';
 
   return (
     <div style={{

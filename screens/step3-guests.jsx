@@ -121,7 +121,7 @@ function GuestDetailsSection({
               fontSize: 10, fontWeight: 800, whiteSpace: 'nowrap',
             }}>
               {unconfirmedCount === 0 && <span aria-hidden="true">✓</span>}
-              {completedCount} of {guestList.length} ready
+              {completedCount} of {guestList.length} profiles ready
             </span>
             {unconfirmedCount > 0 && (
               <button
@@ -192,16 +192,26 @@ function GuestDetailsSection({
               borderRadius: 9, overflow: 'hidden',
               background: '#fff', boxShadow: '0 1px 2px rgba(15,23,42,0.04)',
             }}>
-              {/* Row */}
-              <div style={{
+              {/* The traveler summary is one disclosure control. The previous
+                  split pattern made the card look static while a small button
+                  at the far edge owned the actual interaction. */}
+              <button
+                type="button"
+                className="traveler-card-trigger"
+                aria-expanded={isExpanded}
+                aria-controls={`traveler-profile-${guest.id}`}
+                aria-label={`${isDone ? 'Review' : 'Add'} profile for ${isDone && record.name ? record.name : guest.type}`}
+                onClick={() => { setExpandedGuestId(isExpanded ? null : guest.id); setSearchQuery(''); }}
+                style={{
                 display: 'grid', gridTemplateColumns: 'auto minmax(0, 1fr) auto',
-                alignItems: 'center', gap: 10, padding: '11px 12px',
+                alignItems: 'center', gap: 10, width: '100%', padding: '11px 12px',
                 background: isExpanded ? WF.accentTint : '#fff',
+                border: 'none', color: 'inherit', textAlign: 'left', fontFamily: 'inherit', cursor: 'pointer',
               }}>
                 {/* Badge */}
                 {/* The stable guest code remains visible after completion; the
                     first eligible adult uses the navy primary treatment. */}
-                <div style={{
+                <span style={{
                   width: 36, height: 36, borderRadius: 8,
                   background: isPrimary ? WF.accent : WF.fill,
                   color: isPrimary ? '#fff' : WF.ink,
@@ -211,10 +221,10 @@ function GuestDetailsSection({
                   flexShrink: 0, fontFamily: 'ui-monospace, monospace',
                 }}>
                   {guest.id}
-                </div>
+                </span>
                 {/* Info */}
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                <span style={{ minWidth: 0, display: 'block' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
                     <span style={{ fontSize: 12.5, fontWeight: 800, color: WF.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {isDone && record.name ? record.name : `${guest.type} ${guest.id.replace(/\D/g, '') || ''}`.trim()}
                     </span>
@@ -224,33 +234,36 @@ function GuestDetailsSection({
                     {isPrimary && (
                       <span style={{ background: WF.accentTint, color: WF.accent, border: `1px solid ${WF.accentLine}`, padding: '2px 5px', borderRadius: 4, fontSize: 8.5, fontWeight: 800, flexShrink: 0 }}>PRIMARY</span>
                     )}
-                  </div>
-                  <div style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 5, color: WF.inkSoft, fontSize: 10.5 }}>
+                  </span>
+                  <span style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 5, color: WF.inkSoft, fontSize: 10.5 }}>
                     <span>{guest.type}</span>
                     <span aria-hidden="true" style={{ color: WF.inkFaint }}>·</span>
                     <span>{ageLabel}</span>
-                    <span aria-hidden="true" style={{ color: WF.inkFaint }}>·</span>
-                    <span style={{ color: isDone ? '#047857' : WF.inkFaint, fontWeight: 700 }}>
-                      {isDone ? 'Ready' : 'Needs details'}
-                    </span>
-                  </div>
-                </div>
-                {/* Button */}
-                <button onClick={() => {setExpandedGuestId(isExpanded ? null : guest.id);setSearchQuery('');}} style={{
-                  height: 30, padding: '0 10px', fontSize: 10.5, fontWeight: 700,
-                  border: `1px solid ${isExpanded || !isDone ? WF.accent : WF.line}`,
-                  background: isExpanded || !isDone ? WF.accent : '#fff',
-                  color: isExpanded || !isDone ? '#fff' : WF.ink,
-                  borderRadius: 6, cursor: 'pointer', whiteSpace: 'nowrap',
-                  fontFamily: 'inherit', flexShrink: 0,
-                }}>
-                  {isExpanded ? 'Close' : isDone ? 'Edit details' : 'Add details'}
-                </button>
-              </div>
+                  </span>
+                </span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, flexShrink: 0 }}>
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 5,
+                    padding: '4px 7px', borderRadius: 999,
+                    background: isDone ? '#F0FDF4' : '#FFF7ED',
+                    border: `1px solid ${isDone ? '#BBF7D0' : '#FED7AA'}`,
+                    color: isDone ? '#047857' : '#9A3412',
+                    fontSize: 10, fontWeight: 800, whiteSpace: 'nowrap',
+                  }}>
+                    <span aria-hidden="true">{isDone ? '✓' : '!'}</span>
+                    {isDone ? 'Profile ready' : 'Add profile'}
+                  </span>
+                  <svg aria-hidden="true" viewBox="0 0 20 20" width="16" height="16" fill="none" style={{
+                    color: WF.inkSoft, flexShrink: 0, transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 160ms ease',
+                  }}>
+                    <path d="M5.75 7.75 10 12l4.25-4.25" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </span>
+              </button>
 
               {/* Expanded panel */}
               {isExpanded &&
-              <div style={{ padding: '0 20px 20px', borderTop: `1px solid ${WF.line}` }}>
+              <div id={`traveler-profile-${guest.id}`} style={{ padding: '0 20px 20px', borderTop: `1px solid ${WF.line}` }}>
                   <div style={{ height: 16 }} />
                   {/* Query Customer Index */}
                   <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.8, color: WF.inkLabel, textTransform: 'uppercase', marginBottom: 10 }}>Query Customer Index</div>
@@ -350,9 +363,9 @@ function GuestDetailsSection({
                   }
 
                   {!isManual &&
-                  <button onClick={() => handleConfirm(guest.id)} style={{ width: '100%', padding: '10px', fontSize: 13, fontWeight: 700, border: 'none', borderRadius: 8, background: '#1B2434', color: '#fff', cursor: 'pointer', fontFamily: 'inherit' }}>
-                      Confirm &amp; close
-                    </button>
+                  <button onClick={() => isDone ? setExpandedGuestId(null) : handleConfirm(guest.id)} style={{ width: '100%', padding: '10px', fontSize: 13, fontWeight: 700, border: 'none', borderRadius: 8, background: '#1B2434', color: '#fff', cursor: 'pointer', fontFamily: 'inherit' }}>
+                      {isDone ? 'Done' : 'Confirm & close'}
+                  </button>
                   }
                 </div>
               }
@@ -420,6 +433,8 @@ function GuestTripProtection({ selected, guestCount, onToggle }) {
           <span aria-hidden="true" style={{
             width: 38, height: 22, borderRadius: 999,
             background: selected ? WF.accent : '#CBD5E1',
+            border: `1px solid ${selected ? WF.accent : WF.controlLine}`,
+            boxSizing: 'border-box',
             position: 'relative', transition: 'background 0.18s', flexShrink: 0,
           }}>
             <span style={{
