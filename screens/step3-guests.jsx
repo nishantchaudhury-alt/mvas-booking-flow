@@ -170,21 +170,19 @@ function GuestDetailsSection({
           </div>
         </div>
 
-        {/* Cabin groups keep room context visible. Travelers stack vertically
-            so every profile follows one predictable scanning path. */}
+        {/* Cabin headers and traveler rows scroll as one clipped surface. This
+            avoids a sticky layer revealing or covering cards behind it. */}
         <div style={{
           display: 'flex', flexDirection: 'column', gap: 10,
           padding: 10, background: WF.fill,
         }}>
         {cabinGroups.map((group) => (
           <section key={group.key} aria-label={group.room ? `${group.label}, ${group.room}` : group.label} style={{
-            overflow: 'visible', border: `1px solid ${WF.line}`, borderRadius: 9, background: '#fff',
+            overflow: 'hidden', border: `1px solid ${WF.line}`, borderRadius: 9, background: '#fff',
           }}>
             <div style={{
-              position: 'sticky', top: 0, zIndex: 1,
               display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
               padding: '9px 11px', borderBottom: `1px solid ${WF.line}`, background: '#fff',
-              borderRadius: '9px 9px 0 0', boxShadow: '0 1px 2px rgba(15,23,42,0.06)',
             }}>
               <div style={{ minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 7, minWidth: 0 }}>
