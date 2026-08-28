@@ -1712,7 +1712,6 @@ function StateRoomMatrix({ update, s, onConfirmRooms }) {
               <TH>Category &amp; status</TH>
               <TH>Rooms to add</TH>
               <TH right>Fare / room</TH>
-              <TH right>Fare inventory</TH>
               <TH right>Sleeps 1</TH>
               <TH right>Sleeps 2</TH>
               <TH right>2 + infant</TH>
@@ -1776,13 +1775,6 @@ function StateRoomMatrix({ update, s, onConfirmRooms }) {
                       <span style={{ fontSize: 11.5, fontWeight: 750, color: WF.ink, fontFamily: 'ui-monospace, monospace' }}>
                         ${row.price.toLocaleString()}.00
                       </span>
-                    </td>
-                    <td style={{ padding: '7px 12px', borderBottom: `1px solid ${WF.lineSoft}`, textAlign: 'center' }}>
-                      <span style={{
-                        display: 'inline-flex', minWidth: 52, justifyContent: 'center', padding: '3px 6px', borderRadius: 999,
-                        background: soldOut ? '#FEF2F2' : '#F0FDF4', color: soldOut ? BAD : '#047857',
-                        fontSize: 9.5, fontWeight: 800
-                      }}>{soldOut ? 'Sold out' : `${row.total} bookable`}</span>
                     </td>
                     <td style={{ padding: '7px 12px', borderBottom: `1px solid ${WF.lineSoft}`, textAlign: 'center' }}><NumCell val={row.single} /></td>
                     <td style={{ padding: '7px 12px', borderBottom: `1px solid ${WF.lineSoft}`, textAlign: 'center' }}><NumCell val={row.double} /></td>

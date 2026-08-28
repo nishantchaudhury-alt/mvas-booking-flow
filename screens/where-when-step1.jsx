@@ -420,47 +420,45 @@ function SearchFilterPanel({ state, onUpdate }) {
         display: 'flex', alignItems: 'center', gap: 14, padding: '8px 16px',
         background: WF.fill, borderBottom: `1px solid ${WF.line}`,
       }}>
-        <div style={{
+        <div id="booking-type-label" style={{
           flex: '0 0 auto', fontSize: 10, fontWeight: 750, letterSpacing: 0.65,
           color: WF.inkLabel, textTransform: 'uppercase'
         }}>
           Booking Type
         </div>
-        <div role="tablist" aria-label="Booking Type" style={{
-          display: 'grid', gridTemplateColumns: '72px 68px 182px', gap: 3,
-          width: 334, maxWidth: '100%', padding: 3,
-          border: `1px solid ${WF.line}`, borderRadius: 8,
-          background: '#FFFFFF'
+        <div role="radiogroup" aria-labelledby="booking-type-label" style={{
+          display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6,
+          maxWidth: '100%'
         }}>
           {FP_BOOKING_TYPES.map((type) => {
             const selected = bookingType === type;
             return (
-              <button
+              <label
                 key={type}
-                type="button"
-                role="tab"
-                aria-selected={selected}
-                onClick={() => onUpdate({ bookingType: type })}
                 style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                  minHeight: 27, padding: '4px 8px',
-                  border: `1px solid ${selected ? WF.accent : 'transparent'}`, borderRadius: 6,
-                  background: selected ? WF.accent : 'transparent',
-                  color: selected ? WF.accentText : WF.inkSoft,
-                  fontFamily: 'inherit', fontSize: 11.5, fontWeight: selected ? 700 : 600,
+                  display: 'inline-flex', alignItems: 'center', gap: 7,
+                  minHeight: 30, padding: '5px 10px',
+                  border: `1px solid ${selected ? WF.accent : WF.line}`, borderRadius: 7,
+                  background: selected ? WF.accentTint : '#FFFFFF',
+                  color: selected ? WF.accent : WF.inkSoft,
+                  fontSize: 11.5, fontWeight: selected ? 700 : 600,
                   cursor: 'pointer', whiteSpace: 'nowrap',
-                  boxShadow: selected ? '0 1px 2px rgba(15,23,42,0.08)' : 'none',
-                  transition: 'background 0.12s, color 0.12s'
+                  boxShadow: selected ? `inset 0 0 0 1px ${WF.accent}` : 'none',
+                  transition: 'background 0.12s, border-color 0.12s, color 0.12s'
                 }}>
-                <span aria-hidden="true" style={{
-                  width: 12, height: 12, borderRadius: 999, flexShrink: 0,
-                  display: 'grid', placeItems: 'center',
-                  border: `1px solid ${selected ? 'rgba(255,255,255,0.72)' : FP_CONTROL_BORDER}`,
-                  background: selected ? 'rgba(255,255,255,0.14)' : '#FFFFFF',
-                  color: selected ? '#FFFFFF' : 'transparent', fontSize: 9, fontWeight: 800,
-                }}>{selected ? '✓' : ''}</span>
+                <input
+                  type="radio"
+                  name="booking-type"
+                  value={type}
+                  checked={selected}
+                  onChange={() => onUpdate({ bookingType: type })}
+                  style={{
+                    width: 14, height: 14, margin: 0, flexShrink: 0,
+                    accentColor: WF.accent, cursor: 'pointer'
+                  }}
+                />
                 {type}
-              </button>
+              </label>
             );
           })}
         </div>
