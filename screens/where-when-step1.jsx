@@ -15,6 +15,19 @@ const FP_NAVY = '#1B2434';
 const FP_BORDER = '#E2E8F0';
 const FP_CONTROL_BORDER = '#7C8B9F';
 const FP_BG = '#F1F5F9';
+const FP_SECTION_LABEL_STYLE = Object.freeze({
+  fontSize: 11,
+  fontWeight: 600,
+  letterSpacing: 0,
+  color: '#475569',
+});
+const FP_FIELD_LABEL_STYLE = Object.freeze({
+  fontSize: 11,
+  lineHeight: 1.2,
+  fontWeight: 500,
+  letterSpacing: 0,
+  color: '#475569',
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FILTER PANEL · Constants
@@ -238,32 +251,34 @@ function FPDropdown({ label, trigger, open, onToggle, onClose, footer, width = 2
   }, [open, onClose]);
 
   return (
-    <div style={{ position: 'relative', flex: '1 1 200px', minWidth: 170 }}>
+    <div style={{ position: 'relative', flex: '1 1 155px', minWidth: 145 }}>
+      {label && (
+        <div style={{
+          ...FP_FIELD_LABEL_STYLE,
+          marginBottom: 4,
+        }}>
+          {label}
+        </div>
+      )}
       <button
         ref={btnRef}
         type="button"
         aria-expanded={open}
+        aria-label={label ? `${label}: ${trigger}` : trigger}
         onClick={onToggle}
         style={{
           display: 'flex', alignItems: 'center', gap: 8, width: '100%',
-          minHeight: 48, padding: '7px 11px', borderRadius: 8,
+          minHeight: 34, padding: '5px 10px', borderRadius: 7,
           border: `1px solid ${open ? FP_NAVY : FP_CONTROL_BORDER}`,
           background: open ? '#EFF6FF' : '#fff', color: FP_NAVY,
           cursor: 'pointer', fontFamily: 'inherit',
           transition: 'border-color 0.15s, background 0.15s', outline: 'none', textAlign: 'left'
         }}>
-        <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {label && (
-            <span style={{
-              fontSize: 9, lineHeight: 1, fontWeight: 750, letterSpacing: 0.45,
-              textTransform: 'uppercase', color: WF.inkLabel,
-            }}>{label}</span>
-          )}
-          <span style={{
-            fontSize: 12.5, lineHeight: 1.2, fontWeight: 650, color: FP_NAVY,
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}>{trigger}</span>
-        </span>
+        <span style={{
+          flex: 1, minWidth: 0, fontSize: 12.5, lineHeight: 1.2,
+          fontWeight: 650, color: FP_NAVY,
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>{trigger}</span>
         <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.18s' }}>
           <path d="M2 4L6 8L10 4" stroke="#64748B" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
@@ -417,14 +432,14 @@ function SearchFilterPanel({ state, onUpdate }) {
           This sets booking context only; inventory filtering remains driven
           by the date, port, destination and duration facets below. */}
       <div style={{
-        display: 'flex', alignItems: 'center', gap: 14, padding: '8px 16px',
+        display: 'flex', alignItems: 'center', gap: 12, padding: '6px 12px',
         background: WF.fill, borderBottom: `1px solid ${WF.line}`,
       }}>
         <div id="booking-type-label" style={{
-          flex: '0 0 auto', fontSize: 10, fontWeight: 750, letterSpacing: 0.65,
-          color: WF.inkLabel, textTransform: 'uppercase'
+          ...FP_SECTION_LABEL_STYLE,
+          flex: '0 0 auto',
         }}>
-          Booking Type
+          Booking type
         </div>
         <div role="radiogroup" aria-labelledby="booking-type-label" style={{
           display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6,
@@ -437,7 +452,7 @@ function SearchFilterPanel({ state, onUpdate }) {
                 key={type}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 7,
-                  minHeight: 30, padding: '5px 10px',
+                  minHeight: 28, padding: '4px 9px',
                   border: `1px solid ${selected ? WF.accent : WF.line}`, borderRadius: 7,
                   background: selected ? WF.accentTint : '#FFFFFF',
                   color: selected ? WF.accent : WF.inkSoft,
@@ -465,9 +480,9 @@ function SearchFilterPanel({ state, onUpdate }) {
       </div>
 
       {/* ══ SEARCH BAR ══════════════════════════════════════════════════════ */}
-      <div style={{ padding: '13px 16px 14px' }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, marginBottom: 7 }}>
-          <div style={{ fontSize: 10.5, fontWeight: 750, letterSpacing: 0.55, color: WF.inkLabel, textTransform: 'uppercase' }}>
+      <div style={{ padding: '10px 12px 11px' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
+          <div style={FP_SECTION_LABEL_STYLE}>
             Search inventory
           </div>
           <div style={{ fontSize: 9.5, color: WF.inkSoft }}>Destination, ship, or sailing code</div>
@@ -477,7 +492,7 @@ function SearchFilterPanel({ state, onUpdate }) {
         <div style={{
           flex: 1, display: 'flex', alignItems: 'center', gap: 8,
           background: '#FFFFFF', border: `1px solid ${FP_CONTROL_BORDER}`,
-          height: 40, borderRadius: 8, padding: '0 12px',
+          height: 34, borderRadius: 7, padding: '0 10px',
           transition: 'border-color 0.15s'
         }}
         onFocusCapture={(e) => e.currentTarget.style.borderColor = FP_NAVY}
@@ -503,7 +518,7 @@ function SearchFilterPanel({ state, onUpdate }) {
           onClick={toggle}
           title={isExpanded ? 'Collapse filters' : 'Expand filters'}
           style={{
-            width: 36, height: 36, borderRadius: 8, flexShrink: 0,
+            width: 34, height: 34, borderRadius: 7, flexShrink: 0,
             border: `1px solid ${FP_CONTROL_BORDER}`, background: WF.fill,
             cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -563,16 +578,16 @@ function SearchFilterPanel({ state, onUpdate }) {
 
         <div style={{
           display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12,
-          padding: '12px 16px 0',
+          padding: '9px 12px 0',
         }}>
-          <div style={{ fontSize: 10.5, fontWeight: 750, letterSpacing: 0.55, color: WF.inkLabel, textTransform: 'uppercase' }}>
+          <div style={FP_SECTION_LABEL_STYLE}>
             Itinerary filters
           </div>
           <div style={{ fontSize: 9.5, color: WF.inkSoft }}>Select one or more options</div>
         </div>
 
         {/* ── Primary row: Departure Dates / Departing From / Destination(s) / Duration ── */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, padding: '8px 16px 14px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: '10px 12px 10px' }}>
 
           {/* DEPARTURE DATES */}
           <FPDropdown
@@ -711,17 +726,17 @@ function SearchFilterPanel({ state, onUpdate }) {
         </div>
 
         {/* ── Secondary row: Booking Source / Promo Code ── */}
-        <div style={{ padding: '11px 16px 14px', borderTop: `1px solid ${WF.line}`, background: WF.fill }}>
+        <div style={{ padding: '9px 12px 10px', borderTop: `1px solid ${WF.line}`, background: WF.fill }}>
           <div style={{
             display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12,
-            marginBottom: 7,
+            marginBottom: 10,
           }}>
-            <div style={{ fontSize: 10.5, fontWeight: 750, letterSpacing: 0.55, color: WF.inkLabel, textTransform: 'uppercase' }}>
+            <div style={FP_SECTION_LABEL_STYLE}>
               Booking details
             </div>
             <div style={{ fontSize: 9.5, color: WF.inkSoft }}>Source and promotional pricing</div>
           </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'flex-end' }}>
           {window.SourcePill2 && state.source !== undefined && (
             <div style={{ flex: '1 1 200px', minWidth: 170 }}>
               <window.SourcePill2
@@ -731,17 +746,21 @@ function SearchFilterPanel({ state, onUpdate }) {
             </div>
           )}
 
-          <div style={{ flex: '1 1 220px', display: 'flex', gap: 6, minWidth: 200 }}>
+          <div style={{ flex: '1 1 220px', display: 'flex', gap: 6, minWidth: 200, alignItems: 'flex-end' }}>
             <div style={{
-              flex: 1, minWidth: 0, minHeight: 40, display: 'flex', alignItems: 'center', gap: 8,
-              padding: '6px 11px', border: `1px solid ${FP_CONTROL_BORDER}`, borderRadius: 8,
-              color: FP_NAVY, background: '#fff',
+              flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4,
+              color: FP_NAVY,
             }}>
-              <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
-                <label style={{ fontSize: 9, lineHeight: 1, fontWeight: 750, letterSpacing: 0.45, textTransform: 'uppercase', color: WF.inkLabel }}>
-                  Promotion code
-                </label>
+              <label htmlFor="booking-promotion-code" style={FP_FIELD_LABEL_STYLE}>
+                Promotion code
+              </label>
+              <div style={{
+                minHeight: 34, display: 'flex', alignItems: 'center',
+                padding: '5px 10px', border: `1px solid ${FP_CONTROL_BORDER}`,
+                borderRadius: 7, background: '#fff',
+              }}>
                 <input
+                  id="booking-promotion-code"
                   type="text"
                   placeholder="Enter code"
                   style={{
@@ -751,8 +770,8 @@ function SearchFilterPanel({ state, onUpdate }) {
               </div>
             </div>
             <button style={{
-              minHeight: 40, padding: '9px 16px', fontSize: 12, fontWeight: 650, fontFamily: 'inherit',
-              border: `1px solid ${FP_CONTROL_BORDER}`, borderRadius: 8,
+              minHeight: 34, padding: '6px 14px', fontSize: 12, fontWeight: 650, fontFamily: 'inherit',
+              border: `1px solid ${FP_CONTROL_BORDER}`, borderRadius: 7,
               background: '#fff', color: FP_NAVY, cursor: 'pointer',
               transition: 'all 0.12s', whiteSpace: 'nowrap'
             }}

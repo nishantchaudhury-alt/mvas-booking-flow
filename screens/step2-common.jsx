@@ -85,23 +85,25 @@ function SourcePill2({ source, onChange, fullWidth = false }) {
   }, [open]);
   return (
     <div ref={ref} style={{ position: 'relative', flexShrink: 0, width: fullWidth ? '100%' : 'auto' }}>
-      <button type="button" aria-expanded={open} onClick={() => setOpen(o => !o)} style={{
+      {fullWidth && (
+        <div style={{
+          marginBottom: 4, fontSize: 11, lineHeight: 1.2, fontWeight: 500,
+          letterSpacing: 0, color: WF.inkSoft,
+        }}>
+          Source
+        </div>
+      )}
+      <button type="button" aria-expanded={open} aria-label={fullWidth ? `Source: ${source}` : undefined} onClick={() => setOpen(o => !o)} style={{
         display: 'inline-flex', alignItems: 'center', gap: 8,
-        width: fullWidth ? '100%' : 'auto', height: fullWidth ? 40 : 38,
-        padding: fullWidth ? '6px 11px' : '0 14px', borderRadius: fullWidth ? 8 : 10, whiteSpace: 'nowrap',
+        width: fullWidth ? '100%' : 'auto', height: fullWidth ? 34 : 38,
+        padding: fullWidth ? '0 10px' : '0 14px', borderRadius: fullWidth ? 7 : 10, whiteSpace: 'nowrap',
         cursor: 'pointer', border: `${fullWidth ? 1 : 1.5}px solid ${open ? WF.accent : WF.controlLine}`,
         background: open && fullWidth ? WF.accentTint : WF.panel,
         fontFamily: 'inherit', fontSize: 13, color: WF.ink, outline: 'none',
         transition: 'border-color 0.15s, background 0.15s',
       }}>
         {fullWidth ? (
-          <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 1, textAlign: 'left' }}>
-            <span style={{
-              fontSize: 9, lineHeight: 1, fontWeight: 750, letterSpacing: 0.45,
-              textTransform: 'uppercase', color: WF.inkLabel,
-            }}>Source</span>
-            <span style={{ fontSize: 12.5, lineHeight: 1.2, color: WF.ink, fontWeight: 650 }}>{source}</span>
-          </span>
+          <span style={{ flex: 1, minWidth: 0, textAlign: 'left', fontSize: 12.5, lineHeight: 1.2, color: WF.ink, fontWeight: 650 }}>{source}</span>
         ) : (
           <>
             <span style={{ color: WF.inkSoft }}>Source</span>
