@@ -656,10 +656,18 @@ export function SupplementCatalog({
           outline-offset: 2px;
         }
         .mvas-supplement-product-grid {
+          display: block;
+          overflow: hidden;
+          border: 1px solid ${TOKENS.line};
+          border-radius: 8px;
+          background: ${TOKENS.panel};
+        }
+        .mvas-supplement-list-header,
+        .mvas-supplement-list-row {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-          gap: 8px;
-          align-items: start;
+          grid-template-columns: minmax(0, 1fr) minmax(130px, .42fr) 96px 72px;
+          align-items: center;
+          gap: 10px;
         }
         .mvas-supplement-cabin-grid {
           display: grid;
@@ -678,8 +686,16 @@ export function SupplementCatalog({
           border-radius: 999px;
         }
         @media (max-width: 720px) {
-          .mvas-supplement-product-grid,
           .mvas-supplement-cabin-grid { grid-template-columns: 1fr; }
+          .mvas-supplement-list-header { display: none; }
+          .mvas-supplement-list-row {
+            grid-template-columns: minmax(0, 1fr) auto;
+            row-gap: 6px;
+          }
+          .mvas-supplement-product-cell { grid-column: 1; grid-row: 1; }
+          .mvas-supplement-assignment-cell { grid-column: 1; grid-row: 2; }
+          .mvas-supplement-price-cell { grid-column: 2; grid-row: 1; }
+          .mvas-supplement-action-cell { grid-column: 2; grid-row: 2; }
         }
       `}</style>
 
@@ -806,7 +822,24 @@ export function SupplementCatalog({
       <div style={{ padding: "0 12px 12px" }}>
         {filteredProducts.length > 0 ? (
           <div className="mvas-supplement-product-grid">
-            {filteredProducts.map((product) => {
+            <div
+              className="mvas-supplement-list-header"
+              aria-hidden="true"
+              style={{
+                padding: "6px 10px",
+                borderBottom: `1px solid ${TOKENS.line}`,
+                background: TOKENS.fill,
+                color: TOKENS.inkSoft,
+                fontSize: 11,
+                fontWeight: 600,
+              }}
+            >
+              <span>Product</span>
+              <span>Assignment</span>
+              <span style={{ textAlign: "right" }}>Price</span>
+              <span />
+            </div>
+            {filteredProducts.map((product, index) => {
               const productAssignment = currentAssignments[product.id] || {};
               const quantity = quantityFor(productAssignment);
               const guestsAssigned = assignedGuestCount(productAssignment);
@@ -818,13 +851,13 @@ export function SupplementCatalog({
                   key={product.id}
                   style={{
                     overflow: "hidden",
-                    border: `1px solid ${expanded ? TOKENS.accent : selected ? TOKENS.accentLine : TOKENS.line}`,
-                    borderRadius: 9,
+                    borderBottom: index < filteredProducts.length - 1 ? `1px solid ${TOKENS.lineSoft}` : "none",
                     background: expanded ? TOKENS.accentTint : TOKENS.panel,
-                    boxShadow: "0 1px 2px rgba(15, 23, 42, 0.04)",
+                    boxShadow: selected ? `inset 3px 0 ${TOKENS.accent}` : "none",
                   }}
                 >
                   <button
+                    className="mvas-supplement-list-row"
                     type="button"
                     disabled={!hasGuests}
                     aria-expanded={expanded}
@@ -833,11 +866,7 @@ export function SupplementCatalog({
                     onClick={() => openProduct(product.id)}
                     style={{
                       width: "100%",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: 12,
-                      padding: "11px 12px",
+                      padding: "8px 10px",
                       border: "none",
                       background: "transparent",
                       color: TOKENS.ink,
@@ -847,38 +876,25 @@ export function SupplementCatalog({
                       textAlign: "left",
                     }}
                   >
-                    <span style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1 }}>
+                    <span className="mvas-supplement-product-cell" style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1 }}>
                       <span
                         aria-hidden="true"
                         style={{
-                          width: 38,
-                          height: 38,
+                          width: 32,
+                          height: 32,
                           display: "inline-flex",
                           alignItems: "center",
                           justifyContent: "center",
                           flexShrink: 0,
                           border: `1px solid ${TOKENS.line}`,
-                          borderRadius: 8,
+                          borderRadius: 7,
                           background: TOKENS.panel,
-                          fontSize: 18,
+                          fontSize: 16,
                         }}
                       >
                         {product.emoji}
                       </span>
                       <span style={{ minWidth: 0, flex: 1 }}>
-                        <span
-                          style={{
-                            display: "block",
-                            marginBottom: 3,
-                            color: TOKENS.inkLabel,
-                            fontSize: 11,
-                            fontWeight: 800,
-                            letterSpacing: 0.55,
-                            textTransform: "uppercase",
-                          }}
-                        >
-                          {product.category}
-                        </span>
                         <span style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                           <span style={{ color: TOKENS.ink, fontSize: 12.5, fontWeight: 700 }}>{product.name}</span>
                           {product.minAge != null && (
@@ -896,34 +912,38 @@ export function SupplementCatalog({
                             </span>
                           )}
                         </span>
-                        <span style={{ display: "flex", alignItems: "center", minHeight: 20, marginTop: 5, fontSize: 11 }}>
-                          {selected ? (
-                            <span
-                              style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: 4,
-                                padding: "3px 7px",
-                                border: `1px solid ${TOKENS.positiveLine}`,
-                                borderRadius: 999,
-                                background: TOKENS.positiveBg,
-                                color: TOKENS.positive,
-                                fontSize: 11,
-                                fontWeight: 800,
-                              }}
-                            >
-                              <span aria-hidden="true">✓</span>
-                              Assigned · {guestsAssigned} guest{guestsAssigned === 1 ? "" : "s"}
-                            </span>
-                          ) : (
-                            <span style={{ color: TOKENS.inkSoft }}>No guests assigned</span>
-                          )}
+                        <span style={{ display: "block", marginTop: 3, color: TOKENS.inkSoft, fontSize: 11, fontWeight: 500 }}>
+                          {product.category}
                         </span>
                       </span>
                     </span>
 
-                    <span style={{ display: "flex", alignItems: "center", gap: 9, flexShrink: 0 }}>
-                      <span style={{ minWidth: 76, textAlign: "right" }}>
+                    <span className="mvas-supplement-assignment-cell" style={{ minWidth: 0, fontSize: 11 }}>
+                      {selected ? (
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 4,
+                            padding: "3px 7px",
+                            border: `1px solid ${TOKENS.positiveLine}`,
+                            borderRadius: 999,
+                            background: TOKENS.positiveBg,
+                            color: TOKENS.positive,
+                            fontSize: 11,
+                            fontWeight: 700,
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          <span aria-hidden="true">✓</span>
+                          {guestsAssigned} guest{guestsAssigned === 1 ? "" : "s"}
+                        </span>
+                      ) : (
+                        <span style={{ color: TOKENS.inkSoft }}>Not assigned</span>
+                      )}
+                    </span>
+
+                    <span className="mvas-supplement-price-cell" style={{ minWidth: 0, textAlign: "right" }}>
                         <span
                           style={{
                             display: "block",
@@ -949,12 +969,13 @@ export function SupplementCatalog({
                             ? `+${formatMoney(product.pricePerGuest * quantity, currency)}`
                             : formatMoney(product.pricePerGuest, currency)}
                         </span>
-                      </span>
+                    </span>
                       <span
+                        className="mvas-supplement-action-cell"
                         aria-hidden="true"
                         style={{
-                          minWidth: selected ? 62 : 72,
-                          height: 32,
+                          width: 72,
+                          height: 30,
                           padding: "0 8px 0 10px",
                           display: "inline-flex",
                           alignItems: "center",
@@ -973,7 +994,6 @@ export function SupplementCatalog({
                           <path d="M4 2L8 6L4 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                       </span>
-                    </span>
                   </button>
                 </div>
               );

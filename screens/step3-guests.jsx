@@ -668,6 +668,7 @@ function Step3App({ booking, update, navigate }) {
           continueEnabled={allGuestsAssigned}
           ctaLabel={allGuestsAssigned ? 'Continue to review →' : 'Assign all guests to continue'}
           onContinue={handleContinue}
+          showFlowNavigation={false}
           notice={unassignedSupps.length > 0 && (
             <div style={{ padding: '12px 16px', borderBottom: `1px solid ${WF.line}` }}>
               <div style={{
@@ -678,6 +679,37 @@ function Step3App({ booking, update, navigate }) {
               </div>
             </div>
           )} />
+        }
+        bottomBar={
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <button
+              type="button"
+              onClick={handleBack}
+              aria-label="Back to sailing, fare and cabin"
+              style={{
+                minHeight: 40, padding: '9px 14px', border: `1px solid ${WF.line}`,
+                borderRadius: 8, background: WF.panel, color: WF.inkSoft,
+                fontFamily: 'inherit', fontSize: 12.5, fontWeight: 600,
+                cursor: 'pointer', whiteSpace: 'nowrap',
+              }}>
+              ← Back to sailing, fare &amp; cabin
+            </button>
+            <button
+              type="button"
+              onClick={() => (allGuestsAssigned ? handleContinue() : undefined)}
+              disabled={!allGuestsAssigned}
+              title={allGuestsAssigned ? undefined : 'Assign all guests to continue'}
+              style={{
+                minWidth: 210, minHeight: 40, padding: '9px 18px', border: 'none',
+                borderRadius: 8,
+                background: allGuestsAssigned ? WF.accent : WF.fillStrong,
+                color: allGuestsAssigned ? WF.accentText : WF.inkFaint,
+                fontFamily: 'inherit', fontSize: 12.5, fontWeight: 700,
+                cursor: allGuestsAssigned ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap',
+              }}>
+              {allGuestsAssigned ? 'Continue to review →' : 'Assign all guests to continue'}
+            </button>
+          </div>
         }
         progressBar={<StepProgress3 current={2} onBack={handleBack} />}>
 

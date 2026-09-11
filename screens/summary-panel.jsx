@@ -731,6 +731,7 @@ function SPCabinDetails({ b, p }) {
 function BookingSummaryPanel({
   booking, update, step,
   continueEnabled, ctaLabel, onContinue, onBlocked,
+  showFlowNavigation = true,
   notice,
 }) {
   const b = booking || {};
@@ -790,6 +791,51 @@ function BookingSummaryPanel({
     if (!window.confirm('Discard this booking and start over?')) return;
     update && update({ ...BOOKING_DEFAULTS, step: 1 }, { replace: true });
   };
+
+  const secondaryActions = (
+    <div style={{ display: 'flex', gap: 8 }}>
+      <div style={{ position: 'relative', flex: 1 }}>
+        <button
+          onClick={() => setShowHoldMenu((v) => !v)}
+          style={{
+            width: '100%', padding: '8px 10px', fontSize: 12, fontWeight: 600, border: `1px solid ${WF.line}`,
+            borderRadius: 7, background: '#fff', color: WF.ink, cursor: 'pointer', fontFamily: 'inherit',
+          }}>Hold</button>
+        {showHoldMenu && (
+          <>
+            <div onClick={() => setShowHoldMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
+            <div style={{
+              position: 'absolute', bottom: '100%', left: 0, marginBottom: 6, zIndex: 41,
+              width: 160, background: '#fff', border: `1px solid ${WF.line}`, borderRadius: 9,
+              boxShadow: '0 12px 32px rgba(15,31,61,0.16)', overflow: 'hidden',
+            }}>
+              <div style={{ padding: '8px 12px 6px', fontSize: 10.5, fontWeight: 700, color: WF.inkSoft, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                Hold for
+              </div>
+              {['24h', '48h', '72h'].map((d) => (
+                <button
+                  key={d}
+                  onClick={() => { set({ holdDur: d }); setShowHoldMenu(false); }}
+                  style={{
+                    display: 'block', width: '100%', padding: '9px 12px', border: 'none',
+                    background: 'transparent', color: WF.ink, fontSize: 12.5, fontWeight: 500,
+                    textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = '#F8FAFC'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
+                  {d}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+      <button onClick={discard} style={{
+        flex: 1, padding: '8px 10px', fontSize: 12, fontWeight: 600, border: `1px solid ${WF.line}`,
+        borderRadius: 7, background: '#fff', color: WF.ink, cursor: 'pointer', fontFamily: 'inherit',
+      }}>Discard</button>
+    </div>
+  );
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
@@ -953,65 +999,32 @@ function BookingSummaryPanel({
             <SPAmountDueCard p={p} />
           )}
         </div>
+
+        {!showFlowNavigation && (
+          <div style={{ padding: '0 16px 16px' }}>
+            {secondaryActions}
+          </div>
+        )}
       </div>
 
       {/* ── Footer ── */}
-      <div style={{
-        padding: '12px 16px 16px', borderTop: `1px solid ${WF.line}`,
-        display: 'flex', flexDirection: 'column', gap: 8, background: WF.panel, flexShrink: 0,
-      }}>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <div style={{ position: 'relative', flex: 1 }}>
-            <button
-              onClick={() => setShowHoldMenu((v) => !v)}
-              style={{
-                width: '100%', padding: '8px 10px', fontSize: 12, fontWeight: 600, border: `1px solid ${WF.line}`,
-                borderRadius: 7, background: '#fff', color: WF.ink, cursor: 'pointer', fontFamily: 'inherit',
-              }}>Hold</button>
-            {showHoldMenu && (
-              <>
-                <div onClick={() => setShowHoldMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
-                <div style={{
-                  position: 'absolute', bottom: '100%', left: 0, marginBottom: 6, zIndex: 41,
-                  width: 160, background: '#fff', border: `1px solid ${WF.line}`, borderRadius: 9,
-                  boxShadow: '0 12px 32px rgba(15,31,61,0.16)', overflow: 'hidden',
-                }}>
-                  <div style={{ padding: '8px 12px 6px', fontSize: 10.5, fontWeight: 700, color: WF.inkSoft, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                    Hold for
-                  </div>
-                  {['24h', '48h', '72h'].map((d) => (
-                    <button
-                      key={d}
-                      onClick={() => { set({ holdDur: d }); setShowHoldMenu(false); }}
-                      style={{
-                        display: 'block', width: '100%', padding: '9px 12px', border: 'none',
-                        background: 'transparent', color: WF.ink, fontSize: 12.5, fontWeight: 500,
-                        textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit',
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = '#F8FAFC'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
-                      {d}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-          <button onClick={discard} style={{
-            flex: 1, padding: '8px 10px', fontSize: 12, fontWeight: 600, border: `1px solid ${WF.line}`,
-            borderRadius: 7, background: '#fff', color: WF.ink, cursor: 'pointer', fontFamily: 'inherit',
-          }}>Discard</button>
+      {showFlowNavigation && (
+        <div style={{
+          padding: '12px 16px 16px', borderTop: `1px solid ${WF.line}`,
+          display: 'flex', flexDirection: 'column', gap: 8, background: WF.panel, flexShrink: 0,
+        }}>
+          {secondaryActions}
+          <button
+            onClick={() => (continueEnabled ? onContinue && onContinue() : onBlocked && onBlocked())}
+            title={continueEnabled ? undefined : 'Complete this step to continue'}
+            style={{
+              width: '100%', padding: '11px 14px', fontSize: 12.5, fontWeight: 700, border: 'none', borderRadius: 8,
+              background: continueEnabled ? WF.accent : WF.fillStrong,
+              color: continueEnabled ? '#fff' : WF.inkFaint,
+              cursor: continueEnabled ? 'pointer' : 'not-allowed', fontFamily: 'inherit',
+            }}>{ctaLabel}</button>
         </div>
-        <button
-          onClick={() => (continueEnabled ? onContinue && onContinue() : onBlocked && onBlocked())}
-          title={continueEnabled ? undefined : 'Complete this step to continue'}
-          style={{
-            width: '100%', padding: '11px 14px', fontSize: 12.5, fontWeight: 700, border: 'none', borderRadius: 8,
-            background: continueEnabled ? WF.accent : WF.fillStrong,
-            color: continueEnabled ? '#fff' : WF.inkFaint,
-            cursor: continueEnabled ? 'pointer' : 'not-allowed', fontFamily: 'inherit',
-          }}>{ctaLabel}</button>
-      </div>
+      )}
     </div>
   );
 }

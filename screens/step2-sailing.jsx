@@ -483,7 +483,7 @@ function AssignGuestsPanel({ sup, roster, assignment, onGuestQty, onAddCabin, on
 }
 
 // ───────────────────────────────────────────────────────────────────────────
-// 4. Supplements cards (multi-select grid)
+// 4. Supplements catalog (single-column assignment list)
 // ───────────────────────────────────────────────────────────────────────────
 function SupplementsSection({ selectedSupps, guests, cabins, suppAssignments, onToggle }) {
   const suppQtys = selectedSupps || {}; // { suppId: totalQty, ... }
@@ -563,7 +563,20 @@ function SupplementsSection({ selectedSupps, guests, cabins, suppAssignments, on
   };
 
   return (
-    <div>
+    <div className="mvas-step2-supplements">
+      <style>{`
+        @media (max-width: 1100px) {
+          .mvas-step2-supplements .mvas-supplement-list-header { display: none !important; }
+          .mvas-step2-supplements .mvas-supplement-list-row {
+            grid-template-columns: minmax(0, 1fr) auto !important;
+            row-gap: 6px !important;
+          }
+          .mvas-step2-supplements .mvas-supplement-product-cell { grid-column: 1; grid-row: 1; }
+          .mvas-step2-supplements .mvas-supplement-assignment-cell { grid-column: 1; grid-row: 2; }
+          .mvas-step2-supplements .mvas-supplement-price-cell { grid-column: 2; grid-row: 1; }
+          .mvas-step2-supplements .mvas-supplement-action-cell { grid-column: 2; grid-row: 2; }
+        }
+      `}</style>
       {!hasGuests && (
         <div style={{
           display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', marginBottom: 14,
@@ -648,10 +661,22 @@ function SupplementsSection({ selectedSupps, guests, cabins, suppAssignments, on
       {/* Supplements list with assign-guests controls */}
       <div style={{ padding: '0 11px 11px' }}>
         <div style={{
-          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-          gap: 8, alignItems: 'start'
+          border: `1px solid ${WF.line}`, borderRadius: 8,
+          overflow: 'hidden', background: WF.panel,
         }}>
-          {filteredSupps.length > 0 ? filteredSupps.map((sup) => {
+          <div className="mvas-supplement-list-header" aria-hidden="true" style={{
+            display: 'grid',
+            gridTemplateColumns: 'minmax(0, 1fr) minmax(130px, 0.42fr) 92px 72px',
+            alignItems: 'center', gap: 10, padding: '6px 10px',
+            borderBottom: `1px solid ${WF.line}`, background: WF.fill,
+            color: WF.inkSoft, fontSize: 9.5, fontWeight: 600,
+          }}>
+            <span>Product</span>
+            <span>Assignment</span>
+            <span style={{ textAlign: 'right' }}>Price</span>
+            <span />
+          </div>
+          {filteredSupps.length > 0 ? filteredSupps.map((sup, index) => {
             const suppAssign = assignments[sup.id] || {};
             const qty = suppQtys[sup.id] || 0;
             const lineTotal = sup.pricePP * qty;
@@ -663,13 +688,14 @@ function SupplementsSection({ selectedSupps, guests, cabins, suppAssignments, on
               <div
                 key={sup.id}
                 style={{
-                  border: `1px solid ${expanded ? WF.accent : qty > 0 ? WF.accentLine : WF.line}`,
-                  borderRadius: 9, overflow: 'hidden',
+                  borderBottom: index < filteredSupps.length - 1 ? `1px solid ${WF.lineSoft}` : 'none',
+                  overflow: 'hidden',
                   background: expanded ? WF.accentTint : '#FFFFFF',
-                  boxShadow: '0 1px 2px rgba(15,23,42,0.04)',
+                  boxShadow: qty > 0 ? `inset 3px 0 ${WF.accent}` : 'none',
                   transition: 'border-color 0.12s, background 0.12s'
                 }}>
                 <button
+                  className="mvas-supplement-list-row"
                   type="button"
                   onClick={() => hasGuests && setExpandedSuppId(sup.id)}
                   disabled={!hasGuests}
@@ -678,24 +704,22 @@ function SupplementsSection({ selectedSupps, guests, cabins, suppAssignments, on
                   aria-label={`${qty > 0 ? 'Review assignment for' : 'Assign guests to'} ${sup.name}`}
                   style={{
                     width: '100%', border: 'none', background: 'transparent', fontFamily: 'inherit', textAlign: 'left',
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '11px 12px', gap: 12, cursor: hasGuests ? 'pointer' : 'not-allowed',
+                    display: 'grid',
+                    gridTemplateColumns: 'minmax(0, 1fr) minmax(130px, 0.42fr) 92px 72px',
+                    alignItems: 'center', padding: '8px 10px', gap: 10,
+                    cursor: hasGuests ? 'pointer' : 'not-allowed',
                     opacity: hasGuests ? 1 : 0.55, transition: 'background 0.12s'
                   }}
                   onMouseEnter={(e) => { if (hasGuests && !expanded) e.currentTarget.style.background = WF.fill; }}
                   onMouseLeave={(e) => { if (!expanded) e.currentTarget.style.background = 'transparent'; }}>
                   {/* Supplement info */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
+                  <div className="mvas-supplement-product-cell" style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
                     <span style={{
-                      width: 36, height: 36, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                      border: `1px solid ${WF.line}`, borderRadius: 8, background: '#FFFFFF',
-                      fontSize: 17, flexShrink: 0
+                      width: 32, height: 32, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      border: `1px solid ${WF.line}`, borderRadius: 7, background: '#FFFFFF',
+                      fontSize: 16, flexShrink: 0
                     }}>{sup.emoji}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{
-                        marginBottom: 3, fontSize: 8.5, lineHeight: 1, fontWeight: 800,
-                        letterSpacing: 0.55, textTransform: 'uppercase', color: WF.inkLabel
-                      }}>{sup.category}</div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <div style={{ fontSize: 12.5, lineHeight: 1.2, fontWeight: 700, color: WF.ink }}>{sup.name}</div>
                         {sup.minAge != null && (
@@ -704,39 +728,40 @@ function SupplementsSection({ selectedSupps, guests, cabins, suppAssignments, on
                           </span>
                         )}
                       </div>
-                      <div style={{ marginTop: 5, minHeight: 18, display: 'flex', alignItems: 'center', fontSize: 9.5 }}>
-                        {qty > 0 ? (
-                          <span style={{
-                            display: 'inline-flex', alignItems: 'center', gap: 4,
-                            padding: '3px 7px', borderRadius: 999,
-                            background: '#F0FDF4', border: '1px solid #BBF7D0',
-                            color: '#047857', fontSize: 9, fontWeight: 800,
-                            lineHeight: 1, whiteSpace: 'nowrap'
-                          }}>
-                            <span aria-hidden="true">✓</span>
-                            Assigned · {assignedCaption}
-                          </span>
-                        ) : (
-                          <span style={{ color: WF.inkSoft }}>No guests assigned</span>
-                        )}
-                      </div>
+                      <div style={{ marginTop: 3, fontSize: 9.5, fontWeight: 500, color: WF.inkSoft }}>{sup.category}</div>
                     </div>
                   </div>
 
-                  {/* One commercial summary per card: assigned products lead
+                  <div className="mvas-supplement-assignment-cell" style={{ minWidth: 0, fontSize: 10.5 }}>
+                    {qty > 0 ? (
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 4,
+                        padding: '3px 7px', borderRadius: 999,
+                        background: '#F0FDF4', border: '1px solid #BBF7D0',
+                        color: '#047857', fontSize: 9.5, fontWeight: 700,
+                        lineHeight: 1, whiteSpace: 'nowrap'
+                      }}>
+                        <span aria-hidden="true">✓</span>
+                        {assignedCaption}
+                      </span>
+                    ) : (
+                      <span style={{ color: WF.inkSoft }}>Not assigned</span>
+                    )}
+                  </div>
+
+                  {/* One commercial summary per list row: assigned products lead
                       with the actual total, while unassigned products lead
                       with their unit price. */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 9, flexShrink: 0 }}>
-                    <div style={{ minWidth: 72, textAlign: 'right' }}>
+                  <div className="mvas-supplement-price-cell" style={{ minWidth: 0, textAlign: 'right' }}>
                       <div style={{ fontSize: 8, fontWeight: 800, letterSpacing: 0.45, color: WF.inkLabel, textTransform: 'uppercase' }}>
                         {qty > 0 ? 'Total' : 'Per guest'}
                       </div>
                       <div style={{ marginTop: 2, fontSize: 12.5, fontWeight: 800, color: WF.ink, fontFamily: 'ui-monospace, monospace', fontVariantNumeric: 'tabular-nums' }}>
                         {qty > 0 ? `+$${lineTotal.toFixed(2)}` : `$${sup.pricePP.toFixed(2)}`}
                       </div>
-                    </div>
-                    <span style={{
-                      minWidth: qty > 0 ? 62 : 72, height: 30, padding: '0 8px 0 10px', borderRadius: 6,
+                  </div>
+                    <span className="mvas-supplement-action-cell" style={{
+                      width: 72, height: 30, padding: '0 8px 0 10px', borderRadius: 6,
                       display: 'inline-flex', alignItems: 'center', justifyContent: 'space-between', gap: 6,
                       border: `1px solid ${qty > 0 ? WF.accentLine : WF.line}`,
                       background: qty > 0 ? WF.accentTint : '#FFFFFF', color: WF.accent,
@@ -747,15 +772,13 @@ function SupplementsSection({ selectedSupps, guests, cabins, suppAssignments, on
                         <path d="M4 2L8 6L4 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                     </span>
-                  </div>
                 </button>
               </div>);
 
           }) :
           <div style={{
             fontSize: 11.5, color: WF.inkFaint, textAlign: 'center',
-            padding: '22px 0', border: `1px dashed ${WF.line}`,
-            borderRadius: 9, gridColumn: '1 / -1'
+            padding: '22px 0'
           }}>
               No supplements match your filters.
             </div>
@@ -1270,7 +1293,27 @@ function Step2App({ booking, update, navigate }) {
           continueEnabled={continueEnabled}
           ctaLabel="Continue to guests →"
           onContinue={handleContinue}
-          onBlocked={handleBlocked} />
+          onBlocked={handleBlocked}
+          showFlowNavigation={false} />
+        }
+        bottomBar={
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+            <button
+              type="button"
+              onClick={() => (continueEnabled ? handleContinue() : handleBlocked())}
+              aria-disabled={!continueEnabled}
+              title={continueEnabled ? undefined : 'Complete the sailing, cabin and fare selection to continue'}
+              style={{
+                minWidth: 210, minHeight: 40, padding: '9px 18px', border: 'none',
+                borderRadius: 8,
+                background: continueEnabled ? WF.accent : WF.fillStrong,
+                color: continueEnabled ? WF.accentText : WF.inkFaint,
+                fontFamily: 'inherit', fontSize: 12.5, fontWeight: 700,
+                cursor: continueEnabled ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap',
+              }}>
+              Continue to guests →
+            </button>
+          </div>
         }
         progressBar={<StepProgress2 current={1} />}>
 

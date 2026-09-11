@@ -4,13 +4,14 @@ This package recreates the MVAS supplement catalog shown in the booking-flow pro
 
 ## Included file
 
-- `SupplementCatalog.portable.jsx` — standalone React 18 component, sample catalog data, demo cabins, search, filters, assignment cards, eligibility rules, and the per-guest assignment dialog.
+- `SupplementCatalog.portable.jsx` — standalone React 18 component, sample catalog data, demo cabins, search, filters, assignment list, eligibility rules, and the per-guest assignment dialog.
 
 ## What the component includes
 
 - Search across supplement name and category.
 - Dynamic category filters.
-- Responsive two-column catalog grid.
+- Scan-friendly single-column catalog with aligned product, assignment, price, and action columns.
+- Responsive rows that stack assignment and action details at narrow widths.
 - Per-guest price before assignment.
 - Total assigned price after assignment.
 - Assigned-product and assignment-count summaries.
@@ -211,8 +212,8 @@ Use actual date-of-birth or age data when it exists. Representative ages are onl
 - [ ] `Remove all` affects only the selected cabin.
 - [ ] Escape closes the dialog.
 - [ ] Tab focus remains inside the open dialog.
-- [ ] Closing restores focus to the product card.
-- [ ] At narrow widths, catalog and cabin grids collapse to one column.
+- [ ] Closing restores focus to the product row.
+- [ ] At narrow widths, catalog rows stack cleanly and the cabin grid collapses to one column.
 
 ## Ready-to-paste request for Codex in the other project
 
@@ -239,4 +240,3 @@ The source implementation in this prototype lives in:
   - `GuestSupplyStepper`
   - `AssignGuestsPanel`
   - `SupplementsSection`
-

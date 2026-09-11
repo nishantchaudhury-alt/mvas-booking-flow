@@ -351,7 +351,7 @@ function MVIcon({ id, size = 18 }) {
 // above the content scrollport; only the content beneath it moves.
 const RAIL_W = 320;
 
-function WFAppShell({ active = 'fares', activeGroup = 'fares', breadcrumb, title, actions, children, rightRail, progressBar }) {
+function WFAppShell({ active = 'fares', activeGroup = 'fares', breadcrumb, title, actions, children, rightRail, progressBar, bottomBar }) {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'bookings', label: 'Bookings', children: [
@@ -380,7 +380,7 @@ function WFAppShell({ active = 'fares', activeGroup = 'fares', breadcrumb, title
   return (
     <div style={{
       width: '100%', height: '100%',
-      display: 'grid', gridTemplateColumns: cols, gridTemplateRows: '52px 1fr',
+      display: 'grid', gridTemplateColumns: cols, gridTemplateRows: '52px minmax(0, 1fr) auto',
       background: '#F9FAFC', color: WF.ink,
       fontFamily: '"Inter", system-ui, -apple-system, sans-serif', fontSize: 13,
       overflow: 'hidden',
@@ -508,6 +508,17 @@ function WFAppShell({ active = 'fares', activeGroup = 'fares', breadcrumb, title
           display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden',
         }}>
           {rightRail}
+        </div>
+      )}
+      {bottomBar && (
+        <div style={{
+          gridColumn: '2 / -1', gridRow: 3,
+          padding: '12px 28px 14px', borderTop: `1px solid ${WF.line}`,
+          background: WF.panel,
+        }}>
+          <div style={{ maxWidth: 1460, width: '100%', margin: '0 auto' }}>
+            {bottomBar}
+          </div>
         </div>
       )}
     </div>
