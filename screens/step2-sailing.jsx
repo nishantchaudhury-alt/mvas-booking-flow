@@ -1297,7 +1297,24 @@ function Step2App({ booking, update, navigate }) {
           showFlowNavigation={false} />
         }
         bottomBar={
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+          <div style={{
+            display: 'flex', alignItems: 'center',
+            justifyContent: expandedCard ? 'space-between' : 'flex-end', gap: 12
+          }}>
+            {expandedCard && (
+              <button
+                type="button"
+                onClick={() => setExpandedCard(null)}
+                aria-label="Back to all sailings"
+                style={{
+                  minHeight: 40, padding: '9px 14px', border: `1px solid ${WF.line}`,
+                  borderRadius: 8, background: WF.panel, color: WF.inkSoft,
+                  fontFamily: 'inherit', fontSize: 12.5, fontWeight: 600,
+                  cursor: 'pointer', whiteSpace: 'nowrap',
+                }}>
+                ← Back to all sailings
+              </button>
+            )}
             <button
               type="button"
               onClick={() => (continueEnabled ? handleContinue() : handleBlocked())}
@@ -1345,25 +1362,10 @@ function Step2App({ booking, update, navigate }) {
             border: `1px solid ${WF.line}`, borderRadius: 10, background: WF.panel, padding: 0, marginBottom: 0, marginTop: 16
           }}>
                 <div style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
                   padding: '10px 14px', background: WF.fill,
                   borderBottom: `1px solid ${WF.line}`, borderRadius: '10px 10px 0 0'
                 }}>
-                  <button
-                onClick={() => setExpandedCard(null)}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                  background: '#fff', border: `1px solid ${WF.line}`,
-                  cursor: 'pointer', fontFamily: 'inherit',
-                  padding: '6px 12px', borderRadius: 6,
-                  fontSize: 12, fontWeight: 600, color: WF.inkSoft
-                }}>
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                      <path d="M9 3L5 7l4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                    Back to all sailings
-                  </button>
-
                   {window.CruiseItineraryButton &&
                   <window.CruiseItineraryButton
                     sailingCode={expandedCard}
