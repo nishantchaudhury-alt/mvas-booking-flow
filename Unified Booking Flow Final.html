@@ -234,6 +234,13 @@ window.MiniStep = MiniStep;
   .s4-secondary { border: 1px solid #CBD5E1; background: #fff; color: #0F172A; }
   .s4-secondary:hover { border-color: #94A3B8; background: #F8FAFC; }
 
+  .s4-overflow { border: 1px solid #E2E8F0; background: #F8FAFC; color: #475569; }
+  .s4-overflow:hover { border-color: #CBD5E1; background: #F1F5F9; color: #0F172A; }
+  .s4-overflow[aria-expanded="true"] { border-color: #DBEAFE; background: #EFF6FF; color: #1B2434; }
+
+  .s4-danger-tertiary { border: none; background: transparent; color: #B91C1C; }
+  .s4-danger-tertiary:hover { background: #FEF2F2; }
+
   /* Discard is destructive and reversible only by redoing the booking, so it
      rests as plain text — present, but not competing with the two actions that
      move the booking forward. Red is held back until intent is shown. */
@@ -1321,7 +1328,7 @@ function Step4App({ booking, update }) {
   // because the two write to different slices of the booking (`guestData` vs
   // `suppAssignments`), but both commit on one Save.
   const [draftGuest, setDraftGuest] = React.useState(S4_EMPTY_GUEST_DRAFT);
-  const [showHoldMenu, setShowHoldMenu] = React.useState(false);
+  const [showBookingActions, setShowBookingActions] = React.useState(false);
 
   // Which lens Order summary shows: the whole-booking ledger, or the same money
   // re-cut per stateroom. Local state — a view of the receipt, not booking data.
@@ -1540,7 +1547,7 @@ function Step4App({ booking, update }) {
       active="create-booking"
       breadcrumb={['CRM', 'Bookings', 'Create', 'Review & confirm']}
       bottomBar={
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
           <button
             type="button"
             onClick={() => handleBack(2)}
@@ -1548,15 +1555,6 @@ function Step4App({ booking, update }) {
             aria-label="Back to guest details"
             style={{ minHeight: 40, padding: '9px 14px', fontSize: 12.5, fontWeight: 600, borderRadius: 8, whiteSpace: 'nowrap' }}>
             ← Back to guest details
-          </button>
-          <button
-            type="button"
-            onClick={() => q.status === 'final' && alert('Booking submitted! (Demo only)')}
-            disabled={q.status !== 'final'}
-            className="s4-btn s4-primary"
-            title={q.status !== 'final' ? 'Choose a sailing, cabin and farecode to confirm' : undefined}
-            style={{ minWidth: 210, minHeight: 40, padding: '9px 18px', fontSize: 12.5, fontWeight: 700, borderRadius: 8 }}>
-            Confirm booking
           </button>
         </div>
       }
@@ -1890,54 +1888,81 @@ function Step4App({ booking, update }) {
                   </div>
                 )}
 
-                {/* Amount and booking-management actions stay available in
-                    either view. Flow navigation lives in the shared full-width
-                    footer, matching the other booking steps. */}
+                {/* The final booking action belongs to the pricing decision
+                    surface on this step. Back navigation remains in the shared
+                    footer so it stays predictable without separating Confirm
+                    from the amount the agent is approving. */}
                 <div style={{ marginTop: 16, paddingTop: 16, borderTop: S4_RULE }}>
                   <S4TotalsStats q={q} />
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
-                      <div style={{ position: 'relative', flex: 1 }}>
-                        <button
-                          onClick={() => setShowHoldMenu((v) => !v)}
-                          className="s4-btn s4-secondary"
-                          style={{ width: '100%', minHeight: 34, padding: '8px 14px', fontSize: 12, fontWeight: 600, borderRadius: 7 }}>
-                          Hold
-                        </button>
-                        {showHoldMenu && (
-                          <>
-                            <div onClick={() => setShowHoldMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
-                            <div style={{
-                              position: 'absolute', bottom: '100%', left: 0, marginBottom: 6, zIndex: 41,
-                              width: 160, background: '#fff', border: '1px solid #E2E8F0', borderRadius: 9,
-                              boxShadow: '0 12px 32px rgba(15,31,61,0.16)', overflow: 'hidden',
+                  <div style={{ display: 'flex', alignItems: 'stretch', gap: 8, marginTop: 10 }}>
+                    <button
+                      type="button"
+                      onClick={() => q.status === 'final' && alert('Booking submitted! (Demo only)')}
+                      disabled={q.status !== 'final'}
+                      className="s4-btn s4-primary"
+                      title={q.status !== 'final' ? 'Choose a sailing, cabin and farecode to confirm' : undefined}
+                      style={{ flex: 1, minHeight: 40, padding: '10px 14px', fontSize: 13, fontWeight: 700, borderRadius: 8 }}>
+                      Confirm booking
+                    </button>
+                    <div style={{ position: 'relative', flexShrink: 0 }}>
+                      <button
+                        type="button"
+                        onClick={() => setShowBookingActions((v) => !v)}
+                        className="s4-btn s4-overflow"
+                        aria-label="More booking actions"
+                        aria-haspopup="menu"
+                        aria-expanded={showBookingActions}
+                        title="More booking actions"
+                        style={{ width: 36, height: 40, padding: 0, borderRadius: 7, lineHeight: 1 }}>
+                        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                          <circle cx="3.5" cy="8" r="1.25" />
+                          <circle cx="8" cy="8" r="1.25" />
+                          <circle cx="12.5" cy="8" r="1.25" />
+                        </svg>
+                      </button>
+                      {showBookingActions && (
+                        <>
+                          <div onClick={() => setShowBookingActions(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
+                          <div
+                            role="menu"
+                            aria-label="Booking actions"
+                            style={{
+                              position: 'absolute', bottom: 'calc(100% + 8px)', right: 0, zIndex: 41,
+                              width: 224, background: '#fff', border: `1px solid ${WF.line}`, borderRadius: 9,
+                              boxShadow: '0 8px 24px rgba(15,23,42,0.14)', overflow: 'hidden',
                             }}>
-                              <div style={{ padding: '8px 12px 6px', fontSize: 10.5, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                                Hold for
-                              </div>
+                            <div style={{ padding: '10px 12px 6px' }}>
+                              <div style={{ fontSize: 11.5, fontWeight: 700, color: WF.ink }}>Hold booking</div>
+                              <div style={{ marginTop: 2, fontSize: 10, color: WF.inkSoft }}>Keep this reservation without confirming.</div>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6, padding: '4px 10px 10px' }}>
                               {['24h', '48h', '72h'].map((d) => (
                                 <button
                                   key={d}
-                                  onClick={() => { setSt({ holdDur: d }); setShowHoldMenu(false); alert(`Booking held for ${d}. (Demo only)`); }}
-                                  className="s4-btn"
-                                  style={{
-                                    display: 'block', width: '100%', padding: '9px 12px', border: 'none',
-                                    background: 'transparent', color: '#0F172A', fontSize: 12.5, fontWeight: 500,
-                                    textAlign: 'left',
-                                  }}
-                                  onMouseEnter={(e) => { e.currentTarget.style.background = '#F8FAFC'; }}
-                                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
+                                  type="button"
+                                  role="menuitem"
+                                  onClick={() => { setSt({ holdDur: d }); setShowBookingActions(false); alert(`Booking held for ${d}. (Demo only)`); }}
+                                  className="s4-btn s4-secondary"
+                                  style={{ minHeight: 30, padding: '6px 8px', borderRadius: 6, fontSize: 11.5, fontWeight: 600 }}>
                                   {d}
                                 </button>
                               ))}
                             </div>
-                          </>
-                        )}
-                      </div>
-                      <button
-                        onClick={discard}
-                        className="s4-btn s4-quiet"
-                        style={{ flex: 1, minHeight: 34, padding: '8px 12px', fontSize: 12, fontWeight: 600, borderRadius: 7 }}>Discard</button>
+                            <div style={{ borderTop: `1px solid ${WF.line}` }}>
+                              <button
+                                type="button"
+                                role="menuitem"
+                                onClick={discard}
+                                className="s4-btn s4-danger-tertiary"
+                                style={{ width: '100%', padding: '10px 12px', textAlign: 'left', fontSize: 11.5, fontWeight: 650 }}>
+                                Discard booking
+                              </button>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
