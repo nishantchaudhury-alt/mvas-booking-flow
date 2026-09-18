@@ -666,7 +666,7 @@ function Step3App({ booking, update, navigate }) {
           update={update}
           step={2}
           continueEnabled={allGuestsAssigned}
-          ctaLabel={allGuestsAssigned ? 'Continue to review →' : 'Assign all guests to continue'}
+          ctaLabel={allGuestsAssigned ? 'Continue to review' : 'Assign all guests to continue'}
           onContinue={handleContinue}
           showFlowNavigation={false}
           notice={unassignedSupps.length > 0 && (
@@ -692,7 +692,7 @@ function Step3App({ booking, update, navigate }) {
                 fontFamily: 'inherit', fontSize: 12.5, fontWeight: 600,
                 cursor: 'pointer', whiteSpace: 'nowrap',
               }}>
-              ← Back to sailing, fare &amp; cabin
+              Back to sailing, fare &amp; cabin
             </button>
             <button
               type="button"
@@ -707,7 +707,7 @@ function Step3App({ booking, update, navigate }) {
                 fontFamily: 'inherit', fontSize: 12.5, fontWeight: 700,
                 cursor: allGuestsAssigned ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap',
               }}>
-              {allGuestsAssigned ? 'Continue to review →' : 'Assign all guests to continue'}
+              {allGuestsAssigned ? 'Continue to review' : 'Assign all guests to continue'}
             </button>
           </div>
         }

@@ -1291,7 +1291,7 @@ function Step2App({ booking, update, navigate }) {
           update={handleUpdate}
           step={1}
           continueEnabled={continueEnabled}
-          ctaLabel="Continue to guests →"
+          ctaLabel="Continue to guests"
           onContinue={handleContinue}
           onBlocked={handleBlocked}
           showFlowNavigation={false} />
@@ -1312,7 +1312,7 @@ function Step2App({ booking, update, navigate }) {
                   fontFamily: 'inherit', fontSize: 12.5, fontWeight: 600,
                   cursor: 'pointer', whiteSpace: 'nowrap',
                 }}>
-                ← Back to all sailings
+                Back to all sailings
               </button>
             )}
             <button
@@ -1328,7 +1328,7 @@ function Step2App({ booking, update, navigate }) {
                 fontFamily: 'inherit', fontSize: 12.5, fontWeight: 700,
                 cursor: continueEnabled ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap',
               }}>
-              Continue to guests →
+              Continue to guests
             </button>
           </div>
         }

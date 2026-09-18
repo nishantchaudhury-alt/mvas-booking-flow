@@ -493,7 +493,7 @@ function SailingDetailView({ sailing, s, update, previewPkgId, onPkgPreview, onC
               }}
               onMouseEnter={(e) => { if (ready) e.currentTarget.style.opacity = '0.88'; }}
               onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}>
-              Continue to staterooms →
+              Continue to staterooms
             </button>
           </div>
         );
