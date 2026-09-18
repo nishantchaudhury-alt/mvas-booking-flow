@@ -309,6 +309,218 @@ function AutoAssignIcon({ size = 14 }) {
   );
 }
 
+function EditIcon({ size = 12 }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false">
+      <path d="M10.75 2.25 13.75 5.25 6 13H3v-3l7.75-7.75Z" />
+      <path d="m9.5 3.5 3 3" />
+    </svg>
+  );
+}
+
+function SailboatIcon({ size = 15 }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 20 20"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false">
+      <path d="M10 2.5v10.25" />
+      <path d="M9.75 3.25 4.5 11h5.25V3.25Z" />
+      <path d="m10.75 5 4 6h-4V5Z" />
+      <path d="M3 13h14l-1.2 2.25a3.1 3.1 0 0 1-2.75 1.65h-6.1a3.1 3.1 0 0 1-2.75-1.65L3 13Z" />
+    </svg>
+  );
+}
+
+const CABIN_DESCRIPTIONS = {
+  IS: 'A calm interior retreat designed for efficient rest, storage and easy access to the ship’s shared spaces.',
+  OV: 'A bright ocean-view stateroom with a picture window, practical storage and a comfortable private retreat.',
+  BAL: 'A light-filled balcony stateroom with private outdoor space and flexible sleeping arrangements.',
+  STE: 'A spacious suite with an expanded living area, upgraded finishes and additional room to unwind.',
+};
+
+function CabinFact({ label, value, detail }) {
+  return (
+    <div style={{ padding: '10px 11px', border: `1px solid ${WF.line}`, borderRadius: RD.sm, background: WF.fill }}>
+      <div style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: 0.55, color: WF.inkLabel, textTransform: 'uppercase' }}>{label}</div>
+      <div style={{ marginTop: 5, fontSize: 13, fontWeight: 750, color: WF.ink }}>{value}</div>
+      {detail && <div style={{ marginTop: 2, fontSize: 10.5, color: WF.inkSoft }}>{detail}</div>}
+    </div>
+  );
+}
+
+function CabinDetailsDialog({ room, row, state, ownerSlot, onClose }) {
+  const cap = cabinCapacity(row);
+  const baseOccupancy = row.single > 0 ? 1 : Math.min(2, cap.berths);
+  const maxOccupancy = Math.min(4, Math.max(baseOccupancy, cap.berths)
+    + (room.rollawayBed ? 1 : 0) + (room.infantFriendly ? 1 : 0));
+  const accessibility = (room.a11y || []).map((feature) => ({
+    wheelchair: 'Wheelchair-accessible layout',
+    hearing: 'Hearing assistance',
+    visual: 'Visual alert system',
+  })[feature]).filter(Boolean);
+  const roomFeatures = [
+    'Twin beds convert to one queen',
+    room.infantFriendly ? 'Portable crib available' : null,
+    room.rollawayBed ? 'Rollaway bed available' : null,
+    room.connectedRoom ? 'Connecting room available' : null,
+    ...accessibility,
+  ].filter(Boolean);
+  const statusText = state === 'selected' || state === 'taken'
+    ? `Assigned to Cabin ${ownerSlot + 1}`
+    : state === 'filtered'
+      ? 'Outside current filters'
+      : 'Available';
+  const statusColor = state === 'available' ? '#047857' : state === 'filtered' ? WF.inkSoft : WF.accent;
+  const statusBg = state === 'available' ? '#F0FDF4' : state === 'filtered' ? WF.fill : WF.accentTint;
+  const statusBorder = state === 'available' ? '#BBF7D0' : state === 'filtered' ? WF.line : WF.accentLine;
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 520, display: 'grid', placeItems: 'center', padding: 24,
+        background: 'rgba(15,23,42,0.58)', backdropFilter: 'blur(2px)'
+      }}>
+      <div
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={`cabin-details-title-${room.num}`}
+        aria-describedby={`cabin-details-description-${room.num}`}
+        style={{
+          width: 'min(760px, 100%)', maxHeight: '82vh', overflowY: 'auto',
+          background: WF.panel, border: `1px solid ${WF.line}`, borderRadius: RD.lg,
+          boxShadow: '0 24px 64px rgba(15,23,42,0.30)'
+        }}>
+        <div style={{
+          position: 'sticky', top: 0, zIndex: 1, display: 'flex', alignItems: 'flex-start', gap: SP.lg,
+          padding: `${SP.lg}px ${SP.xl}px`, borderBottom: `1px solid ${WF.line}`, background: WF.panel
+        }}>
+          <div style={{ minWidth: 0 }}>
+            <div id={`cabin-details-title-${room.num}`} style={{ fontSize: 18, fontWeight: 800, letterSpacing: -0.3, color: WF.ink }}>
+              Room {room.num}
+            </div>
+            <div style={{ marginTop: 3, fontSize: 11.5, color: WF.inkSoft }}>{row.label}</div>
+          </div>
+          <span style={{
+            marginLeft: 'auto', padding: '5px 8px', borderRadius: 999,
+            border: `1px solid ${statusBorder}`, background: statusBg,
+            color: statusColor, fontSize: 10.5, fontWeight: 750, whiteSpace: 'nowrap'
+          }}>{statusText}</span>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close room details"
+            autoFocus
+            style={{
+              width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              border: `1px solid ${WF.line}`, borderRadius: RD.sm, background: WF.panel,
+              color: WF.inkSoft, cursor: 'pointer', fontFamily: 'inherit', fontSize: 16, lineHeight: 1, flexShrink: 0
+            }}>×</button>
+        </div>
+
+        <div style={{ padding: SP.xl }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '220px minmax(0, 1fr)', gap: SP.lg }}>
+            <div style={{
+              minHeight: 176, display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+              padding: SP.lg, borderRadius: RD.md, color: '#FFFFFF',
+              background: 'linear-gradient(145deg, #1B2434 0%, #334155 100%)', overflow: 'hidden'
+            }}>
+              <div style={{
+                width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                borderRadius: 10, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.18)'
+              }}><SailboatIcon size={25} /></div>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.7, textTransform: 'uppercase', color: '#CBD5E1' }}>Cabin overview</div>
+                <div style={{ marginTop: 5, fontSize: 20, fontWeight: 800, fontFamily: 'ui-monospace, monospace' }}>{room.num}</div>
+                <div style={{ marginTop: 3, fontSize: 11.5, color: '#E2E8F0' }}>Deck {room.deck} · {LOC_LABELS[room.loc]}</div>
+              </div>
+            </div>
+
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.65, color: WF.inkLabel, textTransform: 'uppercase' }}>About this cabin</div>
+              <p id={`cabin-details-description-${room.num}`} style={{ margin: '7px 0 0', fontSize: 12.5, lineHeight: 1.55, color: WF.inkSoft }}>
+                {CABIN_DESCRIPTIONS[row.cat]}
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: SP.sm, marginTop: SP.md }}>
+                <CabinFact label="Deck" value={`Deck ${room.deck}`} detail={LOC_LABELS[room.loc]} />
+                <CabinFact label="Category" value={CAT_LABELS[row.cat]} detail={row.id} />
+                <CabinFact label="Base occupancy" value={`${baseOccupancy} guest${baseOccupancy === 1 ? '' : 's'}`} detail="Standard bedding" />
+                <CabinFact label="Max occupancy" value={`Up to ${maxOccupancy}`} detail="With available extra beds" />
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: SP.md, marginTop: SP.lg }}>
+            <section style={{ padding: SP.lg, border: `1px solid ${WF.line}`, borderRadius: RD.md }}>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.65, color: WF.inkLabel, textTransform: 'uppercase' }}>Sleeping arrangements</div>
+              <div style={{ marginTop: SP.sm, fontSize: 12.5, fontWeight: 700, color: WF.ink }}>Flexible twin or queen setup</div>
+              <div style={{ marginTop: 4, fontSize: 11.5, lineHeight: 1.45, color: WF.inkSoft }}>
+                Two twin beds can be combined into one queen bed. Extra bedding is prepared on request when available.
+              </div>
+            </section>
+            <section style={{ padding: SP.lg, border: `1px solid ${WF.line}`, borderRadius: RD.md }}>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.65, color: WF.inkLabel, textTransform: 'uppercase' }}>Standard amenities</div>
+              <div style={{ marginTop: SP.sm, fontSize: 11.5, lineHeight: 1.55, color: WF.inkSoft }}>
+                Private bath · Vanity · Climate control · In-room safe · Wardrobe and luggage storage
+              </div>
+            </section>
+          </div>
+
+          <section style={{ marginTop: SP.lg }}>
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.65, color: WF.inkLabel, textTransform: 'uppercase' }}>Room-specific features</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginTop: SP.sm }}>
+              {roomFeatures.map((feature) => (
+                <span key={feature} style={{
+                  display: 'inline-flex', alignItems: 'center', minHeight: 28, padding: '5px 8px',
+                  borderRadius: RD.sm, border: `1px solid ${WF.line}`, background: WF.fill,
+                  color: WF.inkSoft, fontSize: 11, fontWeight: 650
+                }}>{feature}</span>
+              ))}
+              {accessibility.length === 0 && (
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', minHeight: 28, padding: '5px 8px',
+                  borderRadius: RD.sm, border: `1px solid ${WF.line}`, background: WF.fill,
+                  color: WF.inkSoft, fontSize: 11, fontWeight: 650
+                }}>Standard accessibility layout</span>
+              )}
+            </div>
+          </section>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: SP.md, marginTop: SP.xl, paddingTop: SP.lg, borderTop: `1px solid ${WF.line}` }}>
+            <div style={{ fontSize: 10.5, color: WF.inkSoft }}>Viewing details does not change the room assignment.</div>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                marginLeft: 'auto', minHeight: 36, padding: '8px 14px', border: 'none', borderRadius: RD.sm,
+                background: WF.accent, color: WF.accentText, fontFamily: 'inherit', fontSize: 11.5, fontWeight: 750, cursor: 'pointer'
+              }}>Close details</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Quantity control. `max` is the category's remaining inventory; without it
 // the "+" incremented forever and a category with 2 rooms left would accept 5
 // cabins, stranding three that could never be filled. ──
@@ -706,7 +918,7 @@ const ROOM_STATE_STYLE = {
   available: { border: WF.line,      bg: WF.panel,  num: WF.ink,      opacity: 1 },
   filtered:  { border: WF.lineSoft,  bg: WF.fill,   num: WF.inkFaint, opacity: 0.58 },
 };
-function RoomCard({ room, state, ownerSlot, onClick, disabled }) {
+function RoomCard({ room, state, ownerSlot, onClick, onShowDetails, disabled }) {
   const s = ROOM_STATE_STYLE[state];
   const tags = ROOM_FEATURES.filter((f) => f.test(room));
   const statusLabel = state === 'selected'
@@ -722,35 +934,29 @@ function RoomCard({ room, state, ownerSlot, onClick, disabled }) {
       ? WF.inkSoft
       : '#047857';
   return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      aria-pressed={state === 'selected'}
-      aria-label={`Room ${room.num}, deck ${room.deck}, ${LOC_LABELS[room.loc]}, ${statusLabel}${
-        tags.length ? `, ${tags.map((f) => f.label).join(', ')}` : ''
-      }`}
-      style={{
-        display: 'flex', flexDirection: 'column', textAlign: 'left', width: '100%', height: '100%',
-        minHeight: 90, padding: '9px 10px', borderRadius: RD.sm, fontFamily: 'inherit',
-        border: `1px solid ${s.border}`, background: s.bg, opacity: s.opacity,
-        cursor: disabled ? 'not-allowed' : 'pointer',
-        // Inset ring instead of an outer glow: it thickens the selected edge
-        // without changing the tile's footprint, so the grid stays on its rhythm.
-        boxShadow: state === 'selected' ? `inset 0 0 0 1px ${WF.accent}` : '0 1px 1px rgba(15,23,42,0.03)',
-        transition: 'background-color 0.12s, border-color 0.12s, box-shadow 0.12s'
-      }}
-      onMouseEnter={(e) => {
-        if (!disabled && state !== 'selected') {
-          e.currentTarget.style.borderColor = WF.accent;
-          e.currentTarget.style.background = WF.accentTint;
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!disabled && state !== 'selected') {
-          e.currentTarget.style.borderColor = s.border;
-          e.currentTarget.style.background = s.bg;
-        }
-      }}>
+    <div style={{
+      display: 'flex', flexDirection: 'column', width: '100%', height: '100%', minHeight: 116,
+      borderRadius: RD.sm, border: `1px solid ${s.border}`, background: s.bg, opacity: s.opacity,
+      overflow: 'hidden',
+      boxShadow: state === 'selected' ? `inset 0 0 0 1px ${WF.accent}` : '0 1px 1px rgba(15,23,42,0.03)',
+      transition: 'background-color 0.12s, border-color 0.12s, box-shadow 0.12s'
+    }}>
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={disabled}
+        aria-pressed={state === 'selected'}
+        aria-label={`Room ${room.num}, deck ${room.deck}, ${LOC_LABELS[room.loc]}, ${statusLabel}${
+          tags.length ? `, ${tags.map((f) => f.label).join(', ')}` : ''
+        }`}
+        style={{
+          display: 'flex', flexDirection: 'column', flex: 1, textAlign: 'left', width: '100%',
+          minHeight: 84, padding: '9px 10px', border: 'none', background: 'transparent',
+          color: 'inherit', cursor: disabled ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
+          transition: 'background-color 0.12s'
+        }}
+        onMouseEnter={(e) => { if (!disabled && state !== 'selected') e.currentTarget.style.background = WF.accentTint; }}
+        onMouseLeave={(e) => { if (!disabled && state !== 'selected') e.currentTarget.style.background = 'transparent'; }}>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, width: '100%' }}>
         <div style={{
@@ -794,7 +1000,24 @@ function RoomCard({ room, state, ownerSlot, onClick, disabled }) {
           </span>
         ))}
       </div>
-    </button>
+      </button>
+      <button
+        type="button"
+        onClick={onShowDetails}
+        aria-label={`View details for room ${room.num}`}
+        title={`View details for room ${room.num}`}
+        style={{
+          width: '100%', minHeight: 31, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          padding: '5px 8px', border: 'none', borderTop: `1px solid ${state === 'selected' ? WF.accentLine : WF.line}`,
+          background: state === 'selected' ? '#FFFFFF' : WF.fill, color: WF.accent,
+          cursor: 'pointer', fontFamily: 'inherit', fontSize: 10.5, fontWeight: 750
+        }}
+        onMouseEnter={(e) => { e.currentTarget.style.background = WF.accentTint; }}
+        onMouseLeave={(e) => { e.currentTarget.style.background = state === 'selected' ? '#FFFFFF' : WF.fill; }}>
+        <SailboatIcon size={14} />
+        Room details
+      </button>
+    </div>
   );
 }
 
@@ -849,6 +1072,7 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
   const [locFilter, setLocFilter] = React.useState(null);
   const [activeDeck, setActiveDeck] = React.useState(() => roomsByDeck[0]?.deck || STATEROOM_DECKS[0]);
   const [switcherOpen, setSwitcherOpen] = React.useState(false);
+  const [detailRoom, setDetailRoom] = React.useState(null);
 
   const toggleFilter = (key) => setActiveFilters((prev) => {
     const next = new Set(prev);
@@ -858,10 +1082,13 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
 
   // Close on Escape
   React.useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      if (detailRoom) setDetailRoom(null); else onClose();
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [onClose, detailRoom]);
 
   // A fare-row switch is a new inventory context. Return to the first deck and
   // clear stale filters instead of carrying a hidden Deck 8 / room-number query
@@ -870,6 +1097,7 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
     setActiveDeck(roomsByDeck[0]?.deck || STATEROOM_DECKS[0]);
     setLocFilter(null);
     setActiveFilters(new Set());
+    setDetailRoom(null);
   }, [row.id]);
 
   // Filters AND together. Non-matches are hidden in the high-density deck
@@ -900,6 +1128,21 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
   const assignedElsewhere = (other.adults || 0) + (other.youngAdults || 0) + (other.children || 0) + (other.infants || 0);
   const totalAssignedGuests = assignedHere + assignedElsewhere;
   const overAssigned = totalAssignedGuests > totalParty;
+  const guestsFullyDistributed = totalParty > 0 && totalAssignedGuests === totalParty && !overAssigned;
+  const [distributionExpanded, setDistributionExpanded] = React.useState(() => !guestsFullyDistributed);
+  const distributionStateRef = React.useRef({ rowId: row.id, complete: guestsFullyDistributed });
+
+  // Give the room inventory the full working area as soon as the last guest is
+  // placed. The summary row remains visible and can reopen the table for edits.
+  React.useEffect(() => {
+    const previous = distributionStateRef.current;
+    if (previous.rowId !== row.id) {
+      setDistributionExpanded(!guestsFullyDistributed);
+    } else if (guestsFullyDistributed && !previous.complete) {
+      setDistributionExpanded(false);
+    }
+    distributionStateRef.current = { rowId: row.id, complete: guestsFullyDistributed };
+  }, [row.id, guestsFullyDistributed]);
 
   // Display-only: a cabin is "configured" once it has both a room and a guest.
   // It does NOT gate Confirm — a cabin may legitimately be confirmed before its
@@ -937,6 +1180,7 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
         state={state}
         ownerSlot={ownerSlot}
         disabled={!active && !selected}
+        onShowDetails={() => setDetailRoom({ room, state, ownerSlot })}
         onClick={() => (active || selected) && onToggleRoom(room.num)} />
     );
   };
@@ -1139,26 +1383,57 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
 
           {/* ══ Which guests go in which cabin ══ */}
           <div style={{ padding: `${SP.md}px ${SP.lg}px 0` }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: SP.md, marginBottom: SP.sm }}>
-              <div>
-                <div style={{ fontSize: 12.5, fontWeight: 750, color: WF.ink }}>Distribute guests by cabin</div>
-                <div style={{ marginTop: 2, fontSize: 9.5, color: WF.inkSoft }}>Use the cabin header to choose which room you are assigning.</div>
-              </div>
-              <span style={{
-                padding: '4px 7px', borderRadius: 6, border: `1px solid ${WF.line}`,
-                background: WF.fill, fontSize: 9, fontWeight: 800, color: WF.inkSoft
-              }}>{qty} cabin{qty === 1 ? '' : 's'} in this category</span>
+            <div style={{
+              border: `1px solid ${WF.line}`, borderRadius: RD.md, overflow: 'hidden',
+              background: WF.panel, boxShadow: '0 1px 2px rgba(15,23,42,0.08)'
+            }}>
+              <button
+                type="button"
+                onClick={() => setDistributionExpanded((expanded) => !expanded)}
+                aria-expanded={distributionExpanded}
+                aria-controls={`guest-distribution-${row.id}`}
+                style={{
+                  width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: SP.md,
+                  padding: '9px 11px', border: 'none',
+                  borderBottom: distributionExpanded ? `1px solid ${WF.line}` : 'none',
+                  background: WF.fill, color: WF.ink, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left'
+                }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 12.5, fontWeight: 750, color: WF.ink }}>Distribute guests by cabin</div>
+                  <div style={{ marginTop: 2, fontSize: 10.5, color: WF.inkSoft }}>
+                    {distributionExpanded
+                      ? 'Use the cabin header to choose which room you are assigning.'
+                      : `${totalAssignedGuests} guests placed across ${qty} cabin${qty === 1 ? '' : 's'}.`}
+                  </div>
+                </div>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                  <span style={{
+                    padding: '4px 7px', borderRadius: 6, border: `1px solid ${WF.line}`,
+                    background: WF.panel, fontSize: 10.5, fontWeight: 800, color: WF.inkSoft
+                  }}>{qty} cabin{qty === 1 ? '' : 's'}</span>
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                    fontSize: 11.5, fontWeight: 750, color: WF.accent, whiteSpace: 'nowrap'
+                  }}>
+                    {distributionExpanded ? 'Collapse' : <React.Fragment><EditIcon /> Edit</React.Fragment>}
+                  </span>
+                </span>
+              </button>
+              {distributionExpanded && (
+                <div id={`guest-distribution-${row.id}`} style={{ padding: SP.sm, background: WF.panel }}>
+                  <CabinAssignmentTable
+                    qty={qty}
+                    roomsBySlot={roomsBySlot}
+                    cabinGuests={cabinGuests}
+                    activeSlot={activeSlot}
+                    partyGuests={partyGuests || ZERO_GUESTS}
+                    otherAssigned={other}
+                    cap={cap}
+                    onSelectSlot={onSelectSlot}
+                    onGuestChange={onGuestChange} />
+                </div>
+              )}
             </div>
-            <CabinAssignmentTable
-              qty={qty}
-              roomsBySlot={roomsBySlot}
-              cabinGuests={cabinGuests}
-              activeSlot={activeSlot}
-              partyGuests={partyGuests || ZERO_GUESTS}
-              otherAssigned={other}
-              cap={cap}
-              onSelectSlot={onSelectSlot}
-              onGuestChange={onGuestChange} />
           </div>
 
           {/* ══ Which room ══ */}
@@ -1374,6 +1649,15 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
               }}>Confirm Selection</button>
           </div>
         </div>
+
+        {detailRoom && (
+          <CabinDetailsDialog
+            room={detailRoom.room}
+            row={row}
+            state={detailRoom.state}
+            ownerSlot={detailRoom.ownerSlot}
+            onClose={() => setDetailRoom(null)} />
+        )}
       </div>
     </div>
   );
