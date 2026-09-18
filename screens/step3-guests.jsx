@@ -531,12 +531,6 @@ function GuestTripProtection({ selected, guestCount, onToggle }) {
 
   return (
     <section aria-labelledby="guest-trip-protection-title">
-      <div id="guest-trip-protection-title" style={{
-        marginBottom: 7, fontSize: 10.5, fontWeight: 800,
-        letterSpacing: 0.75, color: WF.inkLabel, textTransform: 'uppercase',
-      }}>
-        Trip protection
-      </div>
       <button
         type="button"
         role="switch"
@@ -553,6 +547,12 @@ function GuestTripProtection({ selected, guestCount, onToggle }) {
           fontFamily: 'inherit', textAlign: 'left',
         }}>
         <span style={{ minWidth: 0 }}>
+          <span id="guest-trip-protection-title" style={{
+            display: 'block', marginBottom: 7, fontSize: 10.5, fontWeight: 800,
+            letterSpacing: 0.75, color: WF.inkLabel, textTransform: 'uppercase',
+          }}>
+            Trip protection
+          </span>
           <span style={{ display: 'block', fontSize: 12.5, fontWeight: 800, color: WF.ink }}>
             Add trip protection
           </span>
