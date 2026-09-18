@@ -128,7 +128,7 @@ function GuestDetailsSection({
 
   return (
     <div style={{ marginBottom: 20 }}>
-      <div style={{ border: `1px solid ${WF.line}`, borderRadius: 10, background: '#fff', boxShadow: '0 1px 2px rgba(15,23,42,0.05)' }}>
+      <div style={{ border: `1px solid ${WF.line}`, borderRadius: 10, overflow: 'hidden', background: '#fff', boxShadow: '0 1px 2px rgba(15,23,42,0.05)' }}>
         {/* Roster summary scrolls with the page. Cabin headers own the sticky
             context below so travelers never appear detached from their room. */}
         <div style={{
@@ -176,6 +176,10 @@ function GuestDetailsSection({
           display: 'flex', flexDirection: 'column', gap: 10,
           padding: 10, background: WF.fill,
         }}>
+        <GuestTripProtection
+          selected={protection}
+          guestCount={protectionGuestCount}
+          onToggle={onToggleProtection} />
         {cabinGroups.map((group) => (
           <section key={group.key} aria-label={group.room ? `${group.label}, ${group.room}` : group.label} style={{
             overflow: 'hidden', border: `1px solid ${WF.line}`, borderRadius: 9, background: '#fff',
@@ -303,12 +307,6 @@ function GuestDetailsSection({
             </div>
           </section>
         ))}
-        </div>
-        <div style={{ padding: '11px 14px 13px', borderTop: `1px solid ${WF.line}`, background: '#fff', borderRadius: '0 0 10px 10px' }}>
-          <GuestTripProtection
-            selected={protection}
-            guestCount={protectionGuestCount}
-            onToggle={onToggleProtection} />
         </div>
       </div>
       {activeGuest && ReactDOM.createPortal(
