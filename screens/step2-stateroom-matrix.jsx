@@ -3,7 +3,7 @@
 
 // ── Data ──────────────────────────────────────────────────────────
 const STATEROOM_ROWS = [
-  { id: 'I6',  cat: 'IS',  label: 'Interior Stateroom – I6',    color: '#F59E0B', price: 472,  total: 2,  single: 0, double: 2, dbinf: 0, triple: 0, quad: 0, location: 'mid' },
+  { id: 'I6',  cat: 'IS',  label: 'Interior Stateroom – I6',    color: '#F59E0B', price: 472,  total: 8,  single: 0, double: 8, dbinf: 0, triple: 0, quad: 0, location: 'mid' },
   { id: 'I7',  cat: 'IS',  label: 'Interior Stateroom – I7',    color: '#EAB308', price: 472,  total: 6,  single: 0, double: 5, dbinf: 0, triple: 1, quad: 0, location: 'aft' },
   { id: 'I8',  cat: 'IS',  label: 'Interior Stateroom – I8',    color: '#84CC16', price: 472,  total: 1,  single: 0, double: 1, dbinf: 0, triple: 0, quad: 0, location: 'fwd' },
   { id: 'O4',  cat: 'OV',  label: 'Ocean View – O4',            color: '#A855F7', price: 512,  total: 0,  single: 0, double: 0, dbinf: 0, triple: 0, quad: 0, location: 'mid' },
@@ -15,6 +15,11 @@ const STATEROOM_ROWS = [
   { id: 'S3',  cat: 'STE', label: 'Jr Suite – S3',              color: '#6D28D9', price: 1732, total: 0,  single: 0, double: 0, dbinf: 0, triple: 0, quad: 0, location: 'mid' },
   { id: 'S5',  cat: 'STE', label: 'Owner Suite – S5',           color: '#5B21B6', price: 2250, total: 2,  single: 0, double: 2, dbinf: 0, triple: 0, quad: 0, location: 'aft' },
 ];
+
+// A single reservation can contain up to eight cabins, even when the cabins
+// are split across multiple fare categories. Category inventory can lower the
+// limit for a row, but can never raise the booking-wide limit.
+const MAX_CABINS_PER_BOOKING = 8;
 
 // Rooms per category with accessibility flags
 const STATEROOM_ROOMS = {
@@ -102,6 +107,15 @@ const roomsForRow = (row) => STATEROOM_ROOMS_BY_ROW[row.id] || [];
 
 const CAT_LABELS = { IS: 'Interior', OV: 'Ocean View', BAL: 'Balcony', STE: 'Suite' };
 const LOC_LABELS = { fwd: 'Forward', mid: 'Mid Ship', aft: 'Aft Ship' };
+const STATEROOM_DECK_NAMES = {
+  4: 'Coastal Confessions',
+  5: 'Changes in Attitude',
+  6: 'Last Mango',
+  7: 'Painted Sky',
+  8: 'Limes and Salt',
+  9: "5 O'Clock Somewhere",
+  10: 'Lucky Star',
+};
 
 // ── Design scale ───────────────────────────────────────────────────
 // One spacing/radius/type scale for the room picker, so padding and gaps stop
@@ -223,7 +237,7 @@ const ROOM_FEATURE_EMOJIS = {
   connected: '🔗',
 };
 
-function RoomFeatureEmoji({ feature, size = 13 }) {
+function RoomFeatureEmoji({ feature, size = 16 }) {
   return (
     <span aria-hidden="true" style={{ fontSize: size, lineHeight: 1, flexShrink: 0 }}>
       {ROOM_FEATURE_EMOJIS[feature]}
@@ -290,48 +304,49 @@ function SailboatIcon({ size = 15 }) {
   );
 }
 
-const CABIN_DESCRIPTIONS = {
-  IS: 'A calm interior retreat designed for efficient rest, storage and easy access to the ship’s shared spaces.',
-  OV: 'A bright ocean-view stateroom with a picture window, practical storage and a comfortable private retreat.',
-  BAL: 'A light-filled balcony stateroom with private outdoor space and flexible sleeping arrangements.',
-  STE: 'A spacious suite with an expanded living area, upgraded finishes and additional room to unwind.',
-};
+const cabinBooleanLabel = (value) => value === true ? 'Yes' : value === false ? 'No' : 'Not provided';
 
-function CabinFact({ label, value, detail }) {
+function CabinFact({ label, value, detail, mono = false }) {
   return (
-    <div style={{ padding: '10px 11px', border: `1px solid ${WF.line}`, borderRadius: RD.sm, background: WF.fill }}>
-      <div style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: 0.55, color: WF.inkLabel, textTransform: 'uppercase' }}>{label}</div>
-      <div style={{ marginTop: 5, fontSize: 13, fontWeight: 750, color: WF.ink }}>{value}</div>
-      {detail && <div style={{ marginTop: 2, fontSize: 10.5, color: WF.inkSoft }}>{detail}</div>}
+    <div style={{ minWidth: 0, padding: '12px 12px', border: `1px solid ${WF.line}`, borderRadius: RD.sm, background: WF.fill }}>
+      <dt style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', color: WF.inkLabel, textTransform: 'uppercase' }}>{label}</dt>
+      <dd style={{ margin: '4px 0 0', fontSize: 14, lineHeight: '20px', fontWeight: 700, color: WF.ink, fontFamily: mono ? 'ui-monospace, monospace' : 'inherit' }}>
+        {value || 'Not provided'}
+      </dd>
+      {detail && <div style={{ marginTop: 4, fontSize: 12, lineHeight: '16px', color: WF.inkSoft }}>{detail}</div>}
     </div>
   );
 }
 
-function CabinDetailsDialog({ room, row, state, ownerSlot, onClose }) {
+function CabinSectionLabel({ id, children }) {
+  return (
+    <div id={id} style={{ fontSize: 12, lineHeight: '16px', fontWeight: 700, letterSpacing: '0.04em', color: WF.inkLabel, textTransform: 'uppercase' }}>
+      {children}
+    </div>
+  );
+}
+
+function CabinDetailsDialog({ room, row, onClose }) {
   const cap = cabinCapacity(row);
-  const baseOccupancy = row.single > 0 ? 1 : Math.min(2, cap.berths);
-  const maxOccupancy = Math.min(4, Math.max(baseOccupancy, cap.berths)
+  const derivedBaseOccupancy = row.single > 0 ? 1 : Math.min(2, cap.berths);
+  const baseOccupancy = room.baseOccupancy != null ? room.baseOccupancy : derivedBaseOccupancy;
+  const derivedTotalOccupancy = Math.min(4, Math.max(baseOccupancy, cap.berths)
     + (room.rollawayBed ? 1 : 0) + (room.infantFriendly ? 1 : 0));
+  const totalOccupancy = room.totalOccupancy != null ? room.totalOccupancy : derivedTotalOccupancy;
+  const deckName = room.deckName || STATEROOM_DECK_NAMES[room.deck];
+  const deckLabel = deckName ? `Deck ${room.deck} · ${deckName}` : `Deck ${room.deck}`;
+  const bedConfiguration = room.baseBedConfiguration || 'Twin beds / queen conversion';
+  const connectedCabins = Array.isArray(room.connectedCabins)
+    ? (room.connectedCabins.length ? room.connectedCabins.join(', ') : 'None')
+    : room.connectedRoom === true
+      ? 'Available — cabin number not provided'
+      : room.connectedRoom === false ? 'None' : 'Not provided';
   const accessibility = (room.a11y || []).map((feature) => ({
     wheelchair: 'Wheelchair-accessible layout',
     hearing: 'Hearing assistance',
     visual: 'Visual alert system',
   })[feature]).filter(Boolean);
-  const roomFeatures = [
-    'Twin beds convert to one queen',
-    room.infantFriendly ? 'Portable crib available' : null,
-    room.rollawayBed ? 'Rollaway bed available' : null,
-    room.connectedRoom ? 'Connecting room available' : null,
-    ...accessibility,
-  ].filter(Boolean);
-  const statusText = state === 'selected' || state === 'taken'
-    ? `Assigned to Cabin ${ownerSlot + 1}`
-    : state === 'filtered'
-      ? 'Outside current filters'
-      : 'Available';
-  const statusColor = state === 'available' ? '#047857' : state === 'filtered' ? WF.inkSoft : WF.accent;
-  const statusBg = state === 'available' ? '#F0FDF4' : state === 'filtered' ? WF.fill : WF.accentTint;
-  const statusBorder = state === 'available' ? '#BBF7D0' : state === 'filtered' ? WF.line : WF.accentLine;
+  const gallery = Array.isArray(room.gallery) ? room.gallery.filter(Boolean) : [];
 
   return (
     <div
@@ -345,7 +360,7 @@ function CabinDetailsDialog({ room, row, state, ownerSlot, onClose }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby={`cabin-details-title-${room.num}`}
-        aria-describedby={`cabin-details-description-${room.num}`}
+        aria-describedby={`cabin-details-summary-${room.num}`}
         style={{
           width: 'min(760px, 100%)', maxHeight: '82vh', overflowY: 'auto',
           background: WF.panel, border: `1px solid ${WF.line}`, borderRadius: RD.lg,
@@ -356,104 +371,90 @@ function CabinDetailsDialog({ room, row, state, ownerSlot, onClose }) {
           padding: `${SP.lg}px ${SP.xl}px`, borderBottom: `1px solid ${WF.line}`, background: WF.panel
         }}>
           <div style={{ minWidth: 0 }}>
-            <div id={`cabin-details-title-${room.num}`} style={{ fontSize: 18, fontWeight: 800, letterSpacing: -0.3, color: WF.ink }}>
-              Room {room.num}
+            <div id={`cabin-details-title-${room.num}`} style={{ fontSize: 20, lineHeight: '28px', fontWeight: 700, letterSpacing: '-0.01em', color: WF.ink }}>
+              Cabin {room.num}
             </div>
-            <div style={{ marginTop: 3, fontSize: 11.5, color: WF.inkSoft }}>{row.label}</div>
+            <div id={`cabin-details-summary-${room.num}`} style={{ marginTop: 4, fontSize: 12, lineHeight: '16px', color: WF.inkSoft }}>
+              {CAT_LABELS[row.cat]} Stateroom · {row.id}
+            </div>
           </div>
-          <span style={{
-            marginLeft: 'auto', padding: '5px 8px', borderRadius: 999,
-            border: `1px solid ${statusBorder}`, background: statusBg,
-            color: statusColor, fontSize: 10.5, fontWeight: 750, whiteSpace: 'nowrap'
-          }}>{statusText}</span>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close room details"
+            aria-label="Close cabin details"
             autoFocus
             style={{
-              width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              marginLeft: 'auto', width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               border: `1px solid ${WF.line}`, borderRadius: RD.sm, background: WF.panel,
               color: WF.inkSoft, cursor: 'pointer', fontFamily: 'inherit', fontSize: 16, lineHeight: 1, flexShrink: 0
             }}>×</button>
         </div>
 
         <div style={{ padding: SP.xl }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '220px minmax(0, 1fr)', gap: SP.lg }}>
-            <div style={{
-              minHeight: 176, display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-              padding: SP.lg, borderRadius: RD.md, color: '#FFFFFF',
-              background: 'linear-gradient(145deg, #1B2434 0%, #334155 100%)', overflow: 'hidden'
-            }}>
-              <div style={{
-                width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                borderRadius: 10, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.18)'
-              }}><SailboatIcon size={25} /></div>
-              <div>
-                <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.7, textTransform: 'uppercase', color: '#CBD5E1' }}>Cabin overview</div>
-                <div style={{ marginTop: 5, fontSize: 20, fontWeight: 800, fontFamily: 'ui-monospace, monospace' }}>{room.num}</div>
-                <div style={{ marginTop: 3, fontSize: 11.5, color: '#E2E8F0' }}>Deck {room.deck} · {LOC_LABELS[room.loc]}</div>
-              </div>
-            </div>
-
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.65, color: WF.inkLabel, textTransform: 'uppercase' }}>About this cabin</div>
-              <p id={`cabin-details-description-${room.num}`} style={{ margin: '7px 0 0', fontSize: 12.5, lineHeight: 1.55, color: WF.inkSoft }}>
-                {CABIN_DESCRIPTIONS[row.cat]}
-              </p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: SP.sm, marginTop: SP.md }}>
-                <CabinFact label="Deck" value={`Deck ${room.deck}`} detail={LOC_LABELS[room.loc]} />
-                <CabinFact label="Category" value={CAT_LABELS[row.cat]} detail={row.id} />
-                <CabinFact label="Base occupancy" value={`${baseOccupancy} guest${baseOccupancy === 1 ? '' : 's'}`} detail="Standard bedding" />
-                <CabinFact label="Max occupancy" value={`Up to ${maxOccupancy}`} detail="With available extra beds" />
-              </div>
-            </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: SP.md, marginTop: SP.lg }}>
-            <section style={{ padding: SP.lg, border: `1px solid ${WF.line}`, borderRadius: RD.md }}>
-              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.65, color: WF.inkLabel, textTransform: 'uppercase' }}>Sleeping arrangements</div>
-              <div style={{ marginTop: SP.sm, fontSize: 12.5, fontWeight: 700, color: WF.ink }}>Flexible twin or queen setup</div>
-              <div style={{ marginTop: 4, fontSize: 11.5, lineHeight: 1.45, color: WF.inkSoft }}>
-                Two twin beds can be combined into one queen bed. Extra bedding is prepared on request when available.
-              </div>
-            </section>
-            <section style={{ padding: SP.lg, border: `1px solid ${WF.line}`, borderRadius: RD.md }}>
-              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.65, color: WF.inkLabel, textTransform: 'uppercase' }}>Standard amenities</div>
-              <div style={{ marginTop: SP.sm, fontSize: 11.5, lineHeight: 1.55, color: WF.inkSoft }}>
-                Private bath · Vanity · Climate control · In-room safe · Wardrobe and luggage storage
-              </div>
-            </section>
-          </div>
-
-          <section style={{ marginTop: SP.lg }}>
-            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 0.65, color: WF.inkLabel, textTransform: 'uppercase' }}>Room-specific features</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginTop: SP.sm }}>
-              {roomFeatures.map((feature) => (
-                <span key={feature} style={{
-                  display: 'inline-flex', alignItems: 'center', minHeight: 28, padding: '5px 8px',
-                  borderRadius: RD.sm, border: `1px solid ${WF.line}`, background: WF.fill,
-                  color: WF.inkSoft, fontSize: 11, fontWeight: 650
-                }}>{feature}</span>
-              ))}
-              {accessibility.length === 0 && (
-                <span style={{
-                  display: 'inline-flex', alignItems: 'center', minHeight: 28, padding: '5px 8px',
-                  borderRadius: RD.sm, border: `1px solid ${WF.line}`, background: WF.fill,
-                  color: WF.inkSoft, fontSize: 11, fontWeight: 650
-                }}>Standard accessibility layout</span>
-              )}
-            </div>
+          <section aria-labelledby={`cabin-core-details-${room.num}`}>
+            <CabinSectionLabel id={`cabin-core-details-${room.num}`}>Cabin details</CabinSectionLabel>
+            <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: SP.sm, margin: `${SP.sm}px 0 0` }}>
+              <CabinFact label="Cabin number" value={room.num} mono />
+              <CabinFact label="Total occupancy" value={`${totalOccupancy}`} />
+              <CabinFact label="Deck" value={deckLabel} />
+              <CabinFact label="Cabin location" value={LOC_LABELS[room.loc]} />
+              <CabinFact label="Base bed configuration" value={bedConfiguration} />
+              <CabinFact label="Base occupancy" value={`${baseOccupancy}`} />
+            </dl>
           </section>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: SP.md, marginTop: SP.xl, paddingTop: SP.lg, borderTop: `1px solid ${WF.line}` }}>
-            <div style={{ fontSize: 10.5, color: WF.inkSoft }}>Viewing details does not change the room assignment.</div>
+          <section aria-labelledby={`cabin-suitability-${room.num}`} style={{ marginTop: SP.lg }}>
+            <CabinSectionLabel id={`cabin-suitability-${room.num}`}>Sleeping &amp; suitability</CabinSectionLabel>
+            <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: SP.sm, margin: `${SP.sm}px 0 0` }}>
+              <CabinFact label="Infant friendly" value={cabinBooleanLabel(room.infantFriendly)} />
+              <CabinFact label="Rollaway" value={cabinBooleanLabel(room.rollawayBed)} />
+              <CabinFact label="Sofa bed" value={cabinBooleanLabel(room.sofaBed)} />
+              <CabinFact label="Pullman" value={cabinBooleanLabel(room.pullmanBed)} />
+              <CabinFact label="Single cabin" value={cabinBooleanLabel(room.singleCabin)} />
+              <CabinFact label="Connected cabins" value={connectedCabins} />
+            </dl>
+          </section>
+
+          {accessibility.length > 0 && (
+            <section aria-labelledby={`cabin-accessibility-${room.num}`} style={{ marginTop: SP.lg }}>
+              <CabinSectionLabel id={`cabin-accessibility-${room.num}`}>Accessibility</CabinSectionLabel>
+              <ul style={{ margin: `${SP.sm}px 0 0`, padding: `0 0 0 ${SP.lg}px`, color: WF.inkSoft, fontSize: 14, lineHeight: '20px' }}>
+                {accessibility.map((feature) => <li key={feature}>{feature}</li>)}
+              </ul>
+            </section>
+          )}
+
+          <section aria-labelledby={`cabin-gallery-${room.num}`} style={{ marginTop: SP.lg }}>
+            <CabinSectionLabel id={`cabin-gallery-${room.num}`}>Gallery</CabinSectionLabel>
+            {gallery.length > 0 ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: SP.sm, marginTop: SP.sm }}>
+                {gallery.map((image, index) => {
+                  const source = typeof image === 'string' ? image : image.src;
+                  const alt = typeof image === 'string' ? `${CAT_LABELS[row.cat]} cabin ${room.num}` : (image.alt || `${CAT_LABELS[row.cat]} cabin ${room.num}`);
+                  return <img key={`${source}-${index}`} src={source} alt={alt} style={{ width: '100%', height: 140, objectFit: 'cover', border: `1px solid ${WF.line}`, borderRadius: RD.sm }} />;
+                })}
+              </div>
+            ) : (
+              <div style={{
+                minHeight: 112, marginTop: SP.sm, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: SP.sm,
+                padding: SP.lg, border: `1px dashed ${WF.line}`, borderRadius: RD.md, background: WF.fill, color: WF.inkSoft, textAlign: 'center'
+              }}>
+                <SailboatIcon size={24} />
+                <div>
+                  <div style={{ fontSize: 14, lineHeight: '20px', fontWeight: 700, color: WF.ink }}>No cabin images available</div>
+                  <div style={{ marginTop: 4, fontSize: 12, lineHeight: '16px' }}>Gallery content has not been provided for this cabin.</div>
+                </div>
+              </div>
+            )}
+          </section>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: SP.xl, paddingTop: SP.lg, borderTop: `1px solid ${WF.line}` }}>
             <button
               type="button"
               onClick={onClose}
               style={{
-                marginLeft: 'auto', minHeight: 36, padding: '8px 14px', border: 'none', borderRadius: RD.sm,
-                background: WF.accent, color: WF.accentText, fontFamily: 'inherit', fontSize: 11.5, fontWeight: 750, cursor: 'pointer'
+                minHeight: 36, padding: '8px 16px', border: 'none', borderRadius: RD.sm,
+                background: WF.accent, color: WF.accentText, fontFamily: 'inherit', fontSize: 12, fontWeight: 700, cursor: 'pointer'
               }}>Close details</button>
           </div>
         </div>
@@ -462,9 +463,8 @@ function CabinDetailsDialog({ room, row, state, ownerSlot, onClose }) {
   );
 }
 
-// ── Quantity control. `max` is the category's remaining inventory; without it
-// the "+" incremented forever and a category with 2 rooms left would accept 5
-// cabins, stranding three that could never be filled. ──
+// ── Quantity control. `max` accounts for both category inventory and the
+// booking-wide cabin limit. ──
 function QtyControl({ value, onChange, disabled, max }) {
   const atMax = max != null && value >= max;
   return (
@@ -487,7 +487,7 @@ function QtyControl({ value, onChange, disabled, max }) {
       <button
         onClick={() => !atMax && onChange(value + 1)}
         disabled={disabled || atMax}
-        title={atMax ? `Only ${max} room${max === 1 ? '' : 's'} left in this category` : undefined}
+        title={atMax ? `Maximum ${max} cabin${max === 1 ? '' : 's'} available for this booking` : undefined}
         style={{
           width: 22, height: 22, border: `1px solid ${WF.line}`, borderRadius: '0 4px 4px 0',
           background: atMax ? WF.fill : WF.panel, color: atMax ? WF.inkFaint : WF.ink,
@@ -531,15 +531,15 @@ function GuestAssignmentSummary({ partyGuests, assignedTotals, otherAssigned }) 
   return (
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap',
-      gap: SP.md, padding: `${SP.sm + 2}px ${SP.lg}px`, borderRadius: RD.md,
+      gap: SP.md, padding: `${SP.md}px ${SP.lg}px`, borderRadius: RD.md,
       background: over ? '#FEF2F2' : complete ? '#F0FDF4' : '#FFFBEB',
       border: `1px solid ${over ? '#FECACA' : complete ? '#BBF7D0' : '#FDE68A'}`
     }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: SP.sm }}>
-        <span style={{ fontSize: 13.5, fontWeight: 700, color: tone }}>
+        <span style={{ fontSize: 14, fontWeight: 700, color: tone }}>
           {totalAssigned} of {totalParty} guest{totalParty === 1 ? '' : 's'} assigned
         </span>
-        <span style={{ fontSize: 11.5, color: tone }}>
+        <span style={{ fontSize: 12, color: tone }}>
           {over ? '· Too many guests assigned' : complete ? '· All guests placed' : `· ${totalParty - totalAssigned} remaining`}
           {totalOther > 0 ? ` · ${totalOther} in other categories` : ''}
         </span>
@@ -554,7 +554,7 @@ function GuestAssignmentSummary({ partyGuests, assignedTotals, otherAssigned }) 
           if (need === 0 && got === 0) return null;
           const done = got === need;
           return (
-            <div key={key} style={{ fontSize: 11.5, color: done ? WF.inkSoft : '#92400E', whiteSpace: 'nowrap' }}>
+            <div key={key} style={{ fontSize: 12, color: done ? WF.inkSoft : '#92400E', whiteSpace: 'nowrap' }}>
               <span style={{
                 fontWeight: 700, color: got > need ? BAD : done ? WF.ink : '#92400E',
                 fontFamily: 'ui-monospace, monospace'
@@ -587,7 +587,7 @@ function CabinCellStepper({ value, onChange, canAdd, addBlockedReason }) {
       <div style={{
         width: 30, height: 26, border: `1px solid ${WF.line}`, borderLeft: 'none', borderRight: 'none',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 13, fontWeight: 700, color: value > 0 ? WF.ink : WF.inkFaint,
+        fontSize: 14, fontWeight: 700, color: value > 0 ? WF.ink : WF.inkFaint,
         background: '#F8FAFC', fontFamily: 'ui-monospace, monospace'
       }}>{value}</div>
       <button
@@ -662,7 +662,7 @@ function CabinAssignmentTable({ qty, roomsBySlot, cabinGuests, activeSlot, party
   return (
     <div>
       {qty > 6 && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, fontSize: 11, color: WF.inkSoft }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, fontSize: 12, color: WF.inkSoft }}>
           <span>↔</span> Scroll to see all {qty} cabins
         </div>
       )}
@@ -680,7 +680,7 @@ function CabinAssignmentTable({ qty, roomsBySlot, cabinGuests, activeSlot, party
               <tr>
                 <th style={{
                   position: 'sticky', left: 0, zIndex: 2,
-                  padding: '10px 14px', textAlign: 'left', fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
+                  padding: '12px 16px', textAlign: 'left', fontSize: 12, fontWeight: 700, letterSpacing: '0.04em',
                   color: WF.inkLabel, textTransform: 'uppercase', background: '#F8FAFC', borderBottom: `1px solid ${WF.line}`,
                   boxShadow: scrollState.left ? '2px 0 6px rgba(15,23,42,0.08)' : 'none'
                 }}>Guest Type</th>
@@ -710,17 +710,17 @@ function CabinAssignmentTable({ qty, roomsBySlot, cabinGuests, activeSlot, party
                       }}
                       onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = '#F1F5F9'; }}
                       onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = '#F8FAFC'; }}>
-                      <div style={{ fontSize: 11.5, fontWeight: 700, color: isActive ? TEAL.base : WF.ink, marginBottom: 3, whiteSpace: 'nowrap' }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: isActive ? TEAL.base : WF.ink, marginBottom: 4, whiteSpace: 'nowrap' }}>
                         Cabin {i + 1}
                       </div>
                       {roomNum ? (
                         <div style={{
-                          display: 'inline-flex', fontSize: 10.5, fontWeight: 700, color: TEAL.base,
-                          background: '#fff', border: `1px solid ${TEAL.border}`, borderRadius: RD.sm, padding: '2px 8px',
+                          display: 'inline-flex', fontSize: 12, fontWeight: 700, color: TEAL.base,
+                          background: '#fff', border: `1px solid ${TEAL.border}`, borderRadius: RD.sm, padding: '4px 8px',
                           fontFamily: 'ui-monospace, monospace', whiteSpace: 'nowrap'
                         }}>{roomNum}</div>
                       ) : (
-                        <div style={{ fontSize: 9.5, color: WF.inkFaint, fontStyle: 'italic', whiteSpace: 'nowrap' }}>No room yet</div>
+                        <div style={{ fontSize: 12, color: WF.inkFaint, fontStyle: 'italic', whiteSpace: 'nowrap' }}>No room yet</div>
                       )}
                       {/* Occupancy against this category's berth count, plus the
                           one-line reason when the cabin can't be sold as filled.
@@ -728,7 +728,7 @@ function CabinAssignmentTable({ qty, roomsBySlot, cabinGuests, activeSlot, party
                           taller than its neighbours. */}
                       {v.warning && (
                         <div style={{ height: 13, marginTop: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <span style={{ fontSize: 9.5, fontWeight: 700, color: '#92400E', whiteSpace: 'nowrap' }}>⚠ {v.warning}</span>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: '#92400E', whiteSpace: 'nowrap' }}>⚠ {v.warning}</span>
                         </div>
                       )}
                     </th>
@@ -741,14 +741,14 @@ function CabinAssignmentTable({ qty, roomsBySlot, cabinGuests, activeSlot, party
                 <tr key={key}>
                   <td style={{
                     position: 'sticky', left: 0, zIndex: 1, background: '#fff',
-                    padding: '10px 14px', borderBottom: ri < TYPES.length - 1 ? `1px solid ${WF.lineSoft}` : 'none',
+                    padding: '12px 16px', borderBottom: ri < TYPES.length - 1 ? `1px solid ${WF.lineSoft}` : 'none',
                     boxShadow: scrollState.left ? '2px 0 6px rgba(15,23,42,0.08)' : 'none'
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span style={{ fontSize: 14 }}>{icon}</span>
                       <div>
-                        <div style={{ fontSize: 12.5, fontWeight: 700, color: WF.ink, whiteSpace: 'nowrap' }}>{label}</div>
-                        <div style={{ fontSize: 10, color: WF.inkSoft, whiteSpace: 'nowrap' }}>{sub}</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: WF.ink, whiteSpace: 'nowrap' }}>{label}</div>
+                        <div style={{ fontSize: 12, color: WF.inkSoft, whiteSpace: 'nowrap' }}>{sub}</div>
                       </div>
                     </div>
                   </td>
@@ -762,7 +762,7 @@ function CabinAssignmentTable({ qty, roomsBySlot, cabinGuests, activeSlot, party
                     const partyOk = partyRemaining[key] > 0;
                     return (
                       <td key={i} style={{
-                        padding: `${SP.sm + 2}px ${SP.sm}px`, textAlign: 'center',
+                        padding: `${SP.md}px ${SP.sm}px`, textAlign: 'center',
                         borderBottom: ri < TYPES.length - 1 ? `1px solid ${WF.lineSoft}` : 'none',
                         borderLeft: `1px solid ${WF.lineSoft}`,
                         background: isActive ? '#F0FDFB' : '#fff'
@@ -785,8 +785,8 @@ function CabinAssignmentTable({ qty, roomsBySlot, cabinGuests, activeSlot, party
               <tr>
                 <td style={{
                   position: 'sticky', left: 0, zIndex: 1, background: '#F8FAFC',
-                  padding: `${SP.sm}px ${SP.lg - 2}px`, borderTop: `1px solid ${WF.line}`,
-                  fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
+                  padding: `${SP.sm}px ${SP.lg}px`, borderTop: `1px solid ${WF.line}`,
+                  fontSize: 12, fontWeight: 700, letterSpacing: '0.04em',
                   color: WF.inkLabel, textTransform: 'uppercase', whiteSpace: 'nowrap',
                   boxShadow: scrollState.left ? '2px 0 6px rgba(15,23,42,0.08)' : 'none'
                 }}>In cabin</td>
@@ -834,8 +834,8 @@ function FeatureChip({ icon, label, active, onClick }) {
       title={label}
       style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        gap: 5, height: 30, padding: '0 9px', borderRadius: 6,
-        fontSize: 11, fontWeight: active ? 750 : 600, whiteSpace: 'nowrap', fontFamily: 'inherit',
+        gap: 4, height: 30, padding: '0 8px', borderRadius: 6,
+        fontSize: 12, fontWeight: active ? 700 : 600, whiteSpace: 'nowrap', fontFamily: 'inherit',
         border: `1px solid ${active ? TEAL.border : WF.line}`,
         background: active ? TEAL.tint : WF.panel,
         color: active ? TEAL.base : WF.inkSoft,
@@ -892,7 +892,7 @@ function RoomCard({ room, state, ownerSlot, onClick, onShowDetails, disabled }) 
         }`}
         style={{
           display: 'flex', flexDirection: 'column', flex: 1, textAlign: 'left', width: '100%',
-          minHeight: 84, padding: '9px 10px', border: 'none', background: 'transparent',
+          minHeight: 84, padding: '8px 12px', border: 'none', background: 'transparent',
           color: 'inherit', cursor: disabled ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
           transition: 'background-color 0.12s'
         }}
@@ -901,12 +901,12 @@ function RoomCard({ room, state, ownerSlot, onClick, onShowDetails, disabled }) 
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, width: '100%' }}>
         <div style={{
-          fontSize: 15, fontWeight: 800, lineHeight: 1.15, letterSpacing: -0.2,
+          fontSize: 16, fontWeight: 700, lineHeight: '24px', letterSpacing: '-0.01em',
           color: s.num, fontFamily: 'ui-monospace, monospace'
         }}>{room.num}</div>
         <span style={{
           display: 'inline-flex', alignItems: 'center', gap: 4, minWidth: 0,
-          color: statusColor, fontSize: 11, fontWeight: 750, whiteSpace: 'nowrap'
+          color: statusColor, fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap'
         }}>
           <span aria-hidden="true" style={{
             width: 6, height: 6, borderRadius: 999, flexShrink: 0,
@@ -916,25 +916,25 @@ function RoomCard({ room, state, ownerSlot, onClick, onShowDetails, disabled }) 
         </span>
       </div>
 
-      <div style={{ marginTop: 7, fontSize: 11, fontWeight: 600, color: WF.inkSoft }}>
+      <div style={{ marginTop: 8, fontSize: 12, fontWeight: 600, color: WF.inkSoft }}>
         {LOC_LABELS[room.loc]}
       </div>
 
-      <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4, width: '100%' }}>
+      <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4, width: '100%' }}>
         {tags.length === 0 && (
-          <span style={{ fontSize: 11, color: WF.inkFaint }}>Standard room</span>
+          <span style={{ fontSize: 12, color: WF.inkFaint }}>Standard room</span>
         )}
         {tags.map((f) => (
           <span
             key={f.key}
             title={f.label}
             style={{
-              display: 'inline-flex', alignItems: 'center', gap: 3,
-              minHeight: 20, padding: '2px 5px', borderRadius: 4,
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              minHeight: 20, padding: '4px 4px', borderRadius: 4,
               border: `1px solid ${state === 'selected' ? WF.accentLine : WF.line}`,
               background: state === 'selected' ? '#FFFFFF' : WF.fill,
               color: state === 'selected' ? WF.accent : WF.inkSoft,
-              fontSize: 11, fontWeight: 600, lineHeight: 1, whiteSpace: 'nowrap'
+              fontSize: 12, fontWeight: 600, lineHeight: '16px', whiteSpace: 'nowrap'
             }}>
             <RoomFeatureEmoji feature={f.key} size={12} />
             {f.label}
@@ -948,10 +948,10 @@ function RoomCard({ room, state, ownerSlot, onClick, onShowDetails, disabled }) 
         aria-label={`View details for room ${room.num}`}
         title={`View details for room ${room.num}`}
         style={{
-          width: '100%', minHeight: 31, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-          padding: '5px 8px', border: 'none', borderTop: `1px solid ${state === 'selected' ? WF.accentLine : WF.line}`,
+          width: '100%', minHeight: 31, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          padding: '4px 8px', border: 'none', borderTop: `1px solid ${state === 'selected' ? WF.accentLine : WF.line}`,
           background: state === 'selected' ? '#FFFFFF' : WF.fill, color: WF.accent,
-          cursor: 'pointer', fontFamily: 'inherit', fontSize: 10.5, fontWeight: 750
+          cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700
         }}
         onMouseEnter={(e) => { e.currentTarget.style.background = WF.accentTint; }}
         onMouseLeave={(e) => { e.currentTarget.style.background = state === 'selected' ? '#FFFFFF' : WF.fill; }}>
@@ -972,7 +972,7 @@ function RoomCard({ room, state, ownerSlot, onClick, onShowDetails, disabled }) 
 // so "are these 10 guests spread sensibly?" meant scrolling and remembering.
 // Cabins are columns of one table here, so the whole distribution — plus each
 // cabin's berth count and any rule it breaks — is visible at once.
-function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, partyGuests, otherAssigned, takenRooms, onToggleRoom, onAutoAssign, onSelectSlot, onGuestChange, onConfirm, onBack, onClose, onQtyChange, onSwitchCategory }) {
+function SelectRoomPanel({ row, qty, maxQty, roomsBySlot, cabinGuests, activeSlot, partyGuests, otherAssigned, takenRooms, onToggleRoom, onAutoAssign, onSelectSlot, onGuestChange, onConfirm, onBack, onClose, onQtyChange, onSwitchCategory }) {
   // Joined rather than passed as an array so the memo has a stable dependency —
   // a fresh array literal every render would rebuild this list each time.
   const takenKey = (takenRooms || []).join(',');
@@ -1156,8 +1156,8 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
         }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: SP.lg }}>
             <div style={{ minWidth: 0 }}>
-              <div id="assign-staterooms-title" style={{ fontSize: 15.5, fontWeight: 750, color: WF.ink, letterSpacing: -0.25 }}>Assign staterooms</div>
-              <div id="assign-staterooms-description" style={{ marginTop: 2, fontSize: 10.5, color: WF.inkSoft }}>Choose the category, place guests, then confirm a room for each cabin.</div>
+              <div id="assign-staterooms-title" style={{ fontSize: 16, fontWeight: 700, color: WF.ink, letterSpacing: '-0.01em' }}>Assign staterooms</div>
+              <div id="assign-staterooms-description" style={{ marginTop: 4, fontSize: 12, color: WF.inkSoft }}>Choose the category, place guests, then confirm a room for each cabin.</div>
             </div>
             <button
               onClick={onClose}
@@ -1190,7 +1190,7 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
                 style={{
                   width: '100%', minHeight: 50,
                   display: 'flex', alignItems: 'center', gap: 8,
-                  padding: '7px 8px 7px 10px', borderRadius: RD.sm,
+                  padding: '8px 8px 8px 12px', borderRadius: RD.sm,
                   border: `1px solid ${switcherOpen ? WF.accent : WF.line}`,
                   background: switcherOpen ? WF.accentTint : WF.panel,
                   cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left'
@@ -1199,10 +1199,10 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
                 onMouseLeave={(e) => { if (!switcherOpen) e.currentTarget.style.borderColor = WF.line; }}>
                 <div style={{ width: 10, height: 10, borderRadius: 3, background: row.color, flexShrink: 0 }} />
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 0.55, color: WF.inkLabel, textTransform: 'uppercase' }}>Stateroom category</div>
-                  <div style={{ marginTop: 2, display: 'flex', alignItems: 'baseline', gap: 6, minWidth: 0 }}>
-                    <span style={{ minWidth: 0, fontSize: 12.5, fontWeight: 750, color: WF.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.label}</span>
-                    <span style={{ fontSize: 11, color: WF.inkSoft, whiteSpace: 'nowrap', flexShrink: 0 }}>{CAT_LABELS[row.cat]} · {LOC_LABELS[row.location]}</span>
+                  <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', color: WF.inkLabel, textTransform: 'uppercase' }}>Stateroom category</div>
+                  <div style={{ marginTop: 4, display: 'flex', alignItems: 'baseline', gap: 8, minWidth: 0 }}>
+                    <span style={{ minWidth: 0, fontSize: 14, fontWeight: 700, color: WF.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.label}</span>
+                    <span style={{ fontSize: 12, color: WF.inkSoft, whiteSpace: 'nowrap', flexShrink: 0 }}>{CAT_LABELS[row.cat]} · {LOC_LABELS[row.location]}</span>
                   </div>
                 </div>
                 <span style={{
@@ -1220,12 +1220,12 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
                 <React.Fragment>
                   <div onClick={() => setSwitcherOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
                   <div style={{
-                    position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 41,
+                    position: 'absolute', top: 'calc(100% + 8px)', left: 0, zIndex: 41,
                     width: 380, maxHeight: 360, overflowY: 'auto',
                     background: WF.panel, borderRadius: 10, border: `1px solid ${WF.line}`,
-                    boxShadow: '0 16px 40px rgba(15,23,42,0.22)', padding: 6
+                    boxShadow: '0 16px 40px rgba(15,23,42,0.22)', padding: 8
                   }}>
-                    <div style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: 0.6, color: WF.inkLabel, textTransform: 'uppercase', padding: '6px 8px 4px' }}>Switch to another category</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', color: WF.inkLabel, textTransform: 'uppercase', padding: '8px 8px 4px' }}>Switch to another category</div>
                     {STATEROOM_ROWS.map(r => {
                       const isCurrent = r.id === row.id;
                       const soldOut = r.total === 0;
@@ -1236,7 +1236,7 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
                           onClick={() => { if (!disabled && !isCurrent) onSwitchCategory(r.id); setSwitcherOpen(false); }}
                           disabled={disabled}
                           style={{
-                            display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+                            display: 'flex', alignItems: 'center', gap: 12, width: '100%',
                             padding: '8px', borderRadius: 7, border: 'none', textAlign: 'left',
                             background: isCurrent ? WF.accentTint : 'transparent',
                             cursor: disabled ? 'not-allowed' : 'pointer',
@@ -1246,12 +1246,12 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
                           onMouseLeave={(e) => { if (!isCurrent) e.currentTarget.style.background = 'transparent'; }}>
                           <div style={{ width: 11, height: 11, borderRadius: 3, background: r.color, flexShrink: 0 }} />
                           <div style={{ minWidth: 0, flex: 1 }}>
-                            <div style={{ fontSize: 12.5, fontWeight: 600, color: WF.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.label}</div>
-                            <div style={{ fontSize: 10, color: WF.inkSoft, marginTop: 1 }}>{CAT_LABELS[r.cat]} · {LOC_LABELS[r.location]}</div>
+                            <div style={{ fontSize: 14, fontWeight: 600, color: WF.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.label}</div>
+                            <div style={{ fontSize: 12, color: WF.inkSoft, marginTop: 4 }}>{CAT_LABELS[r.cat]} · {LOC_LABELS[r.location]}</div>
                           </div>
                           <div style={{ textAlign: 'right', flexShrink: 0 }}>
                             <div style={{ fontSize: 12, fontWeight: 700, color: WF.ink, fontFamily: 'ui-monospace, monospace' }}>${r.price.toLocaleString()}</div>
-                            <div style={{ fontSize: 9.5, fontWeight: 600, color: soldOut ? BAD : OK, marginTop: 1 }}>{soldOut ? 'Sold out' : `${r.total} fare units`}</div>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: soldOut ? BAD : OK, marginTop: 4 }}>{soldOut ? 'Sold out' : `${r.total} fare units`}</div>
                           </div>
                           {isCurrent && <span style={{ fontSize: 12, color: WF.accentInk, flexShrink: 0 }}>✓</span>}
                         </button>
@@ -1264,38 +1264,38 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
 
             <div aria-hidden="true" style={{ width: 1, height: 36, background: WF.line }} />
 
-            <div style={{ minWidth: 0, padding: '2px 4px' }}>
-              <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 0.55, color: WF.inkLabel, textTransform: 'uppercase' }}>Fare per room</div>
-              <div style={{ marginTop: 5, fontSize: 14, fontWeight: 800, color: WF.ink, fontFamily: 'ui-monospace, monospace' }}>${row.price.toLocaleString()}.00</div>
+            <div style={{ minWidth: 0, padding: '4px 4px' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', color: WF.inkLabel, textTransform: 'uppercase' }}>Fare per room</div>
+              <div style={{ marginTop: 4, fontSize: 14, fontWeight: 700, color: WF.ink, fontFamily: 'ui-monospace, monospace' }}>${row.price.toLocaleString()}.00</div>
             </div>
 
             <div aria-hidden="true" style={{ width: 1, height: 36, background: WF.line }} />
 
-            <div style={{ minWidth: 0, padding: '2px 4px' }}>
-              <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: 0.55, color: WF.inkLabel, textTransform: 'uppercase' }}>Staterooms</div>
-              <div style={{ marginTop: 5 }}>
+            <div style={{ minWidth: 0, padding: '4px 4px' }}>
+              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', color: WF.inkLabel, textTransform: 'uppercase' }}>Staterooms</div>
+              <div style={{ marginTop: 4 }}>
                 <QtyControl
                   value={qty}
-                  max={row.total}
-                  onChange={(val) => val >= 1 && val <= row.total && onQtyChange(val)} />
+                  max={maxQty}
+                  onChange={(val) => val >= 1 && val <= maxQty && onQtyChange(val)} />
               </div>
             </div>
 
             <div role="status" style={{
-              display: 'flex', alignItems: 'center', gap: 8, padding: '7px 9px',
+              display: 'flex', alignItems: 'center', gap: 8, padding: '8px 8px',
               border: `1px solid ${filledCount === qty ? '#BBF7D0' : WF.accentLine}`,
               borderRadius: RD.sm, background: filledCount === qty ? '#F0FDF4' : WF.accentTint
             }}>
               <span aria-hidden="true" style={{
                 width: 20, height: 20, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 borderRadius: 999, flexShrink: 0, background: filledCount === qty ? '#047857' : WF.accent,
-                color: '#FFFFFF', fontSize: 11, fontWeight: 800
+                color: '#FFFFFF', fontSize: 12, fontWeight: 700
               }}>{filledCount === qty ? '✓' : '!'}</span>
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 11.5, fontWeight: 750, color: filledCount === qty ? '#047857' : WF.ink }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: filledCount === qty ? '#047857' : WF.ink }}>
                   {filledCount === qty ? 'Ready to confirm' : `${qty - filledCount} remaining`}
                 </div>
-                <div style={{ marginTop: 1, fontSize: 11, color: WF.inkSoft, whiteSpace: 'nowrap' }}>{filledCount} of {qty} rooms assigned</div>
+                <div style={{ marginTop: 4, fontSize: 12, color: WF.inkSoft, whiteSpace: 'nowrap' }}>{filledCount} of {qty} rooms assigned</div>
               </div>
             </div>
           </div>
@@ -1335,13 +1335,13 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
                 aria-controls={`guest-distribution-${row.id}`}
                 style={{
                   width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: SP.md,
-                  padding: '9px 11px', border: 'none',
+                  padding: '8px 12px', border: 'none',
                   borderBottom: distributionExpanded ? `1px solid ${WF.line}` : 'none',
                   background: WF.fill, color: WF.ink, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left'
                 }}>
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 12.5, fontWeight: 750, color: WF.ink }}>Distribute guests by cabin</div>
-                  <div style={{ marginTop: 2, fontSize: 10.5, color: WF.inkSoft }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: WF.ink }}>Distribute guests by cabin</div>
+                  <div style={{ marginTop: 4, fontSize: 12, color: WF.inkSoft }}>
                     {distributionExpanded
                       ? 'Use the cabin header to choose which room you are assigning.'
                       : `${totalAssignedGuests} guests placed across ${qty} cabin${qty === 1 ? '' : 's'}.`}
@@ -1349,12 +1349,12 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
                 </div>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                   <span style={{
-                    padding: '4px 7px', borderRadius: 6, border: `1px solid ${WF.line}`,
-                    background: WF.panel, fontSize: 10.5, fontWeight: 800, color: WF.inkSoft
+                    padding: '4px 8px', borderRadius: 6, border: `1px solid ${WF.line}`,
+                    background: WF.panel, fontSize: 12, fontWeight: 700, color: WF.inkSoft
                   }}>{qty} cabin{qty === 1 ? '' : 's'}</span>
                   <span style={{
                     display: 'inline-flex', alignItems: 'center', gap: 4,
-                    fontSize: 11.5, fontWeight: 750, color: WF.accent, whiteSpace: 'nowrap'
+                    fontSize: 12, fontWeight: 700, color: WF.accent, whiteSpace: 'nowrap'
                   }}>
                     {distributionExpanded ? 'Collapse' : <React.Fragment><EditIcon /> Edit</React.Fragment>}
                   </span>
@@ -1381,31 +1381,31 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
           <div style={{ padding: `${SP.lg}px` }}>
             <div style={{ border: `1px solid ${WF.line}`, borderRadius: RD.md, overflow: 'hidden', background: WF.panel }}>
               <div style={{
-                display: 'flex', alignItems: 'center', gap: SP.md, padding: '9px 11px',
+                display: 'flex', alignItems: 'center', gap: SP.md, padding: '8px 12px',
                 background: WF.fill, borderBottom: `1px solid ${WF.line}`
               }}>
                 <div style={{
                   width: 30, height: 30, borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: WF.accent, color: '#FFFFFF', fontSize: 11, fontWeight: 800,
+                  background: WF.accent, color: '#FFFFFF', fontSize: 12, fontWeight: 700,
                   fontFamily: 'ui-monospace, monospace', flexShrink: 0
                 }}>{activeSlot + 1}</div>
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 12.5, fontWeight: 750, color: WF.ink }}>Room inventory for Cabin {activeSlot + 1}</div>
-                  <div style={{ marginTop: 2, fontSize: 11, color: WF.inkSoft }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: WF.ink }}>Room inventory for Cabin {activeSlot + 1}</div>
+                  <div style={{ marginTop: 4, fontSize: 12, color: WF.inkSoft }}>
                     {filtersActive
                       ? `${matchingRoomCount} of ${rooms.length} eligible rooms match across ${roomsByDeck.length} decks`
                       : `${rooms.length} eligible rooms across ${roomsByDeck.length} decks · ${activeDeckRooms.length} on Deck ${activeDeck}`}
                   </div>
                 </div>
                 <div style={{ marginLeft: 'auto', textAlign: 'right', flexShrink: 0 }}>
-                  <div style={{ fontSize: 11, fontWeight: 800, color: filledCount === qty ? '#047857' : WF.ink, fontFamily: 'ui-monospace, monospace' }}>{filledCount} / {qty}</div>
-                  <div style={{ marginTop: 1, fontSize: 8.5, color: WF.inkFaint }}>Rooms assigned</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: filledCount === qty ? '#047857' : WF.ink, fontFamily: 'ui-monospace, monospace' }}>{filledCount} / {qty}</div>
+                  <div style={{ marginTop: 4, fontSize: 12, color: WF.inkFaint }}>Rooms assigned</div>
                 </div>
               </div>
 
               <div style={{
                 display: 'flex', alignItems: 'center', gap: SP.md, flexWrap: 'wrap',
-                padding: '8px 11px', borderBottom: `1px solid ${WF.line}`, background: '#FFFFFF'
+                padding: '8px 12px', borderBottom: `1px solid ${WF.line}`, background: '#FFFFFF'
               }}>
                 <button
                   onClick={() => onAutoAssign(activeDeckMatches.map((room) => room.num))}
@@ -1414,8 +1414,8 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
                     ? `Only ${activeDeckMatches.length} rooms match on Deck ${activeDeck}—clear a filter or choose another deck`
                     : `Spread the party across cabins, then choose matching rooms from Deck ${activeDeck}`}
                   style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 6,
-                    height: 30, padding: '0 10px', borderRadius: 6, fontSize: 11, fontWeight: 750,
+                    display: 'inline-flex', alignItems: 'center', gap: 8,
+                    height: 30, padding: '0 12px', borderRadius: 6, fontSize: 12, fontWeight: 700,
                     border: `1px solid ${activeDeckMatches.length < qty ? WF.line : WF.accentLine}`,
                     background: activeDeckMatches.length < qty ? WF.fill : WF.accentTint,
                     color: activeDeckMatches.length < qty ? WF.inkFaint : WF.accent,
@@ -1433,8 +1433,8 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
                   activeColor={WF.accent}
                   options={['fwd', 'mid', 'aft'].map(loc => ({ key: loc, label: LOC_LABELS[loc] }))} />
                 <div style={{ width: 1, height: 20, background: WF.line }} />
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
-                  <span style={{ marginRight: 2, fontSize: 11, fontWeight: 600, color: WF.inkSoft, whiteSpace: 'nowrap' }}>Filters</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+                  <span style={{ marginRight: 4, fontSize: 12, fontWeight: 600, color: WF.inkSoft, whiteSpace: 'nowrap' }}>Filters</span>
                   <FeatureChip
                     label="All"
                     active={activeFilters.size === 0}
@@ -1453,7 +1453,7 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
                     onClick={() => { setLocFilter(null); setActiveFilters(new Set()); }}
                     style={{
                       minHeight: 30, padding: '0 8px', border: 'none', background: 'transparent',
-                      color: WF.accent, fontSize: 11, fontWeight: 700,
+                      color: WF.accent, fontSize: 12, fontWeight: 700,
                       cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap'
                     }}>Clear filters</button>
                 )}
@@ -1465,7 +1465,7 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
                   aria-label="Available decks"
                   style={{
                     display: 'grid', gridTemplateColumns: `repeat(${roomsByDeck.length}, minmax(0, 1fr))`,
-                    gap: 6, padding: 8, borderBottom: `1px solid ${WF.line}`, background: '#FFFFFF'
+                    gap: 8, padding: 8, borderBottom: `1px solid ${WF.line}`, background: '#FFFFFF'
                   }}>
                   {roomsByDeck.map(({ deck, rooms: deckRooms }) => {
                     const selected = deck === activeDeck;
@@ -1480,21 +1480,21 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
                         aria-controls={`deck-panel-${row.id}-${deck}`}
                         onClick={() => setActiveDeck(deck)}
                         style={{
-                          minHeight: 48, padding: '7px 9px', borderRadius: RD.sm,
+                          minHeight: 48, padding: '8px 8px', borderRadius: RD.sm,
                           border: `1px solid ${selected ? WF.accent : WF.line}`,
                           background: selected ? WF.accent : WF.panel,
                           color: selected ? '#FFFFFF' : WF.ink, cursor: 'pointer',
                           fontFamily: 'inherit', textAlign: 'left'
                         }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
-                          <span style={{ fontSize: 12, fontWeight: 750 }}>Deck {deck}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                          <span style={{ fontSize: 12, fontWeight: 700 }}>Deck {deck}</span>
                           <span style={{
-                            minWidth: 22, padding: '2px 5px', borderRadius: 999, textAlign: 'center',
+                            minWidth: 22, padding: '4px 4px', borderRadius: 999, textAlign: 'center',
                             background: selected ? 'rgba(255,255,255,0.14)' : WF.fill,
-                            fontSize: 10.5, fontWeight: 750, fontFamily: 'ui-monospace, monospace'
+                            fontSize: 12, fontWeight: 700, fontFamily: 'ui-monospace, monospace'
                           }}>{filtersActive ? `${deckMatches}/${deckRooms.length}` : deckRooms.length}</span>
                         </div>
-                        <div style={{ marginTop: 3, minHeight: 13, fontSize: 10.5, color: selected ? '#CBD5E1' : WF.inkSoft }}>
+                        <div style={{ marginTop: 4, minHeight: 13, fontSize: 12, color: selected ? '#CBD5E1' : WF.inkSoft }}>
                           {deckAssigned > 0 ? `✓ ${deckAssigned} assigned` : filtersActive ? `${deckMatches} matching` : 'Available rooms'}
                         </div>
                       </button>
@@ -1507,22 +1507,22 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
                   role="tabpanel"
                   aria-labelledby={`deck-tab-${row.id}-${activeDeck}`}
                   style={{
-                    width: 'auto', margin: '10px 16px 12px',
+                    width: 'auto', margin: '12px 16px 12px',
                     border: `1px solid ${WF.line}`, borderRadius: RD.sm,
                     background: '#FFFFFF', overflow: 'hidden',
                     boxShadow: '0 1px 2px rgba(15,23,42,0.08)'
                   }}>
                   <div style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
-                    padding: '9px 11px', borderBottom: `1px solid ${WF.line}`, background: WF.panel
+                    padding: '8px 12px', borderBottom: `1px solid ${WF.line}`, background: WF.panel
                   }}>
                     <div>
-                      <span style={{ fontSize: 12.5, fontWeight: 750, color: WF.ink }}>Deck {activeDeck}</span>
-                      <span style={{ marginLeft: 7, fontSize: 11, color: WF.inkSoft }}>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: WF.ink }}>Deck {activeDeck}</span>
+                      <span style={{ marginLeft: 8, fontSize: 12, color: WF.inkSoft }}>
                         {filtersActive ? `${activeDeckMatches.length} matching · ${activeDeckRooms.length} total` : `${activeDeckRooms.length} eligible rooms`}
                       </span>
                     </div>
-                    <div style={{ fontSize: 10.5, color: WF.inkSoft }}>
+                    <div style={{ fontSize: 12, color: WF.inkSoft }}>
                       10 Forward · 9 Mid Ship · 9 Aft Ship
                       {activeDeckAssignedCount > 0 ? ` · ${activeDeckAssignedCount} assigned` : ''}
                     </div>
@@ -1530,7 +1530,7 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
 
                   <div
                     className="stateroom-deck-scroll"
-                    style={{ maxHeight: 330, overflowY: 'auto', scrollbarGutter: 'auto', padding: 10, background: WF.fill }}>
+                    style={{ maxHeight: 330, overflowY: 'auto', scrollbarGutter: 'auto', padding: 12, background: WF.fill }}>
                     {visibleActiveDeckRooms.length > 0 ? (
                       <div
                         role="group"
@@ -1547,8 +1547,8 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
                         alignItems: 'center', justifyContent: 'center', textAlign: 'center',
                         border: `1px dashed ${WF.line}`, borderRadius: RD.sm, background: '#FFFFFF'
                       }}>
-                        <div style={{ fontSize: 12.5, fontWeight: 700, color: WF.ink }}>No rooms match on Deck {activeDeck}</div>
-                        <div style={{ marginTop: 4, fontSize: 11, color: WF.inkSoft }}>Choose another deck or clear the current filters.</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: WF.ink }}>No rooms match on Deck {activeDeck}</div>
+                        <div style={{ marginTop: 4, fontSize: 12, color: WF.inkSoft }}>Choose another deck or clear the current filters.</div>
                       </div>
                     )}
                   </div>
@@ -1567,7 +1567,7 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
             <button
               onClick={onClose}
               style={{
-                padding: '9px 18px', fontSize: 12.5, fontWeight: 600, borderRadius: RD.sm,
+                padding: '8px 20px', fontSize: 14, fontWeight: 600, borderRadius: RD.sm,
                 border: `1px solid ${WF.line}`, background: WF.panel, color: WF.ink,
                 cursor: 'pointer', fontFamily: 'inherit'
               }}>Cancel</button>
@@ -1582,7 +1582,7 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
                 : filledCount !== qty ? 'Assign a room to every cabin first'
                 : configuredCount < qty ? 'Some cabins have no guests assigned yet' : undefined}
               style={{
-                padding: '9px 20px', fontSize: 12.5, fontWeight: 700, borderRadius: RD.sm,
+                padding: '8px 20px', fontSize: 14, fontWeight: 700, borderRadius: RD.sm,
                 border: 'none', background: canConfirm ? TEAL.base : WF.fillStrong,
                 color: canConfirm ? '#fff' : WF.inkFaint,
                 cursor: canConfirm ? 'pointer' : 'not-allowed', fontFamily: 'inherit',
@@ -1595,8 +1595,6 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
           <CabinDetailsDialog
             room={detailRoom.room}
             row={row}
-            state={detailRoom.state}
-            ownerSlot={detailRoom.ownerSlot}
             onClose={() => setDetailRoom(null)} />
         )}
       </div>
@@ -1609,7 +1607,7 @@ function SelectRoomPanel({ row, qty, roomsBySlot, cabinGuests, activeSlot, party
 function SegmentedFilter({ label, options, value, onChange, activeColor }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-      <span style={{ fontSize: 11, color: WF.inkSoft, fontWeight: 600, whiteSpace: 'nowrap' }}>{label}</span>
+      <span style={{ fontSize: 12, color: WF.inkSoft, fontWeight: 600, whiteSpace: 'nowrap' }}>{label}</span>
       <div
         role="group"
         aria-label={`${label} filter`}
@@ -1619,7 +1617,7 @@ function SegmentedFilter({ label, options, value, onChange, activeColor }) {
           onClick={() => onChange(null)}
           aria-pressed={value === null}
           style={{
-            padding: '5px 11px', fontSize: 11.5, fontWeight: value === null ? 700 : 500,
+            padding: '4px 12px', fontSize: 12, fontWeight: value === null ? 700 : 500,
             border: 'none', borderRight: `1px solid ${WF.line}`,
             background: value === null ? activeColor : 'transparent',
             color: value === null ? '#fff' : WF.inkSoft,
@@ -1634,7 +1632,7 @@ function SegmentedFilter({ label, options, value, onChange, activeColor }) {
               onClick={() => onChange(on ? null : key)}
               aria-pressed={on}
               style={{
-                padding: '5px 11px', fontSize: 11.5, fontWeight: on ? 700 : 500,
+                padding: '4px 12px', fontSize: 12, fontWeight: on ? 700 : 500,
                 border: 'none', borderRight: i < options.length - 1 ? `1px solid ${WF.line}` : 'none',
                 background: on ? activeColor : 'transparent',
                 color: on ? '#fff' : WF.inkSoft,
@@ -1710,6 +1708,11 @@ function StateRoomMatrix({ update, s, onConfirmRooms }) {
     totals[cat] = STATEROOM_ROWS.filter((row) => row.cat === cat).reduce((sum, row) => sum + row.total, 0);
     return totals;
   }, {});
+  const selectedCabinQty = Object.values(qtys).reduce((sum, qty) => sum + (qty || 0), 0);
+  const maxQtyForRow = (row) => {
+    const otherRowsQty = selectedCabinQty - (qtys[row.id] || 0);
+    return Math.min(row.total, Math.max(0, MAX_CABINS_PER_BOOKING - otherRowsQty));
+  };
   const assignedRoomCount = Object.values(confirmedRooms).reduce((sum, rooms) => sum + rooms.length, 0);
 
   // Single write path for the cabin record. Always reconciles supplement
@@ -1726,10 +1729,10 @@ function StateRoomMatrix({ update, s, onConfirmRooms }) {
   };
 
   const handleQtyChange = (row, rawVal) => {
-    // Clamp here as well as in the control: the matrix's own row stepper calls
-    // this directly, so a category with 2 rooms left must not accept 3 cabins
-    // from either entry point.
-    let val = Math.max(0, Math.min(rawVal, row.total));
+    // Clamp here as well as in both controls so neither category inventory nor
+    // the eight-cabin booking limit can be bypassed from a second entry point.
+    const rowMax = maxQtyForRow(row);
+    let val = Math.max(0, Math.min(rawVal, rowMax));
     const prev = qtys[row.id] || 0;
     // First cabin of a category: size it to the guests still needing a berth
     // rather than opening at 1. A party of 10 against a 2-berth category used to
@@ -1739,7 +1742,7 @@ function StateRoomMatrix({ update, s, onConfirmRooms }) {
       const seats = cabinSeats(cabinCapacity(row));
       const seated = assignedInOtherRows(selections, row.id);
       const unseated = GUEST_TYPES.reduce((n, t) => n + ((s.guests || ZERO_GUESTS)[t.key] || 0) - (seated[t.key] || 0), 0);
-      if (seats > 0 && unseated > 0) val = Math.min(row.total, Math.max(val, Math.ceil(unseated / seats)));
+      if (seats > 0 && unseated > 0) val = Math.min(rowMax, Math.max(val, Math.ceil(unseated / seats)));
     }
     if (val === prev) return;
     setQtys(q => ({ ...q, [row.id]: val }));
@@ -1891,7 +1894,11 @@ function StateRoomMatrix({ update, s, onConfirmRooms }) {
     if (newRowId === fromRowId) return;
     const nextRow = STATEROOM_ROWS.find((candidate) => candidate.id === newRowId);
     if (!nextRow || nextRow.total < 1) return;
-    const carryQty = Math.min(nextRow.total, Math.max(1, qtys[fromRowId] || 1));
+    const fromQty = qtys[fromRowId] || 0;
+    const otherRowsQty = selectedCabinQty - fromQty;
+    const nextMax = Math.min(nextRow.total, Math.max(0, MAX_CABINS_PER_BOOKING - otherRowsQty));
+    if (nextMax < 1) return;
+    const carryQty = Math.min(nextMax, Math.max(1, fromQty || 1));
     setQtys(q => { const n = { ...q }; delete n[fromRowId]; n[newRowId] = carryQty; return n; });
     setSelections(sel => {
       const n = { ...sel };
@@ -1906,7 +1913,7 @@ function StateRoomMatrix({ update, s, onConfirmRooms }) {
 
   const TH = ({ children, right }) => (
     <th style={{
-      padding: '6px 12px', fontSize: 9, fontWeight: 800, letterSpacing: 0.55,
+      padding: '8px 12px', fontSize: 12, fontWeight: 700, letterSpacing: '0.04em',
       color: WF.inkLabel, textTransform: 'uppercase', textAlign: right ? 'center' : 'left',
       borderBottom: `1px solid ${WF.line}`, whiteSpace: 'nowrap', background: WF.fill
     }}>{children}</th>
@@ -1918,14 +1925,14 @@ function StateRoomMatrix({ update, s, onConfirmRooms }) {
       background: '#FFFFFF', boxShadow: '0 1px 2px rgba(15,23,42,0.05)',
     }}>
       <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 18,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20,
         padding: '12px', background: WF.fill, borderBottom: `1px solid ${WF.line}`,
       }}>
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 13.5, fontWeight: 750, letterSpacing: -0.15, color: WF.ink }}>
+          <div style={{ fontSize: 14, fontWeight: 700, letterSpacing: '-0.01em', color: WF.ink }}>
             Choose a stateroom category
           </div>
-          <div style={{ marginTop: 3, fontSize: 10, color: WF.inkSoft }}>Live fare inventory by category and occupancy · select a quantity, then choose exact rooms</div>
+          <div style={{ marginTop: 4, fontSize: 12, color: WF.inkSoft }}>Live fare inventory by category and occupancy · up to {MAX_CABINS_PER_BOOKING} cabins per booking</div>
         </div>
         {/* Availability is already exposed by the cabin-type counts and each
             category row. Keep only completion progress here so the header
@@ -1934,8 +1941,8 @@ function StateRoomMatrix({ update, s, onConfirmRooms }) {
           role="status"
           aria-label={assignedRoomCount > 0 ? `${assignedRoomCount} rooms assigned` : 'No rooms assigned'}
           style={{
-            display: 'inline-flex', alignItems: 'center', gap: 7, flexShrink: 0,
-            padding: '6px 9px', borderRadius: 7,
+            display: 'inline-flex', alignItems: 'center', gap: 8, flexShrink: 0,
+            padding: '8px 8px', borderRadius: 7,
             border: `1px solid ${assignedRoomCount > 0 ? WF.accentLine : WF.line}`,
             background: assignedRoomCount > 0 ? WF.accentTint : '#FFFFFF', color: WF.ink
           }}>
@@ -1943,9 +1950,9 @@ function StateRoomMatrix({ update, s, onConfirmRooms }) {
             width: 17, height: 17, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
             borderRadius: 999, background: assignedRoomCount > 0 ? WF.accent : WF.fillStrong,
             color: assignedRoomCount > 0 ? '#FFFFFF' : WF.inkSoft,
-            fontSize: 10.5, fontWeight: 800, lineHeight: 1
+            fontSize: 12, fontWeight: 700, lineHeight: 1
           }}>{assignedRoomCount > 0 ? '✓' : '—'}</span>
-          <span style={{ fontSize: 11.5, fontWeight: 650, color: WF.inkSoft, whiteSpace: 'nowrap' }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: WF.inkSoft, whiteSpace: 'nowrap' }}>
             {assignedRoomCount > 0 ? <><strong style={{ color: WF.ink }}>{assignedRoomCount}</strong> rooms assigned</> : 'No rooms assigned'}
           </span>
         </div>
@@ -1953,11 +1960,11 @@ function StateRoomMatrix({ update, s, onConfirmRooms }) {
       {/* Inventory-aware category filters: counts explain the effect of a
           filter before the agent commits to it, including sold-out groups. */}
       <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16,
         padding: '8px 12px', background: '#FFFFFF', borderBottom: `1px solid ${WF.line}`
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-          <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: 0.5, color: WF.inkLabel, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>Cabin type</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', color: WF.inkLabel, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>Cabin type</span>
           {[{ key: null, label: 'All types', count: STATEROOM_ROWS.reduce((sum, row) => sum + row.total, 0) },
             ...['IS', 'OV', 'BAL', 'STE'].map((cat) => ({ key: cat, label: CAT_LABELS[cat], count: categoryInventory[cat] }))
           ].map((option) => {
@@ -1967,24 +1974,24 @@ function StateRoomMatrix({ update, s, onConfirmRooms }) {
                 key={option.key || 'all'}
                 onClick={() => setCatFilter(option.key)}
                 style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 7, padding: '5px 8px',
+                  display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 8px',
                   borderRadius: 6, border: `1px solid ${active ? WF.accent : WF.line}`,
                   background: active ? WF.accent : WF.panel, color: active ? '#FFFFFF' : WF.ink,
-                  cursor: 'pointer', fontFamily: 'inherit', fontSize: 10.5, fontWeight: active ? 750 : 600,
+                  cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: active ? 700 : 600,
                   opacity: option.count === 0 && !active ? 0.58 : 1
                 }}>
                 {option.label}
                 <span style={{
-                  minWidth: 18, padding: '1px 5px', borderRadius: 999, textAlign: 'center',
+                  minWidth: 18, padding: '4px 4px', borderRadius: 999, textAlign: 'center',
                   background: active ? 'rgba(255,255,255,0.16)' : WF.fill,
                   color: active ? '#FFFFFF' : option.count === 0 ? BAD : WF.inkSoft,
-                  fontSize: 9, fontWeight: 800, fontFamily: 'ui-monospace, monospace'
+                  fontSize: 12, fontWeight: 700, fontFamily: 'ui-monospace, monospace'
                 }}>{option.count}</span>
               </button>
             );
           })}
         </div>
-        <div style={{ fontSize: 9.5, color: WF.inkFaint }}>Counts show fare inventory currently bookable</div>
+        <div style={{ fontSize: 12, color: WF.inkFaint }}>Counts show fare inventory currently bookable</div>
       </div>
 
       {/* ── Table — grows to its full height with the page. overflowX stays so the
@@ -2022,21 +2029,21 @@ function StateRoomMatrix({ update, s, onConfirmRooms }) {
                     onMouseEnter={(e) => { if (qty > 0 && !confirmed) e.currentTarget.style.background = WF.fill; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = confirmed ? WF.accentTint : soldOut ? WF.fill : WF.panel; }}>
                     {/* Category name */}
-                    <td style={{ padding: '7px 12px', borderBottom: `1px solid ${WF.lineSoft}`, minWidth: 218 }}>
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 9 }}>
+                    <td style={{ padding: '8px 12px', borderBottom: `1px solid ${WF.lineSoft}`, minWidth: 218 }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
                         <div style={{ width: 9, height: 28, borderRadius: 3, background: row.color, flexShrink: 0 }}></div>
                         <div style={{ minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                             <div style={{ fontSize: 12, fontWeight: 700, color: WF.ink }}>{categoryName}</div>
                             <span style={{
-                              padding: '1px 5px', borderRadius: 4, border: `1px solid ${WF.line}`,
-                              background: '#FFFFFF', fontSize: 8.5, fontWeight: 800,
+                              padding: '4px 4px', borderRadius: 4, border: `1px solid ${WF.line}`,
+                              background: '#FFFFFF', fontSize: 12, fontWeight: 700,
                               color: WF.inkSoft, fontFamily: 'ui-monospace, monospace'
                             }}>{row.id}</span>
                           </div>
-                          <div style={{ marginTop: 2, fontSize: 9, color: WF.inkFaint }}>{CAT_LABELS[row.cat]} · {LOC_LABELS[row.location]}</div>
+                          <div style={{ marginTop: 4, fontSize: 12, color: WF.inkFaint }}>{CAT_LABELS[row.cat]} · {LOC_LABELS[row.location]}</div>
                           {confirmed && (
-                            <div style={{ fontSize: 9.5, color: WF.accentInk, fontWeight: 700, marginTop: 3, cursor: 'pointer' }}>
+                            <div style={{ fontSize: 12, color: WF.accentInk, fontWeight: 700, marginTop: 4, cursor: 'pointer' }}>
                               ✓ {confirmed.length} assigned · {confirmed.join(', ')} <span style={{ color: WF.inkFaint, fontWeight: 600 }}>· Edit rooms</span>
                             </div>
                           )}
@@ -2044,27 +2051,27 @@ function StateRoomMatrix({ update, s, onConfirmRooms }) {
                       </div>
                     </td>
                     {/* Qty control — stop row-click so +/- don't also open the modal */}
-                    <td onClick={(e) => e.stopPropagation()} style={{ padding: '7px 12px', borderBottom: `1px solid ${WF.lineSoft}`, textAlign: 'center', whiteSpace: 'nowrap' }}>
+                    <td onClick={(e) => e.stopPropagation()} style={{ padding: '8px 12px', borderBottom: `1px solid ${WF.lineSoft}`, textAlign: 'center', whiteSpace: 'nowrap' }}>
                       {soldOut ? (
-                        <span style={{ fontSize: 9.5, fontWeight: 700, color: BAD }}>Unavailable</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: BAD }}>Unavailable</span>
                       ) : (
                         <QtyControl
                           value={qty}
-                          max={row.total}
+                          max={maxQtyForRow(row)}
                           onChange={(val) => handleQtyChange(row, val)} />
                       )}
                     </td>
                     {/* Price */}
-                    <td style={{ padding: '7px 12px', borderBottom: `1px solid ${WF.lineSoft}`, textAlign: 'center', whiteSpace: 'nowrap' }}>
-                      <span style={{ fontSize: 11.5, fontWeight: 750, color: WF.ink, fontFamily: 'ui-monospace, monospace' }}>
+                    <td style={{ padding: '8px 12px', borderBottom: `1px solid ${WF.lineSoft}`, textAlign: 'center', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: WF.ink, fontFamily: 'ui-monospace, monospace' }}>
                         ${row.price.toLocaleString()}.00
                       </span>
                     </td>
-                    <td style={{ padding: '7px 12px', borderBottom: `1px solid ${WF.lineSoft}`, textAlign: 'center' }}><NumCell val={row.single} /></td>
-                    <td style={{ padding: '7px 12px', borderBottom: `1px solid ${WF.lineSoft}`, textAlign: 'center' }}><NumCell val={row.double} /></td>
-                    <td style={{ padding: '7px 12px', borderBottom: `1px solid ${WF.lineSoft}`, textAlign: 'center' }}><NumCell val={row.dbinf} /></td>
-                    <td style={{ padding: '7px 12px', borderBottom: `1px solid ${WF.lineSoft}`, textAlign: 'center' }}><NumCell val={row.triple} /></td>
-                    <td style={{ padding: '7px 12px', borderBottom: `1px solid ${WF.lineSoft}`, textAlign: 'center' }}><NumCell val={row.quad} /></td>
+                    <td style={{ padding: '8px 12px', borderBottom: `1px solid ${WF.lineSoft}`, textAlign: 'center' }}><NumCell val={row.single} /></td>
+                    <td style={{ padding: '8px 12px', borderBottom: `1px solid ${WF.lineSoft}`, textAlign: 'center' }}><NumCell val={row.double} /></td>
+                    <td style={{ padding: '8px 12px', borderBottom: `1px solid ${WF.lineSoft}`, textAlign: 'center' }}><NumCell val={row.dbinf} /></td>
+                    <td style={{ padding: '8px 12px', borderBottom: `1px solid ${WF.lineSoft}`, textAlign: 'center' }}><NumCell val={row.triple} /></td>
+                    <td style={{ padding: '8px 12px', borderBottom: `1px solid ${WF.lineSoft}`, textAlign: 'center' }}><NumCell val={row.quad} /></td>
                   </tr>
                 </React.Fragment>
               );
@@ -2090,6 +2097,7 @@ function StateRoomMatrix({ update, s, onConfirmRooms }) {
           <SelectRoomPanel
             row={row}
             qty={qty}
+            maxQty={maxQtyForRow(row)}
             roomsBySlot={sel.roomsBySlot}
             cabinGuests={sel.cabinGuests}
             activeSlot={sel.activeSlot || 0}

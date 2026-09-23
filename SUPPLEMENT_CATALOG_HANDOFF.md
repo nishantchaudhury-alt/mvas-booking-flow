@@ -187,7 +187,7 @@ Use actual date-of-birth or age data when it exists. Representative ages are onl
 - Green is reserved for successful assignment status.
 - Amber is reserved for age restrictions and warnings.
 - Red is reserved for removal/destructive actions.
-- Visible text is at least 11px.
+- Visible text is at least 12px and uses the shared even-number type scale.
 - Controls use thin borders, 6–10px radii, and restrained shadows.
 
 ## Important integration decisions

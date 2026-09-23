@@ -44,11 +44,11 @@ const AVAIL_MATRIX_ROWS = [
 
 function LiveAvailMatrix({ onClose }) {
   const COLS = ['CATEGORY NAME', 'PRICE', 'TOTAL', 'SINGLE', 'DOUBLE', 'DB + INF', 'TRIPLE', 'QUAD'];
-  const headerStyle = { fontSize: 10, fontWeight: 700, letterSpacing: 0.6, color: WF.inkSoft,
-    textTransform: 'uppercase', padding: '7px 8px', textAlign: 'right', whiteSpace: 'nowrap',
+  const headerStyle = { fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', color: WF.inkSoft,
+    textTransform: 'uppercase', padding: '8px 8px', textAlign: 'right', whiteSpace: 'nowrap',
     borderBottom: `1.5px solid ${WF.line}` };
   const cellStyle = (val, isTotal) => ({
-    padding: '9px 10px', fontSize: 13, textAlign: 'right', fontWeight: isTotal ? 700 : 400,
+    padding: '8px 12px', fontSize: 14, textAlign: 'right', fontWeight: isTotal ? 700 : 400,
     color: isTotal && val === 0 ? '#EF4444' : isTotal && val > 0 ? WF.ink : val === 0 ? WF.inkSoft : WF.ink,
     background: isTotal && val === 0 ? '#FEF2F2' : isTotal && val > 0 ? '#F0FDF4' : 'transparent',
     borderBottom: `1px solid ${WF.lineSoft}`
@@ -56,13 +56,13 @@ function LiveAvailMatrix({ onClose }) {
   return (
     <div style={{ margin: '0 0 16px 0', border: `1px solid ${WF.line}`, borderRadius: 10, background: '#fff', overflow: 'hidden' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '11px 14px 8px', borderBottom: `1px solid ${WF.line}` }}>
-        <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1.1, color: '#4338CA', textTransform: 'uppercase' }}>
+        padding: '12px 16px 8px', borderBottom: `1px solid ${WF.line}` }}>
+        <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', color: '#4338CA', textTransform: 'uppercase' }}>
           Live Global Category Availability Matrix
         </span>
         <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer',
           fontSize: 12, fontWeight: 600, color: WF.inkSoft, fontFamily: 'inherit', display: 'flex',
-          alignItems: 'center', gap: 4, padding: '3px 6px' }}>
+          alignItems: 'center', gap: 4, padding: '4px 8px' }}>
           <span style={{ fontSize: 14 }}>✕</span> Close
         </button>
       </div>
@@ -70,7 +70,7 @@ function LiveAvailMatrix({ onClose }) {
         <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 580 }}>
           <thead>
             <tr>
-              <th style={{ ...headerStyle, textAlign: 'left', paddingLeft: 14 }}>Category Name</th>
+              <th style={{ ...headerStyle, textAlign: 'left', paddingLeft: 16 }}>Category Name</th>
               {['PRICE', 'TOTAL', 'SINGLE', 'DOUBLE', 'DB + INF', 'TRIPLE', 'QUAD'].map((col) =>
               <th key={col} style={headerStyle}>{col}</th>
               )}
@@ -79,19 +79,19 @@ function LiveAvailMatrix({ onClose }) {
           <tbody>
             {AVAIL_MATRIX_ROWS.map((row, i) =>
             <tr key={row.code} style={{ background: i % 2 === 0 ? '#fff' : '#FAFAFA' }}>
-                <td style={{ padding: '7px 8px 7px 14px', borderBottom: `1px solid ${WF.lineSoft}` }}>
+                <td style={{ padding: '8px 8px 8px 16px', borderBottom: `1px solid ${WF.lineSoft}` }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <div style={{ width: 10, height: 22, borderRadius: 2, background: row.color, flexShrink: 0 }}></div>
                     <span style={{ fontSize: 12, fontWeight: 600, color: WF.ink }}>{row.name}</span>
                   </div>
                 </td>
-                <td style={{ ...cellStyle(null, false), padding: '7px 8px' }}><span style={{ color: WF.ink, fontWeight: 500, fontSize: 12 }}>${row.price.toFixed(2)}</span></td>
-                <td style={{ ...cellStyle(row.total, true), padding: '7px 8px', fontSize: 12 }}>{row.total}</td>
-                <td style={{ ...cellStyle(row.single, false), padding: '7px 8px', fontSize: 12 }}>{row.single === 0 ? <span style={{ color: WF.inkSoft }}>0</span> : row.single}</td>
-                <td style={{ ...cellStyle(row.double, false), padding: '7px 8px', fontSize: 12 }}>{row.double === 0 ? <span style={{ color: WF.inkSoft }}>0</span> : row.double}</td>
-                <td style={{ ...cellStyle(row.dbInf, false), padding: '7px 8px', fontSize: 12 }}>{row.dbInf === 0 ? <span style={{ color: WF.inkSoft }}>0</span> : row.dbInf}</td>
-                <td style={{ ...cellStyle(row.triple, false), padding: '7px 8px', fontSize: 12 }}>{row.triple === 0 ? <span style={{ color: WF.inkSoft }}>0</span> : row.triple}</td>
-                <td style={{ ...cellStyle(row.quad, false), padding: '7px 8px', fontSize: 12 }}>{row.quad === 0 ? <span style={{ color: WF.inkSoft }}>0</span> : row.quad}</td>
+                <td style={{ ...cellStyle(null, false), padding: '8px 8px' }}><span style={{ color: WF.ink, fontWeight: 500, fontSize: 12 }}>${row.price.toFixed(2)}</span></td>
+                <td style={{ ...cellStyle(row.total, true), padding: '8px 8px', fontSize: 12 }}>{row.total}</td>
+                <td style={{ ...cellStyle(row.single, false), padding: '8px 8px', fontSize: 12 }}>{row.single === 0 ? <span style={{ color: WF.inkSoft }}>0</span> : row.single}</td>
+                <td style={{ ...cellStyle(row.double, false), padding: '8px 8px', fontSize: 12 }}>{row.double === 0 ? <span style={{ color: WF.inkSoft }}>0</span> : row.double}</td>
+                <td style={{ ...cellStyle(row.dbInf, false), padding: '8px 8px', fontSize: 12 }}>{row.dbInf === 0 ? <span style={{ color: WF.inkSoft }}>0</span> : row.dbInf}</td>
+                <td style={{ ...cellStyle(row.triple, false), padding: '8px 8px', fontSize: 12 }}>{row.triple === 0 ? <span style={{ color: WF.inkSoft }}>0</span> : row.triple}</td>
+                <td style={{ ...cellStyle(row.quad, false), padding: '8px 8px', fontSize: 12 }}>{row.quad === 0 ? <span style={{ color: WF.inkSoft }}>0</span> : row.quad}</td>
               </tr>
             )}
           </tbody>
@@ -141,7 +141,7 @@ function StratumPickerButton({ selected, options, onSelect }) {
       <button
         onClick={() => setOpen(!open)}
         style={{
-          width: '100%', padding: '5px 26px 5px 9px', fontSize: 12, fontWeight: 500,
+          width: '100%', padding: '4px 28px 4px 8px', fontSize: 12, fontWeight: 500,
           border: `1px solid ${WF.line}`, borderRadius: 6,
           background: WF.panel, color: WF.ink, fontFamily: 'inherit',
           cursor: 'pointer', textAlign: 'left', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
@@ -149,7 +149,7 @@ function StratumPickerButton({ selected, options, onSelect }) {
         {selected}
       </button>
       <svg width="11" height="11" viewBox="0 0 12 12" fill="none"
-      style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+      style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
         <path d="M2 4l4 4 4-4" stroke="#475569" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
 
@@ -164,7 +164,7 @@ function StratumPickerButton({ selected, options, onSelect }) {
           maxHeight: 220, overflow: 'hidden', display: 'flex', flexDirection: 'column', minWidth: 200
         }}>
             {/* Search input */}
-            <div style={{ padding: '7px 8px', borderBottom: `1px solid ${WF.lineSoft}` }}>
+            <div style={{ padding: '8px 8px', borderBottom: `1px solid ${WF.lineSoft}` }}>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <input
                 autoFocus
@@ -173,7 +173,7 @@ function StratumPickerButton({ selected, options, onSelect }) {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 style={{
-                  flex: 1, padding: '5px 26px 5px 8px', fontSize: 12, border: `1px solid ${WF.line}`,
+                  flex: 1, padding: '4px 28px 4px 8px', fontSize: 12, border: `1px solid ${WF.line}`,
                   borderRadius: 5, fontFamily: 'inherit', background: WF.fill, color: WF.ink,
                   boxSizing: 'border-box'
                 }} />
@@ -197,7 +197,7 @@ function StratumPickerButton({ selected, options, onSelect }) {
                 setSearch('');
               }}
               style={{
-                width: '100%', padding: '7px 10px', textAlign: 'left', border: 'none',
+                width: '100%', padding: '8px 12px', textAlign: 'left', border: 'none',
                 background: opt === selected ? WF.fill : 'transparent',
                 color: WF.ink, fontFamily: 'inherit', fontSize: 12, fontWeight: 500,
                 cursor: 'pointer', borderBottom: `1px solid ${WF.lineSoft}`,
@@ -209,7 +209,7 @@ function StratumPickerButton({ selected, options, onSelect }) {
                   </button>
             ) :
 
-            <div style={{ padding: '16px 14px', textAlign: 'center', color: WF.inkFaint, fontSize: 12 }}>No matches</div>
+            <div style={{ padding: '16px 16px', textAlign: 'center', color: WF.inkFaint, fontSize: 12 }}>No matches</div>
             }
             </div>
           </div>
@@ -232,7 +232,7 @@ function CabinCard({ cabin, selected, typeLabel, onSelect }) {
       onMouseLeave={() => setHovered(false)}
       style={{
         display: 'flex', flexDirection: 'column',
-        padding: '8px 9px 10px',
+        padding: '8px 8px 12px',
         borderRadius: 8,
         border: `1px solid ${selected ? '#3B82F6' : hovered ? '#CBD5E1' : available ? '#E5E7EB' : '#F1F5F9'}`,
         background: selected ? '#F0F9FF' : hovered && available ? '#F9FAFB' : '#fff',
@@ -246,29 +246,29 @@ function CabinCard({ cabin, selected, typeLabel, onSelect }) {
       }}>
 
       {/* Type label + icons — compact row */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 3, minHeight: 0 }}>
-        <span style={{ fontSize: 8, fontWeight: 600, color: WF.inkFaint, letterSpacing: 0.1, textTransform: 'uppercase', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4, minHeight: 0 }}>
+        <span style={{ fontSize: 12, fontWeight: 600, color: WF.inkFaint, letterSpacing: '0.04em', textTransform: 'uppercase', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {typeLabel}
         </span>
-        <div style={{ display: 'flex', gap: 1.5, flexShrink: 0, marginLeft: 2 }}>
+        <div style={{ display: 'flex', gap: 4, flexShrink: 0, marginLeft: 4 }}>
           {cabin.accessible &&
           <div style={{
             width: 13, height: 13, borderRadius: 2, background: '#3B82F6',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 8, color: '#fff', flexShrink: 0, lineHeight: 1
+            fontSize: 12, color: '#fff', flexShrink: 0, lineHeight: 1
           }}>♿</div>
           }
           {cabin.linked &&
-          <span style={{ fontSize: 9, color: WF.inkFaint, lineHeight: 1, flexShrink: 0 }}>🔗</span>
+          <span style={{ fontSize: 12, color: WF.inkFaint, lineHeight: 1, flexShrink: 0 }}>🔗</span>
           }
         </div>
       </div>
 
       {/* Cabin number — large, centered */}
       <div style={{
-        fontSize: 16, fontWeight: 800,
+        fontSize: 16, fontWeight: 700,
         color: cabin.occupied ? WF.inkSoft : '#1F2937',
-        textAlign: 'center', letterSpacing: -0.4, lineHeight: 1.1, flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center'
+        textAlign: 'center', letterSpacing: '-0.01em', lineHeight: '24px', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center'
       }}>
         {cabin.num}
       </div>
@@ -324,20 +324,20 @@ function DeckRow({ deck, cabinCategory, orientation, selectedCabin, onSelectCabi
 
         {/* Deck name badge */}
         <div style={{
-          padding: '4px 10px', borderRadius: 5,
+          padding: '4px 12px', borderRadius: 5,
           border: `1.5px solid ${deck.color}`, background: deck.bg,
-          color: deck.textColor, fontSize: 10, fontWeight: 700,
-          letterSpacing: 0.3, whiteSpace: 'nowrap', flexShrink: 0
+          color: deck.textColor, fontSize: 12, fontWeight: 700,
+          letterSpacing: '0.04em', whiteSpace: 'nowrap', flexShrink: 0
         }}>
           DECK {deck.num}: {deck.name}
         </div>
 
         {/* Available pill */}
         <div style={{
-          padding: '3px 8px', borderRadius: 16,
+          padding: '4px 8px', borderRadius: 16,
           border: `1px solid ${hasCabins && available > 0 ? '#22C55E' : WF.line}`,
           background: hasCabins && available > 0 ? '#F0FFF4' : WF.fill,
-          fontSize: 10, fontWeight: 600,
+          fontSize: 12, fontWeight: 600,
           color: hasCabins && available > 0 ? '#15803D' : WF.inkSoft,
           flexShrink: 0
         }}>
@@ -346,18 +346,18 @@ function DeckRow({ deck, cabinCategory, orientation, selectedCabin, onSelectCabi
 
         {/* Occupied pill */}
         <div style={{
-          padding: '3px 8px', borderRadius: 16,
+          padding: '4px 8px', borderRadius: 16,
           border: `1px solid ${WF.line}`, background: WF.fill,
-          fontSize: 10, fontWeight: 600, color: WF.inkSoft,
+          fontSize: 12, fontWeight: 600, color: WF.inkSoft,
           flexShrink: 0
         }}>
           {occupied} Occupied
         </div>
 
         {/* Expand / collapse toggle */}
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
           <span style={{
-            fontSize: 11, color: hasCabins ? WF.inkSoft : WF.inkFaint, fontWeight: 500
+            fontSize: 12, color: hasCabins ? WF.inkSoft : WF.inkFaint, fontWeight: 500
           }}>
             {expanded ? 'Collapse' : 'Expand'}
           </span>
@@ -440,7 +440,7 @@ function CabinDeckMapSection({ cabinId, selectedCabin, onSelectCabin, deckPrefer
               key={opt}
               onClick={() => setOrientation(opt)}
               style={{
-                padding: '5px 10px', fontSize: 11, fontWeight: 600,
+                padding: '4px 12px', fontSize: 12, fontWeight: 600,
                 border: 'none',
                 borderRight: i < ORIENT_OPTS.length - 1 ? `1px solid ${WF.line}` : 'none',
                 background: orientation === opt ? '#1B2434' : 'transparent',
@@ -482,9 +482,9 @@ function CabinDeckMapSection({ cabinId, selectedCabin, onSelectCabin, deckPrefer
             </button>
             {/* Tooltip */}
             <div style={{
-              position: 'absolute', bottom: 'calc(100% + 6px)', left: '50%',
+              position: 'absolute', bottom: 'calc(100% + 8px)', left: '50%',
               transform: 'translateX(-50%)', background: '#1B2434', color: '#fff',
-              fontSize: 10, fontWeight: 600, padding: '4px 8px', borderRadius: 5,
+              fontSize: 12, fontWeight: 600, padding: '4px 8px', borderRadius: 5,
               whiteSpace: 'nowrap', pointerEvents: 'none', opacity: 0,
               transition: 'opacity 0.15s', zIndex: 10
             }} className="avail-tooltip">
@@ -506,7 +506,7 @@ function CabinDeckMapSection({ cabinId, selectedCabin, onSelectCabin, deckPrefer
               transition: 'all 0.12s',
               whiteSpace: 'nowrap', padding: "8px"
             }}>
-            <span style={{ fontSize: 10, marginRight: 4 }}>⚙️</span>Auto-Assign Room
+            <span style={{ fontSize: 12, marginRight: 4 }}>⚙️</span>Auto-Assign Room
           </button>
         </div>
       </div>
@@ -519,47 +519,47 @@ function CabinDeckMapSection({ cabinId, selectedCabin, onSelectCabin, deckPrefer
       {/* ── Selected room summary (shows below Room Category when picked) ── */}
       {selectedCabin && !showDeckMap &&
       <div style={{
-        display: 'flex', alignItems: 'center', gap: 10,
-        padding: '10px 14px', marginBottom: 4,
-        background: '#F0F9FF', border: '1.5px solid #3B82F6',
+        display: 'flex', alignItems: 'center', gap: 12,
+        padding: '12px 16px', marginBottom: 4,
+        background: 'var(--ds-color-info-bg, #F0F9FF)', border: '1.5px solid var(--ds-color-info-border, #BFDBFE)',
         borderRadius: 8
       }}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ color: '#3B82F6', flexShrink: 0 }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ color: 'var(--ds-color-info-text, #1D4ED8)', flexShrink: 0 }}>
             <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
           </svg>
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: WF.accentInk }}>Room {selectedCabin}</span>
+            <span style={{ fontSize: 14, fontWeight: 700, color: WF.accentInk }}>Room {selectedCabin}</span>
             {selectedDeckDef &&
-          <span style={{ fontSize: 11, fontWeight: 600, color: '#3B82F6',
-            padding: '2px 7px', borderRadius: 4, background: '#DBEAFE' }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--ds-color-info-text, #1D4ED8)',
+            padding: '4px 8px', borderRadius: 4, background: 'var(--ds-primitive-color-info-100, #DBEAFE)' }}>
                 Deck {selectedDeckNum}
               </span>
           }
-            <span style={{ fontSize: 11, color: '#3B82F6' }}>{stratum}</span>
+            <span style={{ fontSize: 12, color: 'var(--ds-color-info-text, #1D4ED8)' }}>{stratum}</span>
           </div>
           <button
           onClick={() => {onSelectCabin(null);setShowDeckMap(true);}}
           style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12,
-            color: WF.accentOn, fontFamily: 'inherit', fontWeight: 700, padding: '3px 8px',
-            borderRadius: 4, letterSpacing: 0.1 }}>
+            color: WF.accentOn, fontFamily: 'inherit', fontWeight: 700, padding: '4px 8px',
+            borderRadius: 4, letterSpacing: '0.04em' }}>
             Change
           </button>
         </div>
       }
 
       {/* ── Section label + legend (hidden when room selected) ── */}
-      {showDeckMap && <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }} data-comment-anchor="fefab165bf-div-552-23">
-        <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 0.8, color: WF.inkLabel, textTransform: 'uppercase' }}>
+      {showDeckMap && <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }} data-comment-anchor="fefab165bf-div-552-23">
+        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', color: WF.inkLabel, textTransform: 'uppercase' }}>
           Active Structural Deck Levels
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           {[
           { label: 'Available', color: '#22C55E', border: false },
           { label: 'Selected', color: '#3B82F6', border: false },
           { label: 'Occupied', color: '#E2E8F0', border: true }].
           map(({ label, color, border }) =>
-          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: WF.inkSoft }}>
+          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: WF.inkSoft }}>
               <div style={{ width: 11, height: 11, borderRadius: 2, background: color, border: border ? '1px solid #CBD5E1' : 'none' }} />
               {label}
             </div>

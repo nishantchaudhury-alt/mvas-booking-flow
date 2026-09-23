@@ -4,26 +4,26 @@
 
 const WF = {
   // ── Ink (text) ──
-  ink: '#0F172A',         // primary text (navy near-black)
-  inkSoft: '#475569',     // secondary text / row values
+  ink: 'var(--ds-color-text-primary, #0F172A)',         // primary text (navy near-black)
+  inkSoft: 'var(--ds-color-text-secondary, #475569)',   // secondary text / row values
   // Accessible compact-text greys. The former #94A3B8 tertiary token was only
   // 2.45:1 on the cool-grey fill, and #64748B labels dipped below 4.5:1 on the
   // blue selected surface. These retain the cool-grey hierarchy while clearing
   // AA contrast on every working surface used by the flow.
-  inkFaint: '#5F6F85',    // tertiary / placeholders / icon glyphs
-  inkLabel: '#5B6B80',    // section-header label grey
+  inkFaint: 'var(--ds-color-text-muted, #5F6F85)',      // tertiary / placeholders / icon glyphs
+  inkLabel: 'var(--ds-color-text-label, #5B6B80)',      // section-header label grey
   // ── Surfaces ──
-  bg: '#F1F5F9',          // app background behind cards
-  panel: '#FFFFFF',       // card / table surface
-  fill: '#F8FAFC',        // subtle fill (table header, section head)
-  fillStrong: '#E2E8F0',  // strong fill (active states, accents)
+  bg: 'var(--ds-color-canvas, #F1F5F9)',                // app background behind cards
+  panel: 'var(--ds-color-surface, #FFFFFF)',             // card / table surface
+  fill: 'var(--ds-color-surface-subtle, #F8FAFC)',       // subtle fill (table header, section head)
+  fillStrong: 'var(--ds-color-surface-strong, #E2E8F0)', // strong fill (active states, accents)
   // ── Lines ──
-  line: '#E2E8F0',        // primary divider
-  lineSoft: '#EEF2F6',    // soft inner row divider
-  controlLine: '#7C8B9F', // 3:1+ boundary for editable/custom controls
+  line: 'var(--ds-color-border, #E2E8F0)',               // primary divider
+  lineSoft: 'var(--ds-color-divider, #EEF2F6)',          // soft inner row divider
+  controlLine: 'var(--ds-color-control-border, #7C8B9F)', // 3:1+ boundary for editable/custom controls
   // ── Brand / accent ──
-  accent: '#1B2434',      // dark navy primary
-  accentText: '#FFFFFF',
+  accent: 'var(--ds-color-action, #1B2434)',             // dark navy primary
+  accentText: 'var(--ds-color-on-action, #FFFFFF)',
   // ── Interactive accent (one blue family for the whole booking flow) ──
   // Every affirmative / interactive state runs on these four: completed step
   // markers, row-level actions, selected chips, toggles, accent surfaces.
@@ -50,14 +50,14 @@ const WF = {
   // NOTE: green is still used in this app, but only for *status* — availability
   // (green = bookable) and savings (green = money off). That is semantics, not
   // brand accent; don't fold those into this family or the meaning is lost.
-  accentOn: '#1B2434',    // filled interactive / on / done  (= accent)
-  accentInk: '#1B2434',   // accent text & icons — same navy, not a lighter shade
-  accentTint: '#EFF6FF',  // accent surface
-  accentLine: '#DBEAFE',  // accent surface border
+  accentOn: 'var(--ds-color-action, #1B2434)',           // filled interactive / on / done  (= accent)
+  accentInk: 'var(--ds-color-action, #1B2434)',          // accent text & icons — same navy, not a lighter shade
+  accentTint: 'var(--ds-color-selection, #EFF6FF)',      // accent surface
+  accentLine: 'var(--ds-color-selection-border, #DBEAFE)', // accent surface border
   // ── Callouts (BRD annotations) ──
-  callout: '#FEF3C7',
-  calloutBorder: '#FCD34D',
-  calloutInk: '#78350F',
+  callout: 'var(--ds-color-warning-bg, #FEF3C7)',
+  calloutBorder: 'var(--ds-color-callout-border, #FCD34D)',
+  calloutInk: 'var(--ds-color-warning-strong, #78350F)',
 };
 
 // ──────────────────────────────────────────────────────────
@@ -83,9 +83,9 @@ function WFPlaceholder({ width = '100%', height = 60, label, style = {} }) {
       position: 'relative', width, height,
       border: `1px dashed ${WF.line}`, background: WF.fill,
       borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center',
-      color: WF.inkFaint, fontSize: 11, ...style,
+      color: WF.inkFaint, fontSize: 12, ...style,
     }}>
-      {label && <span style={{ background: WF.fill, padding: '2px 6px' }}>{label}</span>}
+      {label && <span style={{ background: WF.fill, padding: '4px 8px' }}>{label}</span>}
     </div>
   );
 }
@@ -94,7 +94,7 @@ function WFLine({ width = '100%', height = 8, style = {} }) {
   return <div style={{ width, height, background: WF.lineSoft, borderRadius: 4, ...style }} />;
 }
 
-function WFLines({ count = 3, widths, gap = 6 }) {
+function WFLines({ count = 3, widths, gap = 8 }) {
   const w = widths || Array.from({ length: count }, (_, i) => i === count - 1 ? '60%' : '100%');
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap }}>
@@ -108,8 +108,8 @@ function WFLines({ count = 3, widths, gap = 6 }) {
 // ──────────────────────────────────────────────────────────
 function WFField({ label, value, hint, kind = 'text', width, badge, required, style = {} }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, width, ...style }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: WF.inkSoft, fontWeight: 500 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width, ...style }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: WF.inkSoft, fontWeight: 500 }}>
         <span>{label}{required && <span style={{ color: '#DC2626' }}> *</span>}</span>
         {badge && <WFBadge>{badge}</WFBadge>}
       </div>
@@ -118,18 +118,18 @@ function WFField({ label, value, hint, kind = 'text', width, badge, required, st
           border: `1px solid ${WF.line}`, borderRadius: 6,
           background: WF.panel,
           height: kind === 'textarea' ? 64 : 34,
-          padding: '8px 10px',
-          fontSize: 13, color: value ? WF.ink : WF.inkFaint,
+          padding: '8px 12px',
+          fontSize: 14, color: value ? WF.ink : WF.inkFaint,
           display: 'flex', alignItems: kind === 'textarea' ? 'flex-start' : 'center',
           justifyContent: 'space-between',
           fontFamily: kind === 'mono' ? 'ui-monospace, "SF Mono", Menlo, monospace' : 'inherit',
         }}
       >
         <span>{value || <span style={{ color: WF.inkFaint }}>—</span>}</span>
-        {kind === 'select' && <span style={{ color: WF.inkFaint, fontSize: 10 }}>▾</span>}
-        {kind === 'date' && <span style={{ color: WF.inkFaint, fontSize: 10 }}>📅</span>}
+        {kind === 'select' && <span style={{ color: WF.inkFaint, fontSize: 12 }}>▾</span>}
+        {kind === 'date' && <span style={{ color: WF.inkFaint, fontSize: 12 }}>📅</span>}
       </div>
-      {hint && <div style={{ fontSize: 11, color: WF.inkFaint }}>{hint}</div>}
+      {hint && <div style={{ fontSize: 12, color: WF.inkFaint }}>{hint}</div>}
     </div>
   );
 }
@@ -138,12 +138,12 @@ function WFField({ label, value, hint, kind = 'text', width, badge, required, st
 function WFKV({ label, value, badge, mono, style = {} }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 4, ...style }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: WF.inkLabel, fontWeight: 500 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: WF.inkLabel, fontWeight: 500 }}>
         <span>{label}</span>
         {badge && <WFBadge size="xs">{badge}</WFBadge>}
       </div>
       <div style={{
-        fontSize: 13.5, color: WF.ink, fontWeight: 500,
+        fontSize: 14, color: WF.ink, fontWeight: 500,
         fontFamily: mono ? 'ui-monospace, "SF Mono", Menlo, monospace' : 'inherit',
       }}>{value ?? '—'}</div>
     </div>
@@ -156,7 +156,7 @@ function WFKV({ label, value, badge, mono, style = {} }) {
 function WFToggle({ label, on, badge }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: `1px solid ${WF.lineSoft}` }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: WF.ink }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: WF.ink }}>
         <span>{label}</span>
         {badge && <WFBadge size="xs">{badge}</WFBadge>}
       </div>
@@ -182,14 +182,14 @@ function WFToggle({ label, on, badge }) {
 
 function WFCheckbox({ label, on }) {
   return (
-    <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13, color: WF.ink, cursor: 'pointer' }}>
+    <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 14, color: WF.ink, cursor: 'pointer' }}>
       <div style={{
         width: 16, height: 16, borderRadius: 4,
         border: `1.5px solid ${on ? WF.accent : WF.controlLine}`,
         background: on ? WF.accent : WF.panel,
         position: 'relative', flexShrink: 0,
       }}>
-        {on && <span style={{ position: 'absolute', inset: 0, color: WF.panel, fontSize: 11, lineHeight: '13px', textAlign: 'center', fontWeight: 700 }}>✓</span>}
+        {on && <span style={{ position: 'absolute', inset: 0, color: WF.panel, fontSize: 12, lineHeight: '16px', textAlign: 'center', fontWeight: 700 }}>✓</span>}
       </div>
       {label && <span>{label}</span>}
     </label>
@@ -201,25 +201,25 @@ function WFCheckbox({ label, on }) {
 // ──────────────────────────────────────────────────────────
 function WFBadge({ children, kind = 'default', size = 'sm' }) {
   const styles = {
-    default:   { bg: '#F1F5F9', fg: '#475569', border: '#E2E8F0' },
-    inherit:   { bg: '#EFF6FF', fg: '#1D4ED8', border: '#BFDBFE' },
-    override:  { bg: '#FEF3C7', fg: '#92400E', border: '#FDE68A' },
-    locked:    { bg: '#F1F5F9', fg: '#64748B', border: '#E2E8F0' },
-    active:    { bg: '#D1FAE5', fg: '#047857', border: '#A7F3D0' },
-    inactive:  { bg: '#FEE2E2', fg: '#B91C1C', border: '#FECACA' },
-    draft:     { bg: '#FEF3C7', fg: '#A16207', border: '#FDE68A' },
+    default:   { bg: 'var(--ds-badge-neutral-bg, #F8FAFC)', fg: 'var(--ds-badge-neutral-text, #475569)', border: 'var(--ds-color-border, #E2E8F0)' },
+    inherit:   { bg: 'var(--ds-badge-info-bg, #EFF6FF)', fg: 'var(--ds-badge-info-text, #1D4ED8)', border: 'var(--ds-badge-info-border, #BFDBFE)' },
+    override:  { bg: 'var(--ds-badge-warning-bg, #FEF3C7)', fg: 'var(--ds-badge-warning-text, #92400E)', border: 'var(--ds-badge-warning-border, #FDE68A)' },
+    locked:    { bg: 'var(--ds-color-canvas, #F1F5F9)', fg: 'var(--ds-primitive-color-slate-500, #64748B)', border: 'var(--ds-color-border, #E2E8F0)' },
+    active:    { bg: 'var(--ds-badge-success-bg, #D1FAE5)', fg: 'var(--ds-badge-success-text, #047857)', border: 'var(--ds-badge-success-border, #A7F3D0)' },
+    inactive:  { bg: 'var(--ds-badge-danger-bg, #FEE2E2)', fg: 'var(--ds-badge-danger-text, #B91C1C)', border: 'var(--ds-badge-danger-border, #FECACA)' },
+    draft:     { bg: 'var(--ds-badge-warning-bg, #FEF3C7)', fg: 'var(--ds-primitive-color-warning-700, #A16207)', border: 'var(--ds-badge-warning-border, #FDE68A)' },
     new:       { bg: WF.accent, fg: WF.accentText, border: WF.accent },
   }[kind];
-  const pad = size === 'xs' ? '1px 7px' : '3px 9px';
-  const fs = size === 'xs' ? 10 : 11;
+  const pad = size === 'xs' ? '4px 8px' : '4px 12px';
+  const fs = 12;
   return (
     <span style={{
       display: 'inline-flex', alignItems: 'center', gap: 4,
       background: styles.bg, color: styles.fg,
       border: `1px solid ${styles.border}`,
       borderRadius: 999, padding: pad, fontSize: fs,
-      lineHeight: 1.3, whiteSpace: 'nowrap',
-      fontWeight: 600, letterSpacing: 0.1,
+      lineHeight: '16px', whiteSpace: 'nowrap',
+      fontWeight: 600, letterSpacing: '0.04em',
     }}>{children}</span>
   );
 }
@@ -228,22 +228,22 @@ function WFBadge({ children, kind = 'default', size = 'sm' }) {
 // Button
 // ──────────────────────────────────────────────────────────
 function WFButton({ children, primary, danger, ghost, size = 'md', icon }) {
-  const pad = size === 'sm' ? '5px 11px' : '8px 14px';
-  const fs = size === 'sm' ? 12 : 13;
+  const pad = size === 'sm' ? '4px 12px' : '8px 16px';
+  const fs = size === 'sm' ? 12 : 14;
   const bg = primary ? WF.accent : ghost ? 'transparent' : WF.panel;
-  const fg = primary ? WF.accentText : danger ? '#B91C1C' : WF.ink;
-  const border = primary ? WF.accent : danger ? '#FCA5A5' : WF.line;
+  const fg = primary ? WF.accentText : danger ? 'var(--ds-color-danger-text, #B91C1C)' : WF.ink;
+  const border = primary ? WF.accent : danger ? 'var(--ds-color-danger-border, #FECACA)' : WF.line;
   return (
     <button style={{
       padding: pad, fontSize: fs,
       border: `1px solid ${border}`, background: bg, color: fg,
       cursor: 'pointer', borderRadius: 6,
-      display: 'inline-flex', alignItems: 'center', gap: 6,
+      display: 'inline-flex', alignItems: 'center', gap: 8,
       fontWeight: primary ? 600 : 500,
       fontFamily: 'inherit',
-      boxShadow: primary ? '0 1px 2px rgba(15,23,42,0.08)' : 'none',
+      boxShadow: primary ? 'var(--ds-button-shadow, 0 1px 2px rgba(15,23,42,0.08))' : 'none',
     }}>
-      {icon && <span style={{ fontSize: fs - 1, opacity: 0.85 }}>{icon}</span>}
+      {icon && <span style={{ fontSize: fs, opacity: 0.85 }}>{icon}</span>}
       {children}
     </button>
   );
@@ -260,15 +260,15 @@ function WFCallout({ n, children, top, left, right, bottom, width = 220, anchor 
     }}>
       <div style={{
         background: WF.callout, border: `1px solid ${WF.calloutBorder}`,
-        borderRadius: 6, padding: '8px 10px',
-        fontSize: 11, color: WF.calloutInk, lineHeight: 1.4,
+        borderRadius: 6, padding: '8px 12px',
+        fontSize: 12, color: WF.calloutInk, lineHeight: '16px',
         boxShadow: '0 2px 4px rgba(0,0,0,0.06)',
         display: 'flex', gap: 8,
       }}>
         <div style={{
           flexShrink: 0, width: 18, height: 18, borderRadius: 9,
           background: '#78350F', color: '#fff',
-          fontSize: 10.5, fontWeight: 700,
+          fontSize: 12, fontWeight: 700,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>{n}</div>
         <div>{children}</div>
@@ -283,7 +283,7 @@ function WFMarker({ n, style = {} }) {
       display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
       width: 16, height: 16, borderRadius: 8,
       background: '#78350F', color: '#fff',
-      fontSize: 10, fontWeight: 700,
+      fontSize: 12, fontWeight: 700,
       ...style,
     }}>{n}</span>
   );
@@ -292,14 +292,14 @@ function WFMarker({ n, style = {} }) {
 // ──────────────────────────────────────────────────────────
 // Margaritaville at Sea — sidebar brand tokens, wordmark & nav icons
 // ──────────────────────────────────────────────────────────
-const MV_NAVY = '#1B2436';
-const MV_ACCENT = '#C03A2B';
+const MV_NAVY = 'var(--ds-color-shell-bg, #1B2436)';
+const MV_ACCENT = 'var(--ds-color-shell-nav-active, #C03A2B)';
 // The deep brand red remains the active group fill. On the navy sidebar it was
 // only 2.87:1, so sub-navigation uses a lighter coral that clears AA for text.
-const MV_ACCENT_TEXT = '#FF7A6B';
+const MV_ACCENT_TEXT = 'var(--ds-color-shell-nav-current, #FF7A6B)';
 // #A8B2BE on MV_NAVY (#1B2436) is ~7.2:1 — clears WCAG AAA (7:1) for normal
 // text, not just AA (4.5:1) the previous #9CA7B4 (~6.4:1) landed on.
-const MV_INK_MUTED = '#A8B2BE';
+const MV_INK_MUTED = 'var(--ds-color-shell-text-muted, #A8B2BE)';
 
 function MVLogo({ width = 150 }) {
   return (
@@ -345,10 +345,11 @@ function MVIcon({ id, size = 18 }) {
 // ──────────────────────────────────────────────────────────
 // App shell — sidebar + topbar + content + summary rail
 // ──────────────────────────────────────────────────────────
-// Three columns: sidebar | content | rail. The rail is a real grid track, so it
-// spans the full height between the top bar and the bottom edge on its own —
-// nothing measures it or reserves space for it. The progress bar sits pinned
-// above the content scrollport; only the content beneath it moves.
+// Three columns: sidebar | content | rail. The rail keeps its own grid track so
+// it remains visible while the content scrolls, but its working surface is
+// inset as a floating card instead of reading like a full-height page column.
+// The progress bar sits pinned above the content scrollport; only the content
+// beneath it moves.
 const RAIL_W = 320;
 
 function WFAppShell({ active = 'fares', activeGroup = 'fares', breadcrumb, title, actions, children, rightRail, progressBar, bottomBar }) {
@@ -357,6 +358,7 @@ function WFAppShell({ active = 'fares', activeGroup = 'fares', breadcrumb, title
     { id: 'bookings', label: 'Bookings', children: [
       { id: 'all-bookings', label: 'All bookings' },
       { id: 'create-booking', label: 'Create booking' },
+      { id: 'group-reservations', label: 'Group reservations' },
       { id: 'holds', label: 'Holds & waitlist' },
       { id: 'guests', label: 'Guest profiles' },
     ]},
@@ -381,8 +383,8 @@ function WFAppShell({ active = 'fares', activeGroup = 'fares', breadcrumb, title
     <div style={{
       width: '100%', height: '100%',
       display: 'grid', gridTemplateColumns: cols, gridTemplateRows: '52px minmax(0, 1fr) auto',
-      background: '#F9FAFC', color: WF.ink,
-      fontFamily: '"Inter", system-ui, -apple-system, sans-serif', fontSize: 13,
+      background: 'var(--ds-color-workspace, #F9FAFC)', color: WF.ink,
+      fontFamily: 'var(--ds-type-family-body, "Inter", system-ui, -apple-system, sans-serif)', fontSize: 14,
       overflow: 'hidden',
     }}>
       {/* Top bar — spans the content area and the rail. `-1` is the last explicit
@@ -391,12 +393,12 @@ function WFAppShell({ active = 'fares', activeGroup = 'fares', breadcrumb, title
       <div style={{
         gridColumn: '2 / -1', gridRow: 1,
         borderBottom: `1px solid ${WF.line}`, background: WF.panel,
-        display: 'flex', alignItems: 'center', padding: '0 20px', gap: 14,
+        display: 'flex', alignItems: 'center', padding: '0 20px', gap: 16,
       }}>
         <div style={{
           display: 'flex', alignItems: 'center', gap: 8,
-          padding: '7px 12px', border: `1px solid ${WF.line}`, borderRadius: 8,
-          fontSize: 12.5, color: WF.inkFaint, background: WF.fill, minWidth: 280,
+          padding: '8px 12px', border: `1px solid ${WF.line}`, borderRadius: 8,
+          fontSize: 14, color: WF.inkFaint, background: WF.fill, minWidth: 280,
         }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
             <circle cx="11" cy="11" r="7" /><path d="m21 21-4.35-4.35" />
@@ -408,7 +410,7 @@ function WFAppShell({ active = 'fares', activeGroup = 'fares', breadcrumb, title
           width: 30, height: 30, borderRadius: 15,
           background: '#DCEFEC', color: '#16324A',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 11.5, fontWeight: 700,
+          fontSize: 12, fontWeight: 700,
         }}>JD</div>
       </div>
       {/* Sidebar */}
@@ -419,20 +421,20 @@ function WFAppShell({ active = 'fares', activeGroup = 'fares', breadcrumb, title
         display: 'flex', flexDirection: 'column',
         height: '100%', minHeight: '100%', alignSelf: 'stretch', boxSizing: 'border-box',
       }}>
-        <div style={{ padding: '0 16px 26px', display: 'flex', justifyContent: 'center' }}>
+        <div style={{ padding: '0 16px 28px', display: 'flex', justifyContent: 'center' }}>
           <MVLogo width={150} />
         </div>
         {navItems.map((it) => {
           const isActiveGroup = it.id === activeGroup;
           return (
-            <div key={it.id} style={{ padding: '0 12px', marginBottom: 2 }}>
+            <div key={it.id} style={{ padding: '0 12px', marginBottom: 4 }}>
               <div style={{
                 position: 'relative',
-                padding: '10px 14px', borderRadius: 8,
+                padding: '12px 16px', borderRadius: 8,
                 color: isActiveGroup ? '#fff' : MV_INK_MUTED,
                 background: isActiveGroup ? MV_ACCENT : 'transparent',
                 fontWeight: isActiveGroup ? 700 : 500,
-                fontSize: 13.5,
+                fontSize: 14,
                 display: 'flex', alignItems: 'center', gap: 12,
               }}>
                 {isActiveGroup && (
@@ -444,12 +446,12 @@ function WFAppShell({ active = 'fares', activeGroup = 'fares', breadcrumb, title
                 <span>{it.label}</span>
               </div>
               {it.children && isActiveGroup && (
-                <div style={{ padding: '6px 0 4px 44px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <div style={{ padding: '8px 0 4px 44px', display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {it.children.map((c) => {
                     const on = c.id === active;
                     return (
                       <div key={c.id} style={{
-                        padding: '6px 0 6px 12px', fontSize: 12.5,
+                        padding: '8px 0 8px 12px', fontSize: 14,
                         color: on ? MV_ACCENT_TEXT : MV_INK_MUTED,
                         fontWeight: on ? 700 : 500,
                         borderLeft: `2px solid ${on ? MV_ACCENT_TEXT : 'transparent'}`,
@@ -469,7 +471,7 @@ function WFAppShell({ active = 'fares', activeGroup = 'fares', breadcrumb, title
           // the bar card carries a 20px marginBottom, and without this the
           // scrolling content would show through that gap.
           // Width-constrained to match the content below so they align.
-          <div style={{ padding: '20px 28px 0 28px', flexShrink: 0, background: '#F9FAFC', display: 'flex', justifyContent: 'center' }}>
+          <div style={{ padding: '20px 28px 0 28px', flexShrink: 0, background: 'var(--ds-color-workspace, #F9FAFC)', display: 'flex', justifyContent: 'center' }}>
             <div style={{ maxWidth: 1140, width: '100%' }}>
               {progressBar}
             </div>
@@ -483,15 +485,15 @@ function WFAppShell({ active = 'fares', activeGroup = 'fares', breadcrumb, title
           // overflowY: auto alone would compute overflow-x to auto as well, so
           // anything escaping sideways would raise a horizontal scrollbar.
           overflowY: 'auto', overflowX: 'hidden',
-          scrollbarWidth: 'thin', scrollbarGutter: 'stable',
+          scrollbarWidth: 'none', msOverflowStyle: 'none',
         }}>
           {actions && !title && (
-            <div style={{ display: 'flex', marginBottom: 14 }}>
+            <div style={{ display: 'flex', marginBottom: 16 }}>
               {actions}
             </div>
           )}
           {title && (
-            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 18, gap: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 20, gap: 16 }}>
               <div>{title}</div>
               {actions && <div style={{ display: 'flex', gap: 8 }}>{actions}</div>}
             </div>
@@ -499,21 +501,28 @@ function WFAppShell({ active = 'fares', activeGroup = 'fares', breadcrumb, title
           {children}
         </div>
       </div>
-      {/* Summary rail — a real grid cell, flush under the top bar and flush to the
-          bottom edge. Rendered last, so it paints over Main without a zIndex. */}
+      {/* Summary rail — its grid track preserves the main-content width while
+          the inset card creates a clearly separate, floating workspace. */}
       {rightRail && (
         <div style={{
           gridColumn: 3, gridRow: 2,
-          background: WF.panel, borderLeft: `1px solid ${WF.line}`,
-          display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden',
+          padding: '16px 12px 16px 12px', background: 'var(--ds-color-workspace, #F9FAFC)',
+          minHeight: 0, overflow: 'hidden', boxSizing: 'border-box',
         }}>
-          {rightRail}
+          <div style={{
+            height: '100%', minHeight: 0, overflow: 'hidden',
+            display: 'flex', flexDirection: 'column',
+            background: WF.panel, border: `1px solid ${WF.line}`, borderRadius: 10,
+            boxShadow: 'var(--ds-panel-shadow, 0 2px 8px rgba(15,23,42,0.06))',
+          }}>
+            {rightRail}
+          </div>
         </div>
       )}
       {bottomBar && (
         <div style={{
           gridColumn: '2 / -1', gridRow: 3,
-          padding: '12px 28px 14px', borderTop: `1px solid ${WF.line}`,
+          padding: '12px 28px 16px', borderTop: `1px solid ${WF.line}`,
           background: WF.panel,
         }}>
           <div style={{ maxWidth: 1460, width: '100%', margin: '0 auto' }}>
@@ -529,9 +538,9 @@ function WFAppShell({ active = 'fares', activeGroup = 'fares', breadcrumb, title
 function WFTitle({ eyebrow, title, sub }) {
   return (
     <div>
-      {eyebrow && <div style={{ fontSize: 11, color: WF.inkLabel, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600, marginBottom: 4 }}>{eyebrow}</div>}
-      <div style={{ fontSize: 22, fontWeight: 700, color: WF.ink, lineHeight: 1.2, letterSpacing: -0.2 }}>{title}</div>
-      {sub && <div style={{ fontSize: 13, color: WF.inkSoft, marginTop: 6 }}>{sub}</div>}
+      {eyebrow && <div style={{ fontSize: 12, color: WF.inkLabel, textTransform: 'uppercase', letterSpacing: '0.04em', fontWeight: 600, marginBottom: 4 }}>{eyebrow}</div>}
+      <div style={{ fontSize: 24, fontWeight: 700, color: WF.ink, lineHeight: '32px', letterSpacing: '-0.01em' }}>{title}</div>
+      {sub && <div style={{ fontSize: 14, color: WF.inkSoft, marginTop: 8 }}>{sub}</div>}
     </div>
   );
 }
@@ -546,8 +555,8 @@ function WFSectionHead({ children, action, num }) {
     }}>
       <div style={{
         display: 'flex', alignItems: 'center', gap: 8,
-        fontSize: 11.5, fontWeight: 700,
-        textTransform: 'uppercase', letterSpacing: 0.8,
+        fontSize: 12, fontWeight: 700,
+        textTransform: 'uppercase', letterSpacing: '0.04em',
         color: WF.inkLabel,
       }}>
         {num && <WFMarker n={num} />}
@@ -579,7 +588,7 @@ function WFTabs({ tabs, active }) {
     <div style={{ display: 'flex', borderBottom: `1px solid ${WF.line}`, gap: 4 }}>
       {tabs.map((t) => (
         <div key={t} style={{
-          padding: '10px 14px', fontSize: 13,
+          padding: '12px 16px', fontSize: 14,
           color: t === active ? WF.ink : WF.inkSoft,
           fontWeight: t === active ? 600 : 500,
           borderBottom: t === active ? `2px solid ${WF.accent}` : '2px solid transparent',
@@ -596,17 +605,17 @@ function WFTabs({ tabs, active }) {
 function WFTable({ columns, rows, dense = true, selected = -1 }) {
   const rowH = dense ? 36 : 44;
   return (
-    <div style={{ width: '100%', fontSize: 12.5 }}>
+    <div style={{ width: '100%', fontSize: 14 }}>
       <div style={{
         display: 'grid',
         gridTemplateColumns: columns.map(c => c.w || '1fr').join(' '),
         background: WF.fill,
         borderBottom: `1px solid ${WF.line}`,
-        fontSize: 11, fontWeight: 600, color: WF.inkLabel,
-        textTransform: 'uppercase', letterSpacing: 0.5,
+        fontSize: 12, fontWeight: 600, color: WF.inkLabel,
+        textTransform: 'uppercase', letterSpacing: '0.04em',
       }}>
         {columns.map((c, i) => (
-          <div key={i} style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <div key={i} style={{ padding: '12px 12px', display: 'flex', alignItems: 'center', gap: 4 }}>
             {c.label} {c.sort && <span style={{ color: WF.inkFaint }}>↕</span>}
           </div>
         ))}
@@ -623,7 +632,7 @@ function WFTable({ columns, rows, dense = true, selected = -1 }) {
             <div key={ci} style={{
               padding: '8px 12px',
               fontFamily: c.mono ? 'ui-monospace, "SF Mono", Menlo, monospace' : 'inherit',
-              fontSize: c.mono ? 12 : 12.5,
+              fontSize: c.mono ? 12 : 14,
               color: ci === 0 ? WF.ink : WF.inkSoft,
               fontWeight: ci === 0 ? 500 : 400,
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
@@ -640,15 +649,15 @@ function WFTable({ columns, rows, dense = true, selected = -1 }) {
 function WFChip({ label, value, hasValue, dropdown = true }) {
   return (
     <div style={{
-      display: 'inline-flex', alignItems: 'center', gap: 6,
-      padding: '6px 10px', borderRadius: 6,
+      display: 'inline-flex', alignItems: 'center', gap: 8,
+      padding: '8px 12px', borderRadius: 6,
       border: `1px solid ${hasValue ? '#CBD5E1' : WF.line}`,
       background: hasValue ? WF.fill : WF.panel,
       fontSize: 12,
     }}>
       <span style={{ color: WF.inkFaint }}>{label}:</span>
       <span style={{ color: WF.ink, fontWeight: 500 }}>{value}</span>
-      {dropdown && <span style={{ color: WF.inkFaint, fontSize: 9 }}>▾</span>}
+      {dropdown && <span style={{ color: WF.inkFaint, fontSize: 12 }}>▾</span>}
     </div>
   );
 }
@@ -658,9 +667,9 @@ function WFSearch({ placeholder, width = 280 }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 8,
-      width, padding: '7px 10px', borderRadius: 6,
+      width, padding: '8px 12px', borderRadius: 6,
       border: `1px solid ${WF.line}`, background: WF.panel,
-      fontSize: 12.5, color: WF.inkFaint,
+      fontSize: 14, color: WF.inkFaint,
     }}>
       <span>⌕</span><span>{placeholder}</span>
     </div>
@@ -673,17 +682,17 @@ function WFInheritedRow({ label, parentValue, value, overridden, locked, marker 
     <div style={{
       display: 'grid', gridTemplateColumns: '180px 1fr 1fr 110px',
       borderBottom: `1px solid ${WF.lineSoft}`,
-      padding: '10px 16px', alignItems: 'center', gap: 12,
+      padding: '12px 16px', alignItems: 'center', gap: 12,
       background: overridden ? '#FFFBEB' : WF.panel,
     }}>
-      <div style={{ fontSize: 12.5, color: WF.inkSoft, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
+      <div style={{ fontSize: 14, color: WF.inkSoft, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 8 }}>
         {marker && <WFMarker n={marker} />}
         {label}
       </div>
-      <div style={{ fontSize: 13, color: WF.inkFaint, fontStyle: overridden ? 'italic' : 'normal' }}>
+      <div style={{ fontSize: 14, color: WF.inkFaint, fontStyle: overridden ? 'italic' : 'normal' }}>
         {parentValue}
       </div>
-      <div style={{ fontSize: 13, color: WF.ink, fontWeight: overridden ? 600 : 500 }}>
+      <div style={{ fontSize: 14, color: WF.ink, fontWeight: overridden ? 600 : 500 }}>
         {value}
       </div>
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -725,11 +734,11 @@ function WFSidePanel({ width = 720, icon, title, badges, actions, children, foot
               width: 56, height: 56, borderRadius: 8,
               background: WF.fill, border: `1px solid ${WF.line}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: WF.inkSoft, fontSize: 22, flexShrink: 0,
+              color: WF.inkSoft, fontSize: 24, flexShrink: 0,
             }}>{icon}</div>
           )}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 19, fontWeight: 700, color: WF.ink, lineHeight: 1.2, letterSpacing: -0.2 }}>{title}</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: WF.ink, lineHeight: '28px', letterSpacing: '-0.01em' }}>{title}</div>
             {badges && <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>{badges}</div>}
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -738,7 +747,7 @@ function WFSidePanel({ width = 720, icon, title, badges, actions, children, foot
               <button style={{
                 width: 32, height: 32, borderRadius: 6,
                 border: 'none', background: 'transparent',
-                color: WF.inkSoft, fontSize: 18, cursor: 'pointer',
+                color: WF.inkSoft, fontSize: 20, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>×</button>
             )}
@@ -751,7 +760,7 @@ function WFSidePanel({ width = 720, icon, title, badges, actions, children, foot
         {/* Footer */}
         {footer && (
           <div style={{
-            padding: '14px 28px', borderTop: `1px solid ${WF.line}`,
+            padding: '16px 28px', borderTop: `1px solid ${WF.line}`,
             background: WF.fill, display: 'flex',
             alignItems: 'center', justifyContent: 'space-between', gap: 12,
           }}>{footer}</div>
@@ -766,10 +775,10 @@ function WFSidePanel({ width = 720, icon, title, badges, actions, children, foot
 function WFPanelSection({ title, action, columns = 2, children, style = {} }) {
   return (
     <div style={{ padding: '20px 28px', borderBottom: `1px solid ${WF.line}`, ...style }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <div style={{
-          fontSize: 11, fontWeight: 700,
-          textTransform: 'uppercase', letterSpacing: 1,
+          fontSize: 12, fontWeight: 700,
+          textTransform: 'uppercase', letterSpacing: '0.04em',
           color: WF.inkLabel,
         }}>{title}</div>
         {action}
@@ -777,7 +786,7 @@ function WFPanelSection({ title, action, columns = 2, children, style = {} }) {
       <div style={{
         display: 'grid',
         gridTemplateColumns: `repeat(${columns}, 1fr)`,
-        rowGap: 14, columnGap: 32,
+        rowGap: 16, columnGap: 32,
       }}>{children}</div>
     </div>
   );
@@ -790,16 +799,16 @@ function WFDLRow({ label, value, mono, icon, span = 1, badge, style = {} }) {
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       gridColumn: `span ${span}`, gap: 12, ...style,
     }}>
-      <div style={{ fontSize: 13, color: WF.inkSoft, fontWeight: 400, display: 'flex', alignItems: 'center', gap: 6 }}>
+      <div style={{ fontSize: 14, color: WF.inkSoft, fontWeight: 400, display: 'flex', alignItems: 'center', gap: 8 }}>
         <span>{label}</span>
         {badge && <WFBadge size="xs">{badge}</WFBadge>}
       </div>
       <div style={{
-        fontSize: 13.5, color: WF.ink, fontWeight: 500,
+        fontSize: 14, color: WF.ink, fontWeight: 500,
         fontFamily: mono ? 'ui-monospace, "SF Mono", Menlo, monospace' : 'inherit',
-        display: 'flex', alignItems: 'center', gap: 6, textAlign: 'right',
+        display: 'flex', alignItems: 'center', gap: 8, textAlign: 'right',
       }}>
-        {icon && <span style={{ color: WF.inkFaint, fontSize: 13 }}>{icon}</span>}
+        {icon && <span style={{ color: WF.inkFaint, fontSize: 14 }}>{icon}</span>}
         <span>{value ?? '—'}</span>
       </div>
     </div>

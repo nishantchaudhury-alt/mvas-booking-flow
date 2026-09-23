@@ -34,7 +34,7 @@ function SPSection({ title, children, tint, action, collapsible, defaultCollapse
 
   const heading = (
     <div style={{
-      fontSize: 11, fontWeight: 700, letterSpacing: 0.8,
+      fontSize: 12, fontWeight: 700, letterSpacing: '0.04em',
       color: WF.inkSoft, textTransform: 'uppercase',
     }}>{title}</div>
   );
@@ -54,18 +54,18 @@ function SPSection({ title, children, tint, action, collapsible, defaultCollapse
               onClick={() => setOpen((v) => !v)}
               aria-expanded={open}
               style={{
-                display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0,
+                display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0,
                 background: 'none', border: 'none', padding: 0, cursor: 'pointer',
                 fontFamily: 'inherit', textAlign: 'left',
               }}>
               <span style={{
-                fontSize: 9, color: WF.inkFaint, flexShrink: 0,
+                fontSize: 12, color: WF.inkFaint, flexShrink: 0,
                 transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 0.12s',
               }}>▶</span>
               {heading}
               {collapsed && summary && (
                 <span style={{
-                  fontSize: 11, color: WF.inkSoft, fontWeight: 500, marginLeft: 'auto',
+                  fontSize: 12, color: WF.inkSoft, fontWeight: 500, marginLeft: 'auto',
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0,
                 }}>{summary}</span>
               )}
@@ -82,7 +82,7 @@ function SPSection({ title, children, tint, action, collapsible, defaultCollapse
 // ── Label/value row. `dim` renders the em-dash treatment. ──
 function SPRow({ label, value, dim, mono, accent, strong }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, padding: '3px 0' }}>
+    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, padding: '4px 0' }}>
       <div style={{ fontSize: 12, color: WF.inkSoft, flexShrink: 0 }}>{label}</div>
       <div style={{
         fontSize: 12,
@@ -101,22 +101,22 @@ function SPPriceRow({ label, amount, preview, accent, strong, sub }) {
   const changed = preview !== undefined && preview !== null && preview !== amount;
   const fmt = spMoney;
   return (
-    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, padding: '4px 0' }}>
+    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, padding: '4px 0' }}>
       <div style={{ fontSize: 12, color: WF.inkSoft, minWidth: 0 }}>
         {label}
-        {sub && <div style={{ fontSize: 10.5, color: WF.inkFaint, marginTop: 1 }}>{sub}</div>}
+        {sub && <div style={{ fontSize: 12, color: WF.inkFaint, marginTop: 4 }}>{sub}</div>}
       </div>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, flexShrink: 0 }}>
         {changed && (
           <>
-            <span style={{ fontSize: 11, color: WF.inkFaint, fontFamily: 'ui-monospace, monospace', textDecoration: 'line-through' }}>
+            <span style={{ fontSize: 12, color: WF.inkFaint, fontFamily: 'ui-monospace, monospace', textDecoration: 'line-through' }}>
               {fmt(amount)}
             </span>
-            <span style={{ fontSize: 10, color: WF.inkFaint }}>→</span>
+            <span style={{ fontSize: 12, color: WF.inkFaint }}>→</span>
           </>
         )}
         <span style={{
-          fontSize: strong ? 13 : 12,
+          fontSize: strong ? 14 : 12,
           fontWeight: strong || changed ? 700 : 600,
           color: changed ? '#1B2434' : accent || WF.ink,
           fontFamily: 'ui-monospace, monospace',
@@ -134,7 +134,7 @@ function SPPriceRow({ label, amount, preview, accent, strong, sub }) {
 function SPSegmented({ options, value, onChange }) {
   return (
     <div style={{
-      display: 'flex', gap: 2, padding: 3,
+      display: 'flex', gap: 4, padding: 4,
       background: WF.fill, border: `1px solid ${WF.line}`, borderRadius: 8,
     }}>
       {options.map((opt) => {
@@ -146,7 +146,7 @@ function SPSegmented({ options, value, onChange }) {
             aria-pressed={on}
             onClick={() => onChange(opt)}
             style={{
-              flex: 1, minWidth: 0, padding: '6px 6px', fontSize: 11,
+              flex: 1, minWidth: 0, padding: '8px 8px', fontSize: 12,
               fontWeight: on ? 700 : 500, border: 'none', borderRadius: 6,
               background: on ? '#fff' : 'transparent',
               color: on ? WF.ink : WF.inkSoft,
@@ -170,10 +170,10 @@ function SPSegmented({ options, value, onChange }) {
 // heavy) is needed.
 function SPGroup({ label, first, children }) {
   return (
-    <div style={{ marginTop: first ? 0 : 14 }}>
+    <div style={{ marginTop: first ? 0 : 16 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
         <span style={{
-          fontSize: 10, fontWeight: 800, letterSpacing: 0.8,
+          fontSize: 12, fontWeight: 700, letterSpacing: '0.04em',
           color: WF.inkSoft, textTransform: 'uppercase', flexShrink: 0,
         }}>{label}</span>
         <span style={{ flex: 1, height: 1, background: WF.line }} />
@@ -191,8 +191,8 @@ function SPGroup({ label, first, children }) {
 function SPKicker({ children }) {
   return (
     <div style={{
-      fontSize: 9, fontWeight: 800, letterSpacing: 0.72,
-      color: WF.inkLabel || WF.inkSoft, textTransform: 'uppercase', lineHeight: 1.2,
+      fontSize: 12, fontWeight: 700, letterSpacing: '0.04em',
+      color: WF.inkLabel || WF.inkSoft, textTransform: 'uppercase', lineHeight: '16px',
     }}>{children}</div>
   );
 }
@@ -201,12 +201,12 @@ function SPDatum({ label, value, dim, mono, align = 'left' }) {
   return (
     <div style={{ minWidth: 0, textAlign: align }}>
       <div style={{
-        fontSize: 8.5, fontWeight: 700, letterSpacing: 0.45,
-        color: WF.inkFaint, textTransform: 'uppercase', lineHeight: 1.2,
+        fontSize: 12, fontWeight: 700, letterSpacing: '0.04em',
+        color: WF.inkFaint, textTransform: 'uppercase', lineHeight: '16px',
       }}>{label}</div>
       <div style={{
-        marginTop: 2, fontSize: 10.5, fontWeight: 700,
-        color: dim ? WF.inkFaint : WF.ink, lineHeight: 1.25,
+        marginTop: 4, fontSize: 12, fontWeight: 700,
+        color: dim ? WF.inkFaint : WF.ink, lineHeight: '16px',
         fontFamily: mono ? 'ui-monospace, monospace' : 'inherit',
         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         fontVariantNumeric: mono ? 'tabular-nums' : 'normal',
@@ -216,7 +216,7 @@ function SPDatum({ label, value, dim, mono, align = 'left' }) {
 }
 
 function SPBookingSnapshot({
-  b, p, destStr, homePortStr, guestStr, durationStr, monthStr,
+  b, p, destStr, guestStr, durationStr,
   roomLabel, roomStr, showSupps, setShowSupps,
 }) {
   const bookingType = b.bookingType || 'Normal';
@@ -227,10 +227,8 @@ function SPBookingSnapshot({
         <SPRow label="Booking Type" value={bookingType} />
         <SPRow label="Source" value={b.source || SP_DASH} dim={!b.source} />
         <SPRow label="Destination" value={destStr || SP_DASH} dim={!destStr} />
-        <SPRow label="Departing" value={homePortStr || SP_DASH} dim={!homePortStr} />
         <SPRow label="Guests" value={guestStr} dim={p.guestCount === 0} mono />
         <SPRow label="Duration" value={durationStr || SP_DASH} dim={!durationStr} />
-        <SPRow label="Month" value={monthStr || SP_DASH} dim={!monthStr} />
       </SPGroup>
 
       <SPGroup label="Sailing">
@@ -258,7 +256,7 @@ function SPBookingSnapshot({
       <SPGroup label="Fare & extras">
         <SPRow label="Farecode" value={p.fc ? p.fc.code : SP_DASH} dim={!p.fc} mono />
 
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, padding: '3px 0' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, padding: '4px 0' }}>
           <div style={{ fontSize: 12, color: WF.inkSoft }}>Supplements</div>
           {p.suppLines.length > 0 ? (
             <button
@@ -273,7 +271,7 @@ function SPBookingSnapshot({
               }}>
               {p.suppLines.length} · {p.suppTotal > 0 ? `+${money(p.suppTotal)}` : 'included'}
               <span aria-hidden="true" style={{
-                fontSize: 9,
+                fontSize: 12,
                 transform: showSupps ? 'rotate(180deg)' : 'none',
                 transition: 'transform 0.12s',
               }}>▾</span>
@@ -284,16 +282,16 @@ function SPBookingSnapshot({
         </div>
 
         {showSupps && p.suppLines.length > 0 && (
-          <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
             {p.suppLines.map((ln) => (
-              <div key={ln.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, fontSize: 11 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
+              <div key={ln.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, fontSize: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0 }}>
                   <span>{ln.emoji}</span>
                   <span style={{ color: WF.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {ln.name}{ln.qty > 1 ? ` ×${ln.qty}` : ''}
                   </span>
                 </div>
-                <span style={{ flexShrink: 0, fontSize: 9.5, fontWeight: 700, color: WF.ink, fontFamily: 'ui-monospace, monospace' }}>
+                <span style={{ flexShrink: 0, fontSize: 12, fontWeight: 700, color: WF.ink, fontFamily: 'ui-monospace, monospace' }}>
                   {ln.amount > 0 ? `+${money(ln.amount)}` : '—'}
                 </span>
               </div>
@@ -333,7 +331,7 @@ function SPPriceSummary({ b, p }) {
   return (
     <div style={{ border: `1px solid ${WF.line}`, borderRadius: 10, overflow: 'hidden', background: WF.panel, boxShadow: '0 1px 2px rgba(15,23,42,.05)' }}>
       {groups.map((group, groupIndex) => (
-        <div key={group.label} style={{ padding: '9px 11px', borderTop: groupIndex === 0 ? 'none' : `1px solid ${WF.line}` }}>
+        <div key={group.label} style={{ padding: '8px 12px', borderTop: groupIndex === 0 ? 'none' : `1px solid ${WF.line}` }}>
           <SPKicker>{group.label}</SPKicker>
           <div style={{ marginTop: 4 }}>
             {group.rows.map((row) => (
@@ -354,33 +352,33 @@ function SPAmountDueCard({ p }) {
     <div style={{
       borderRadius: 10, background: WF.accentTint || '#EFF6FF',
       border: `1px solid ${WF.accentLine || '#DBEAFE'}`,
-      padding: '11px 12px', boxShadow: '0 1px 2px rgba(15,23,42,.06)',
+      padding: '12px 12px', boxShadow: '0 1px 2px rgba(15,23,42,.06)',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
         <SPKicker>Payment today</SPKicker>
         <span style={{
-          padding: '3px 7px', borderRadius: 999, background: WF.panel,
+          padding: '4px 8px', borderRadius: 999, background: WF.panel,
           border: `1px solid ${WF.accentLine || '#DBEAFE'}`,
-          color: WF.accentInk, fontSize: 8.5, fontWeight: 800, whiteSpace: 'nowrap',
+          color: WF.accentInk, fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap',
         }}>{rateLabel}</span>
       </div>
-      <div style={{ marginTop: 7, fontSize: 9.5, fontWeight: 700, color: WF.inkSoft }}>Amount due now</div>
+      <div style={{ marginTop: 8, fontSize: 12, fontWeight: 700, color: WF.inkSoft }}>Amount due now</div>
       <div style={{
-        marginTop: 2, fontSize: 23, fontWeight: 800, color: WF.ink,
+        marginTop: 4, fontSize: 24, fontWeight: 700, color: WF.ink,
         fontFamily: 'ui-monospace, monospace', fontVariantNumeric: 'tabular-nums',
-        letterSpacing: -0.5, lineHeight: 1.05,
+        letterSpacing: '-0.01em', lineHeight: '32px',
       }}>{money(p.amountDue)}</div>
-      <div style={{ height: 4, marginTop: 10, borderRadius: 999, background: '#DCE6F3', overflow: 'hidden' }}>
+      <div style={{ height: 4, marginTop: 12, borderRadius: 999, background: '#DCE6F3', overflow: 'hidden' }}>
         <div style={{ width: `${dueShare}%`, height: '100%', borderRadius: 999, background: WF.accentInk }} />
       </div>
       <div style={{
-        display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10,
-        marginTop: 9, paddingTop: 9, borderTop: `1px solid ${WF.accentLine || '#DBEAFE'}`,
+        display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12,
+        marginTop: 8, paddingTop: 8, borderTop: `1px solid ${WF.accentLine || '#DBEAFE'}`,
       }}>
         <SPDatum label={p.status === 'partial' ? 'Provisional total' : 'Booking total'} value={money(p.total)} mono />
         <SPDatum label="Remaining" value={money(p.remaining)} mono align="right" />
       </div>
-      <div style={{ marginTop: 8, fontSize: 9.5, color: WF.inkSoft, lineHeight: 1.35 }}>
+      <div style={{ marginTop: 8, fontSize: 12, color: WF.inkSoft, lineHeight: '16px' }}>
         {p.payFull
           ? 'Nothing remains after this payment.'
           : p.status === 'partial'
@@ -394,12 +392,12 @@ function SPAmountDueCard({ p }) {
 // ── Pill row used by promotions / hold / payment terms ──
 function SPPills({ options, value, onChange, dark }) {
   return (
-    <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
       {options.map((opt) => {
         const on = value === opt;
         return (
           <button key={opt} onClick={() => onChange(opt)} style={{
-            padding: '5px 11px', fontSize: 11, fontWeight: on ? 700 : 500,
+            padding: '4px 12px', fontSize: 12, fontWeight: on ? 700 : 500,
             border: `1px solid ${on ? '#1B2434' : WF.line}`, borderRadius: 20,
             background: on ? '#1B2434' : '#fff', color: on ? '#fff' : WF.ink,
             cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.12s',
@@ -579,19 +577,19 @@ function spCabinBreakdown(b, p) {
 // scope tags made these financial rows harder to scan without adding meaning.
 function SPCabinSuppLine({ ln }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, padding: '2px 0' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
-        <span style={{ fontSize: 10.5, fontWeight: 500, color: WF.inkSoft, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ln.name}</span>
+    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, padding: '4px 0' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0 }}>
+        <span style={{ fontSize: 12, fontWeight: 500, color: WF.inkSoft, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ln.name}</span>
         {ln.qty > 1 && (
           <span style={{
-            padding: '1px 4px', borderRadius: 4, background: WF.fill,
+            padding: '4px 4px', borderRadius: 4, background: WF.fill,
             border: `1px solid ${WF.line}`, color: WF.inkSoft,
-            fontSize: 8.5, fontWeight: 700, fontFamily: 'ui-monospace, monospace', flexShrink: 0,
+            fontSize: 12, fontWeight: 700, fontFamily: 'ui-monospace, monospace', flexShrink: 0,
           }}>×{ln.qty}</span>
         )}
       </div>
       <span style={{
-        fontSize: 10.5, fontFamily: 'ui-monospace, monospace', fontWeight: 700,
+        fontSize: 12, fontFamily: 'ui-monospace, monospace', fontWeight: 700,
         fontVariantNumeric: 'tabular-nums', flexShrink: 0, color: ln.amount > 0 ? WF.inkSoft : WF.inkFaint,
       }}>{ln.amount > 0 ? money(ln.amount) : '—'}</span>
     </div>
@@ -606,7 +604,7 @@ function SPCabinSuppLine({ ln }) {
 function SPCabinRoomCard({ rm, p }) {
   const [open, setOpen] = React.useState(false);
   const amountStyle = {
-    fontSize: 12, fontWeight: 800, color: WF.ink,
+    fontSize: 12, fontWeight: 700, color: WF.ink,
     fontFamily: 'ui-monospace, monospace', fontVariantNumeric: 'tabular-nums', flexShrink: 0,
   };
 
@@ -614,30 +612,30 @@ function SPCabinRoomCard({ rm, p }) {
     <div style={{ border: `1px solid ${WF.line}`, borderRadius: 9, overflow: 'hidden', background: WF.panel, boxShadow: '0 1px 2px rgba(15,23,42,.06)' }}>
       <div style={{
         display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12,
-        padding: '9px 10px', background: WF.fill, borderBottom: `1px solid ${WF.line}`,
+        padding: '8px 12px', background: WF.fill, borderBottom: `1px solid ${WF.line}`,
       }}>
         <div style={{ minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 11.5, fontWeight: 800, color: WF.ink }}>{rm.label}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: WF.ink }}>{rm.label}</span>
             <span style={{
-              padding: '2px 6px', borderRadius: 999, background: WF.panel,
+              padding: '4px 8px', borderRadius: 999, background: WF.panel,
               border: `1px solid ${WF.line}`, color: WF.inkSoft,
-              fontSize: 9, fontWeight: 700, whiteSpace: 'nowrap',
+              fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap',
             }}>{rm.occupants} guest{rm.occupants === 1 ? '' : 's'}</span>
           </div>
-          {rm.cat && <div style={{ fontSize: 9.5, fontWeight: 500, color: WF.inkSoft, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{rm.cat}</div>}
+          {rm.cat && <div style={{ fontSize: 12, fontWeight: 500, color: WF.inkSoft, marginTop: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{rm.cat}</div>}
         </div>
         <div style={{ textAlign: 'right', flexShrink: 0 }}>
-          <div style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: 0.45, color: WF.inkLabel, textTransform: 'uppercase' }}>Room total</div>
-          <div style={{ ...amountStyle, fontSize: 13.5, marginTop: 2 }}>{money(rm.subtotal)}</div>
+          <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', color: WF.inkLabel, textTransform: 'uppercase' }}>Room total</div>
+          <div style={{ ...amountStyle, fontSize: 14, marginTop: 4 }}>{money(rm.subtotal)}</div>
         </div>
       </div>
       <div>
-        <div style={{ padding: '9px 10px' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+        <div style={{ padding: '8px 12px' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
             <div>
-              <div style={{ fontSize: 10.5, fontWeight: 700, color: WF.ink }}>Cabin fare</div>
-              <div style={{ fontSize: 9.5, color: WF.inkSoft, marginTop: 2 }}>Allocated across {rm.occupants} guest{rm.occupants === 1 ? '' : 's'}</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: WF.ink }}>Cabin fare</div>
+              <div style={{ fontSize: 12, color: WF.inkSoft, marginTop: 4 }}>Allocated across {rm.occupants} guest{rm.occupants === 1 ? '' : 's'}</div>
             </div>
             <span style={amountStyle}>{money(rm.fare)}</span>
           </div>
@@ -648,38 +646,38 @@ function SPCabinRoomCard({ rm, p }) {
               aria-expanded={open}
               style={{
                 width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
-                marginTop: 7, padding: '6px 8px', borderRadius: 6,
+                marginTop: 8, padding: '8px 8px', borderRadius: 6,
                 border: `1px solid ${open ? WF.accentLine : WF.line}`,
                 background: open ? WF.accentTint : WF.fill, color: WF.accentInk,
                 cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
               }}>
-              <span style={{ fontSize: 9.5, fontWeight: 700 }}>{open ? 'Hide guest fare split' : 'View guest fare split'}</span>
-              <span aria-hidden="true" style={{ fontSize: 8, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .12s' }}>▼</span>
+              <span style={{ fontSize: 12, fontWeight: 700 }}>{open ? 'Hide guest fare split' : 'View guest fare split'}</span>
+              <span aria-hidden="true" style={{ fontSize: 12, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .12s' }}>▼</span>
             </button>
           )}
           {open && rm.people.length > 0 && (
-            <div style={{ marginTop: 6, padding: '5px 8px', borderRadius: 6, background: WF.fill, border: `1px solid ${WF.line}` }}>
+            <div style={{ marginTop: 8, padding: '4px 8px', borderRadius: 6, background: WF.fill, border: `1px solid ${WF.line}` }}>
               {rm.people.map((pax, index) => (
                 <div key={pax.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '4px 0', borderTop: index === 0 ? 'none' : `1px solid ${WF.lineSoft}` }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-                    <span style={{ padding: '2px 4px', borderRadius: 4, border: `1px solid ${WF.line}`, background: WF.panel, color: WF.inkSoft, fontSize: 8.5, fontWeight: 700, fontFamily: 'ui-monospace, monospace', flexShrink: 0 }}>{pax.code}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                    <span style={{ padding: '4px 4px', borderRadius: 4, border: `1px solid ${WF.line}`, background: WF.panel, color: WF.inkSoft, fontSize: 12, fontWeight: 700, fontFamily: 'ui-monospace, monospace', flexShrink: 0 }}>{pax.code}</span>
                     <span style={{ minWidth: 0 }}>
-                      <span style={{ display: 'block', fontSize: 10, color: WF.ink, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pax.name}</span>
-                      <span style={{ display: 'block', fontSize: 8.5, color: WF.inkSoft, marginTop: 1 }}>{pax.type} · {pax.berthLabel}</span>
+                      <span style={{ display: 'block', fontSize: 12, color: WF.ink, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pax.name}</span>
+                      <span style={{ display: 'block', fontSize: 12, color: WF.inkSoft, marginTop: 4 }}>{pax.type} · {pax.berthLabel}</span>
                     </span>
                   </div>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: WF.inkSoft, fontFamily: 'ui-monospace, monospace', fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{money(pax.fare)}</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: WF.inkSoft, fontFamily: 'ui-monospace, monospace', fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{money(pax.fare)}</span>
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        <div style={{ padding: '9px 10px', borderTop: `1px solid ${WF.line}` }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, marginBottom: rm.lines.length > 0 ? 5 : 0 }}>
+        <div style={{ padding: '8px 12px', borderTop: `1px solid ${WF.line}` }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, marginBottom: rm.lines.length > 0 ? 4 : 0 }}>
             <div>
-              <div style={{ fontSize: 10.5, fontWeight: 700, color: WF.ink }}>Supplements</div>
-              <div style={{ fontSize: 9.5, color: WF.inkSoft, marginTop: 2 }}>{rm.lines.length > 0 ? `${rm.lines.length} selected item${rm.lines.length === 1 ? '' : 's'}` : 'No supplements assigned'}</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: WF.ink }}>Supplements</div>
+              <div style={{ fontSize: 12, color: WF.inkSoft, marginTop: 4 }}>{rm.lines.length > 0 ? `${rm.lines.length} selected item${rm.lines.length === 1 ? '' : 's'}` : 'No supplements assigned'}</div>
             </div>
             <span style={amountStyle}>{money(rm.suppTotal)}</span>
           </div>
@@ -688,10 +686,10 @@ function SPCabinRoomCard({ rm, p }) {
           ) : null}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, padding: '9px 10px', borderTop: `1px solid ${WF.line}` }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, padding: '8px 12px', borderTop: `1px solid ${WF.line}` }}>
           <div>
-            <div style={{ fontSize: 10.5, fontWeight: 700, color: WF.ink }}>Taxes and port fees</div>
-            <div style={{ fontSize: 9.5, color: WF.inkSoft, marginTop: 2 }}>Room share of {money(p.gratuities)}</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: WF.ink }}>Taxes and port fees</div>
+            <div style={{ fontSize: 12, color: WF.inkSoft, marginTop: 4 }}>Room share of {money(p.gratuities)}</div>
           </div>
           <span style={amountStyle}>{money(rm.taxes)}</span>
         </div>
@@ -706,7 +704,7 @@ function SPCabinDetails({ b, p }) {
 
   if (rooms.length === 0) {
     return (
-      <div style={{ fontSize: 12, color: WF.inkFaint, fontStyle: 'italic', padding: '2px 0' }}>
+      <div style={{ fontSize: 12, color: WF.inkFaint, fontStyle: 'italic', padding: '4px 0' }}>
         No staterooms assigned yet — pick rooms on Sailing, fare &amp; cabin.
       </div>
     );
@@ -717,8 +715,8 @@ function SPCabinDetails({ b, p }) {
       {rooms.map((rm) => <SPCabinRoomCard key={rm.key} rm={rm} p={p} />)}
 
       {unassigned && (
-        <div style={{ border: `1px dashed ${WF.line}`, borderRadius: 8, padding: '7px 10px' }}>
-          <div style={{ fontSize: 10.5, fontWeight: 700, color: WF.inkSoft, marginBottom: 3 }}>
+        <div style={{ border: `1px dashed ${WF.line}`, borderRadius: 8, padding: '8px 12px' }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: WF.inkSoft, marginBottom: 4 }}>
             Unassigned guests <span style={{ fontWeight: 500, color: WF.inkFaint }}>· {unassigned.count}</span>
           </div>
           {unassigned.lines.map((ln) => <SPCabinSuppLine key={ln.id} ln={ln} />)}
@@ -752,20 +750,9 @@ function BookingSummaryPanel({
     ...(b.selectedDestinations || []),
     ...(b.selectedPorts || []).map((pid) => `⚓ ${mvasPortShort(pid)}`),
   ].join(', ');
-  // Embarkation city — an independent facet from the destination above (a
-  // Bahamas cruise can sail from any of the three home ports).
-  const homePortStr = (b.selectedHomePorts || []).map(mvasHomePortName).join(', ');
   const durationStr = (b.selectedDuration || [])
     .map((id) => { const band = getDurationBand(id); return band ? band.short : id; })
     .join(', ');
-  const selectedMonths = b.selectedMonth
-    ? (Array.isArray(b.selectedMonth.months)
-        ? b.selectedMonth.months
-        : b.selectedMonth.month ? [b.selectedMonth.month] : [])
-    : [];
-  const monthStr = selectedMonths.length
-    ? `${selectedMonths.join(', ')} ${b.selectedMonth.year || ''}`.trim()
-    : (b.selectedMonth && b.selectedMonth.year) || '';
   // The stateroom matrix persists every confirmed room in `cabins`; the legacy
   // selectedCabinNum field only stores the first room for base-fare
   // compatibility. Build the visible summary from the complete cabin record so
@@ -798,18 +785,18 @@ function BookingSummaryPanel({
         <button
           onClick={() => setShowHoldMenu((v) => !v)}
           style={{
-            width: '100%', padding: '8px 10px', fontSize: 12, fontWeight: 600, border: `1px solid ${WF.line}`,
+            width: '100%', padding: '8px 12px', fontSize: 12, fontWeight: 600, border: `1px solid ${WF.line}`,
             borderRadius: 7, background: '#fff', color: WF.ink, cursor: 'pointer', fontFamily: 'inherit',
           }}>Hold</button>
         {showHoldMenu && (
           <>
             <div onClick={() => setShowHoldMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
             <div style={{
-              position: 'absolute', bottom: '100%', left: 0, marginBottom: 6, zIndex: 41,
+              position: 'absolute', bottom: '100%', left: 0, marginBottom: 8, zIndex: 41,
               width: 160, background: '#fff', border: `1px solid ${WF.line}`, borderRadius: 9,
               boxShadow: '0 12px 32px rgba(15,31,61,0.16)', overflow: 'hidden',
             }}>
-              <div style={{ padding: '8px 12px 6px', fontSize: 10.5, fontWeight: 700, color: WF.inkSoft, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+              <div style={{ padding: '8px 12px 8px', fontSize: 12, fontWeight: 700, color: WF.inkSoft, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                 Hold for
               </div>
               {['24h', '48h', '72h'].map((d) => (
@@ -817,8 +804,8 @@ function BookingSummaryPanel({
                   key={d}
                   onClick={() => { set({ holdDur: d }); setShowHoldMenu(false); }}
                   style={{
-                    display: 'block', width: '100%', padding: '9px 12px', border: 'none',
-                    background: 'transparent', color: WF.ink, fontSize: 12.5, fontWeight: 500,
+                    display: 'block', width: '100%', padding: '8px 12px', border: 'none',
+                    background: 'transparent', color: WF.ink, fontSize: 14, fontWeight: 500,
                     textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit',
                   }}
                   onMouseEnter={(e) => { e.currentTarget.style.background = '#F8FAFC'; }}
@@ -831,7 +818,7 @@ function BookingSummaryPanel({
         )}
       </div>
       <button onClick={discard} style={{
-        flex: 1, padding: '8px 10px', fontSize: 12, fontWeight: 600, border: `1px solid ${WF.line}`,
+        flex: 1, padding: '8px 12px', fontSize: 12, fontWeight: 600, border: `1px solid ${WF.line}`,
         borderRadius: 7, background: '#fff', color: WF.ink, cursor: 'pointer', fontFamily: 'inherit',
       }}>Discard</button>
     </div>
@@ -839,7 +826,10 @@ function BookingSummaryPanel({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', scrollbarWidth: 'thin' }}>
+      <div style={{
+        flex: 1, minHeight: 0, overflowY: 'auto',
+        scrollbarWidth: 'none', msOverflowStyle: 'none',
+      }}>
 
         {/* ── Selection — every row always present ──
             Collapsed by default on Review & confirm: by then the selection is
@@ -857,7 +847,7 @@ function BookingSummaryPanel({
           summary={selectionSummary}>
 
           {/* View toggle — whole-booking rows vs per-stateroom breakdown. */}
-          <div style={{ marginBottom: 10 }}>
+          <div style={{ marginBottom: 12 }}>
             <SPSegmented
               options={['Global Details', 'Cabin-wise Details']}
               value={selectionView}
@@ -871,10 +861,8 @@ function BookingSummaryPanel({
               b={b}
               p={p}
               destStr={destStr}
-              homePortStr={homePortStr}
               guestStr={guestStr}
               durationStr={durationStr}
-              monthStr={monthStr}
               roomLabel={roomLabel}
               roomStr={roomStr}
               showSupps={showSupps}
@@ -902,20 +890,20 @@ function BookingSummaryPanel({
             {/* ── Promotions ── */}
             <SPSection title="Promotions">
               <SPPills options={['None', 'SAVE10', 'EARLYBIRD']} value={b.appliedCoupon} onChange={(c) => set({ appliedCoupon: c })} />
-              <div style={{ display: 'flex', gap: 5, marginTop: 8 }}>
+              <div style={{ display: 'flex', gap: 4, marginTop: 8 }}>
                 <input
                   type="text" placeholder="Custom code…" value={b.customCode || ''}
                   onChange={(e) => set({ customCode: e.target.value.toUpperCase() })}
                   onKeyDown={(e) => { if (e.key === 'Enter' && (b.customCode || '').trim()) set({ appliedCoupon: b.customCode.trim() }); }}
                   style={{
-                    flex: 1, minWidth: 0, padding: '7px 10px', fontSize: 11, border: `1px solid ${WF.line}`,
+                    flex: 1, minWidth: 0, padding: '8px 12px', fontSize: 12, border: `1px solid ${WF.line}`,
                     borderRadius: 6, fontFamily: 'inherit', outline: 'none',
                   }} />
                 <button
                   onClick={() => { if ((b.customCode || '').trim()) set({ appliedCoupon: b.customCode.trim() }); }}
                   disabled={!(b.customCode || '').trim()}
                   style={{
-                    padding: '7px 12px', fontSize: 11, fontWeight: 600, border: 'none', borderRadius: 6,
+                    padding: '8px 12px', fontSize: 12, fontWeight: 600, border: 'none', borderRadius: 6,
                     background: (b.customCode || '').trim() ? '#1B2434' : '#CBD5E1', color: '#fff',
                     cursor: (b.customCode || '').trim() ? 'pointer' : 'default', fontFamily: 'inherit',
                   }}>Apply</button>
@@ -923,13 +911,13 @@ function BookingSummaryPanel({
               {b.appliedCoupon !== 'None' && (
                 <div style={{
                   marginTop: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  padding: '7px 11px', background: p.couponIsCustom ? '#FFFBEB' : '#F0FDF4',
-                  borderRadius: 7, border: `1px solid ${p.couponIsCustom ? '#FDE68A' : '#DCFCE7'}`,
+                  padding: '8px 12px', background: p.couponIsCustom ? 'var(--ds-primitive-color-warning-50, #FFFBEB)' : 'var(--ds-color-success-bg, #F0FDF4)',
+                  borderRadius: 7, border: `1px solid ${p.couponIsCustom ? 'var(--ds-color-warning-border, #FDE68A)' : 'var(--ds-color-success-border, #BBF7D0)'}`,
                 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: p.couponIsCustom ? '#92400E' : '#059669' }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: p.couponIsCustom ? 'var(--ds-color-warning-text, #92400E)' : 'var(--ds-color-success-text, #047857)' }}>
                     {p.couponIsCustom ? '⏳ Pending validation' : `✨ ${Math.round(p.couponPct * 100)}% off base fare`}
                   </div>
-                  <div style={{ fontSize: 11.5, fontWeight: 700, color: p.couponIsCustom ? '#92400E' : '#059669', fontFamily: 'ui-monospace, monospace' }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: p.couponIsCustom ? 'var(--ds-color-warning-text, #92400E)' : 'var(--ds-color-success-text, #047857)', fontFamily: 'ui-monospace, monospace' }}>
                     {spMoney(p.couponDisc)}
                   </div>
                 </div>
@@ -942,14 +930,14 @@ function BookingSummaryPanel({
                 onClick={() => set({ protection: !b.protection })}
                 style={{
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8,
-                  padding: '8px 11px', border: `1px solid ${WF.line}`, borderRadius: 8, cursor: 'pointer', background: '#fff',
+                  padding: '8px 12px', border: `1px solid ${WF.line}`, borderRadius: 8, cursor: 'pointer', background: '#fff',
                 }}>
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 11.5, fontWeight: 700, color: WF.ink }}>Add trip protection</div>
-                  <div style={{ fontSize: 10.5, color: WF.inkSoft, marginTop: 1 }}>Medical &amp; cancellation · ${PROTECTION_PP}/guest</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: WF.ink }}>Add trip protection</div>
+                  <div style={{ fontSize: 12, color: WF.inkSoft, marginTop: 4 }}>Medical &amp; cancellation · ${PROTECTION_PP}/guest</div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 9, flexShrink: 0 }}>
-                  <div style={{ fontSize: 11.5, fontWeight: 600, color: b.protection ? WF.ink : WF.inkFaint, fontFamily: 'ui-monospace, monospace' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: b.protection ? WF.ink : WF.inkFaint, fontFamily: 'ui-monospace, monospace' }}>
                     {b.protection ? `+${money(p.protectionTotal)}` : '—'}
                   </div>
                   <div style={{
@@ -1018,7 +1006,7 @@ function BookingSummaryPanel({
             onClick={() => (continueEnabled ? onContinue && onContinue() : onBlocked && onBlocked())}
             title={continueEnabled ? undefined : 'Complete this step to continue'}
             style={{
-              width: '100%', padding: '11px 14px', fontSize: 12.5, fontWeight: 700, border: 'none', borderRadius: 8,
+              width: '100%', padding: '12px 16px', fontSize: 14, fontWeight: 700, border: 'none', borderRadius: 8,
               background: continueEnabled ? WF.accent : WF.fillStrong,
               color: continueEnabled ? '#fff' : WF.inkFaint,
               cursor: continueEnabled ? 'pointer' : 'not-allowed', fontFamily: 'inherit',

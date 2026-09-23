@@ -16,7 +16,7 @@ function StepProgress2({ current, onBack }) {
     <div style={{
       display: 'flex', alignItems: 'center',
       background: WF.panel, border: `1px solid ${WF.line}`,
-      borderRadius: 8, padding: '6px 8px', marginBottom: 20,
+      borderRadius: 8, padding: '8px 8px', marginBottom: 20,
     }}>
       {FLOW4.map((st, i) => {
         const state = st.n < current ? 'done' : st.n === current ? 'current' : 'pending';
@@ -25,7 +25,7 @@ function StepProgress2({ current, onBack }) {
           <React.Fragment key={st.n}>
             <button onClick={() => clickable && onBack()} style={{
               display: 'flex', alignItems: 'center', gap: 8, border: 'none',
-              padding: '6px 10px', borderRadius: 6, fontFamily: 'inherit',
+              padding: '8px 12px', borderRadius: 6, fontFamily: 'inherit',
               background: state === 'current' ? WF.fill : 'transparent',
               cursor: clickable ? 'pointer' : 'default',
             }}>
@@ -38,7 +38,7 @@ function StepProgress2({ current, onBack }) {
                 background: state === 'pending' ? WF.fillStrong : WF.accent,
                 boxShadow: state === 'current' ? `0 0 0 3px ${WF.accentLine}` : 'none',
                 color: state === 'pending' ? WF.inkSoft : '#fff',
-                fontSize: 10, fontWeight: 700,
+                fontSize: 12, fontWeight: 700,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>{state === 'done' ? '✓' : st.n}</div>
               <div style={{
@@ -67,7 +67,7 @@ function SourcePill2({ source, onChange, fullWidth = false }) {
       const rect = ref.current.getBoundingClientRect();
       const width = Math.max(196, rect.width);
       setPos({
-        top: rect.bottom + 6,
+        top: rect.bottom + 8,
         left: Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)),
         width,
       });
@@ -87,7 +87,7 @@ function SourcePill2({ source, onChange, fullWidth = false }) {
     <div ref={ref} style={{ position: 'relative', flexShrink: 0, width: fullWidth ? '100%' : 'auto' }}>
       {fullWidth && (
         <div style={{
-          marginBottom: 4, fontSize: 11, lineHeight: 1.2, fontWeight: 500,
+          marginBottom: 4, fontSize: 12, lineHeight: '16px', fontWeight: 500,
           letterSpacing: 0, color: WF.inkSoft,
         }}>
           Source
@@ -96,14 +96,14 @@ function SourcePill2({ source, onChange, fullWidth = false }) {
       <button type="button" aria-expanded={open} aria-label={fullWidth ? `Source: ${source}` : undefined} onClick={() => setOpen(o => !o)} style={{
         display: 'inline-flex', alignItems: 'center', gap: 8,
         width: fullWidth ? '100%' : 'auto', height: fullWidth ? 34 : 38,
-        padding: fullWidth ? '0 10px' : '0 14px', borderRadius: fullWidth ? 7 : 10, whiteSpace: 'nowrap',
+        padding: fullWidth ? '0 12px' : '0 16px', borderRadius: fullWidth ? 7 : 10, whiteSpace: 'nowrap',
         cursor: 'pointer', border: `${fullWidth ? 1 : 1.5}px solid ${open ? WF.accent : WF.controlLine}`,
         background: open && fullWidth ? WF.accentTint : WF.panel,
-        fontFamily: 'inherit', fontSize: 13, color: WF.ink, outline: 'none',
+        fontFamily: 'inherit', fontSize: 14, color: WF.ink, outline: 'none',
         transition: 'border-color 0.15s, background 0.15s',
       }}>
         {fullWidth ? (
-          <span style={{ flex: 1, minWidth: 0, textAlign: 'left', fontSize: 12.5, lineHeight: 1.2, color: WF.ink, fontWeight: 650 }}>{source}</span>
+          <span style={{ flex: 1, minWidth: 0, textAlign: 'left', fontSize: 14, lineHeight: '20px', color: WF.ink, fontWeight: 600 }}>{source}</span>
         ) : (
           <>
             <span style={{ color: WF.inkSoft }}>Source</span>
@@ -139,8 +139,8 @@ function SourcePill2({ source, onChange, fullWidth = false }) {
             const on = opt === source;
             return (
               <button key={opt} type="button" onClick={() => { onChange(opt); setOpen(false); }} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, width: '100%', textAlign: 'left',
-                padding: '8px 10px', borderRadius: 6, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5,
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, width: '100%', textAlign: 'left',
+                padding: '8px 12px', borderRadius: 6, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 14,
                 background: on ? WF.accentTint : 'transparent', color: on ? WF.ink : WF.inkSoft, fontWeight: on ? 600 : 500,
               }}>
                 <span>{opt}</span>
@@ -231,8 +231,8 @@ function pruneCabinSuppAssignments(suppAssignments, cabins) {
 }
 
 function Pills({ options, value, onChange, size = 'md' }) {
-  const pad = size === 'sm' ? '6px 12px' : '8px 15px';
-  const fs = size === 'sm' ? 12 : 13;
+  const pad = size === 'sm' ? '8px 12px' : '8px 16px';
+  const fs = size === 'sm' ? 12 : 14;
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
       {options.map(opt => {
@@ -276,8 +276,8 @@ function MiniStep({ value, min, onChange }) {
       onBlur={handleBlur}
       style={{
         width: 50,
-        padding: '6px 8px',
-        fontSize: 13,
+        padding: '8px 8px',
+        fontSize: 14,
         fontWeight: 700,
         fontFamily: 'ui-monospace, monospace',
         border: `1px solid ${WF.line}`,
@@ -303,15 +303,15 @@ function MiniCalendar({ departDate, nights, onPick }) {
   for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(view.year, view.month, d));
   const step = (delta) => setView(v => { let m = v.month + delta, y = v.year; if (m < 0) { m = 11; y--; } if (m > 11) { m = 0; y++; } return { year: y, month: m }; });
   const Arrow = ({ dir }) => (
-    <button onClick={() => step(dir === 'prev' ? -1 : 1)} style={{ width: 26, height: 26, borderRadius: 6, border: `1px solid ${WF.line}`, background: WF.panel, color: WF.inkSoft, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{dir === 'prev' ? '‹' : '›'}</button>
+    <button onClick={() => step(dir === 'prev' ? -1 : 1)} style={{ width: 26, height: 26, borderRadius: 6, border: `1px solid ${WF.line}`, background: WF.panel, color: WF.inkSoft, cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{dir === 'prev' ? '‹' : '›'}</button>
   );
   return (
     <div style={{ width: 250 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-        <Arrow dir="prev" /><div style={{ fontSize: 13, fontWeight: 600, color: WF.ink }}>{MON_FULL2[view.month]} {view.year}</div><Arrow dir="next" />
+        <Arrow dir="prev" /><div style={{ fontSize: 14, fontWeight: 600, color: WF.ink }}>{MON_FULL2[view.month]} {view.year}</div><Arrow dir="next" />
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2 }}>
-        {DOW2.map((d, i) => <div key={i} style={{ textAlign: 'center', fontSize: 10, fontWeight: 600, color: WF.inkFaint, letterSpacing: 0.5, padding: '2px 0' }}>{d}</div>)}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
+        {DOW2.map((d, i) => <div key={i} style={{ textAlign: 'center', fontSize: 12, fontWeight: 600, color: WF.inkFaint, letterSpacing: '0.04em', padding: '4px 0' }}>{d}</div>)}
         {cells.map((date, i) => {
           if (!date) return <div key={i} />;
           const past = date < TODAY2;
@@ -360,20 +360,20 @@ function ContextBar({ s, update }) {
     const on = editing === c.key;
     return (
       <button onClick={() => setEditing(on ? null : c.key)} style={{
-        display: 'inline-flex', alignItems: 'center', gap: 7, padding: '7px 12px', borderRadius: 8, fontFamily: 'inherit',
-        border: `1px solid ${on ? WF.accent : WF.line}`, background: on ? WF.fill : WF.panel, cursor: 'pointer', fontSize: 12.5,
+        display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 8, fontFamily: 'inherit',
+        border: `1px solid ${on ? WF.accent : WF.line}`, background: on ? WF.fill : WF.panel, cursor: 'pointer', fontSize: 14,
       }}>
         <span style={{ color: WF.inkFaint, fontSize: 12 }}>{c.icon}</span>
         <span style={{ color: WF.ink, fontWeight: 600 }}>{c.label}</span>
-        <span style={{ color: WF.inkFaint, fontSize: 9 }}>▾</span>
+        <span style={{ color: WF.inkFaint, fontSize: 12 }}>▾</span>
       </button>
     );
   };
 
   return (
-    <div ref={ref} style={{ position: 'relative', marginBottom: 18 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', padding: '10px 12px', background: WF.panel, border: `1px solid ${WF.line}`, borderRadius: 8 }}>
-        <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, color: WF.inkLabel, textTransform: 'uppercase', marginRight: 2 }}>Search</span>
+    <div ref={ref} style={{ position: 'relative', marginBottom: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', padding: '12px 12px', background: WF.panel, border: `1px solid ${WF.line}`, borderRadius: 8 }}>
+        <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', color: WF.inkLabel, textTransform: 'uppercase', marginRight: 4 }}>Search</span>
         {chips.map((c, i) => (
           <React.Fragment key={c.key}>
             {i > 0 && <span style={{ color: WF.inkFaint, fontSize: 12 }}>·</span>}
@@ -383,24 +383,24 @@ function ContextBar({ s, update }) {
       </div>
 
       {editing && (
-        <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, zIndex: 50, background: WF.panel, border: `1px solid ${WF.line}`, borderRadius: 10, boxShadow: '0 12px 32px rgba(15,23,42,0.16)', padding: 16, minWidth: 280 }}>
+        <div style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, zIndex: 50, background: WF.panel, border: `1px solid ${WF.line}`, borderRadius: 10, boxShadow: '0 12px 32px rgba(15,23,42,0.16)', padding: 16, minWidth: 280 }}>
           {editing === 'dest' && (<>
-            <div style={{ fontSize: 11, color: WF.inkLabel, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10 }}>Destination</div>
+            <div style={{ fontSize: 12, color: WF.inkLabel, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 12 }}>Destination</div>
             <Pills options={(window.MVAS_REGIONS || []).map((r) => r.name)} value={s.region} onChange={(v) => update({ region: v })} size="sm" />
           </>)}
           {editing === 'duration' && (<>
-            <div style={{ fontSize: 11, color: WF.inkLabel, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10 }}>Duration</div>
+            <div style={{ fontSize: 12, color: WF.inkLabel, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 12 }}>Duration</div>
             <Pills options={[...(window.DURATION_BANDS || []).map((b) => b.label), 'Any']} value={s.duration} onChange={(v) => update({ duration: v })} size="sm" />
           </>)}
           {editing === 'dates' && (<>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.7, color: WF.inkLabel, textTransform: 'uppercase', marginBottom: 8 }}>Months</div>
+            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', color: WF.inkLabel, textTransform: 'uppercase', marginBottom: 8 }}>Months</div>
             <Pills options={MONTH_OPTS} value={s.departMonth || 'Any'} onChange={(v) => update({ departMonth: v })} size="sm" />
           </>)}
           {editing === 'guests' && (<>
-            <div style={{ fontSize: 11, color: WF.inkLabel, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 }}>Guests</div>
+            <div style={{ fontSize: 12, color: WF.inkLabel, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8 }}>Guests</div>
             {[['Adults', 'adults', 1], ['Children', 'children', 0], ['Infants', 'infants', 0]].map(([lbl, k, min]) => (
-              <div key={k} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24, padding: '6px 0' }}>
-                <span style={{ fontSize: 13, color: WF.ink, fontWeight: 500 }}>{lbl}</span>
+              <div key={k} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24, padding: '8px 0' }}>
+                <span style={{ fontSize: 14, color: WF.ink, fontWeight: 500 }}>{lbl}</span>
                 <input
                   type="number"
                   min={min}
@@ -410,7 +410,7 @@ function ContextBar({ s, update }) {
                     if (!isNaN(num) && num >= min) update({ guests: { ...g, [k]: num } });
                   }}
                   style={{
-                    width: 56, padding: '6px 8px', fontSize: 13, fontWeight: 700,
+                    width: 56, padding: '8px 8px', fontSize: 14, fontWeight: 700,
                     fontFamily: 'ui-monospace, monospace', border: `1px solid ${WF.line}`,
                     borderRadius: 6, textAlign: 'center', color: WF.ink, outline: 'none',
                     background: WF.panel

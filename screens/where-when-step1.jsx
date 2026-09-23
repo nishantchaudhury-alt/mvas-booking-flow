@@ -16,14 +16,14 @@ const FP_BORDER = '#E2E8F0';
 const FP_CONTROL_BORDER = '#7C8B9F';
 const FP_BG = '#F1F5F9';
 const FP_SECTION_LABEL_STYLE = Object.freeze({
-  fontSize: 11,
+  fontSize: 12,
   fontWeight: 600,
   letterSpacing: 0,
   color: '#475569',
 });
 const FP_FIELD_LABEL_STYLE = Object.freeze({
-  fontSize: 11,
-  lineHeight: 1.2,
+  fontSize: 12,
+  lineHeight: '16px',
   fontWeight: 500,
   letterSpacing: 0,
   color: '#475569',
@@ -40,7 +40,6 @@ const FP_HOME_PORTS = window.MVAS_HOME_PORTS;
 
 const FP_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const FP_YEARS = ['2026', '2027'];
-const FP_BOOKING_TYPES = ['Normal', 'Future', 'Channel Partner Booking'];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPERS
@@ -94,8 +93,8 @@ function FPListRow({ label, icon, selected, onClick, multiSelect = false }) {
       aria-pressed={selected}
       onClick={onClick}
       style={{
-        display: 'flex', alignItems: 'center', gap: 10, width: '100%',
-        padding: '10px 14px', border: 'none',
+        display: 'flex', alignItems: 'center', gap: 12, width: '100%',
+        padding: '12px 16px', border: 'none',
         background: selected ? '#EBF2FF' : 'transparent',
         cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
         transition: 'background 0.1s'
@@ -109,15 +108,15 @@ function FPListRow({ label, icon, selected, onClick, multiSelect = false }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           border: `1.5px solid ${selected ? FP_NAVY : FP_CONTROL_BORDER}`,
           background: selected ? FP_NAVY : '#fff', color: '#fff',
-          fontSize: 10, fontWeight: 800, lineHeight: 1
+          fontSize: 12, fontWeight: 700, lineHeight: 1
         }}>
           {selected ? '✓' : ''}
         </span>
       )}
-      <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: selected ? 600 : 500, color: FP_NAVY, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: selected ? 600 : 500, color: FP_NAVY, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {label}
       </span>
-      {!multiSelect && selected && <span style={{ color: FP_NAVY, fontSize: 13, fontWeight: 700, flexShrink: 0 }}>✓</span>}
+      {!multiSelect && selected && <span style={{ color: FP_NAVY, fontSize: 14, fontWeight: 700, flexShrink: 0 }}>✓</span>}
     </button>
   );
 }
@@ -128,7 +127,7 @@ function FPListRow({ label, icon, selected, onClick, multiSelect = false }) {
 // each list short enough to take in at a glance.
 function FPSegmented({ options, value, onChange }) {
   return (
-    <div style={{ display: 'flex', gap: 2, padding: 3, margin: '6px 14px 8px', background: '#F1F5F9', border: `1px solid ${FP_BORDER}`, borderRadius: 8 }}>
+    <div style={{ display: 'flex', gap: 4, padding: 4, margin: '8px 16px 8px', background: '#F1F5F9', border: `1px solid ${FP_BORDER}`, borderRadius: 8 }}>
       {options.map((opt) => {
         const on = value === opt;
         return (
@@ -138,7 +137,7 @@ function FPSegmented({ options, value, onChange }) {
             aria-pressed={on}
             onClick={() => onChange(opt)}
             style={{
-              flex: 1, padding: '6px 8px', fontSize: 11.5, fontWeight: on ? 700 : 500,
+              flex: 1, padding: '8px 8px', fontSize: 12, fontWeight: on ? 700 : 500,
               border: 'none', borderRadius: 6,
               background: on ? '#fff' : 'transparent', color: on ? FP_NAVY : WF.inkLabel,
               boxShadow: on ? '0 1px 2px rgba(15,31,61,0.14)' : 'none',
@@ -166,21 +165,21 @@ function FPPortRow({ label, selected, count, onClick }) {
       disabled={dead}
       onClick={onClick}
       style={{
-        display: 'flex', alignItems: 'center', gap: 10, width: '100%',
-        padding: '10px 14px', border: 'none',
+        display: 'flex', alignItems: 'center', gap: 12, width: '100%',
+        padding: '12px 16px', border: 'none',
         background: selected ? '#EBF2FF' : 'transparent',
         cursor: dead ? 'default' : 'pointer', fontFamily: 'inherit', textAlign: 'left',
         opacity: dead ? 0.45 : 1, transition: 'background 0.1s'
       }}
       onMouseEnter={(e) => { if (!selected && !dead) e.currentTarget.style.background = '#F8FAFC'; }}
       onMouseLeave={(e) => { if (!selected) e.currentTarget.style.background = 'transparent'; }}>
-      <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: selected ? 600 : 500, color: FP_NAVY, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: selected ? 600 : 500, color: FP_NAVY, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {label}
       </span>
-      <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 600, color: count === 0 ? '#CBD5E1' : WF.inkLabel, fontFamily: 'ui-monospace, monospace', minWidth: 16, textAlign: 'right' }}>
+      <span style={{ flexShrink: 0, fontSize: 12, fontWeight: 600, color: count === 0 ? '#CBD5E1' : WF.inkLabel, fontFamily: 'ui-monospace, monospace', minWidth: 16, textAlign: 'right' }}>
         {count}
       </span>
-      {selected && <span style={{ color: FP_NAVY, fontSize: 13, fontWeight: 700, flexShrink: 0 }}>✓</span>}
+      {selected && <span style={{ color: FP_NAVY, fontSize: 14, fontWeight: 700, flexShrink: 0 }}>✓</span>}
     </button>
   );
 }
@@ -192,13 +191,13 @@ function FPDropdownFooter({ onClear, onDone, clearDisabled }) {
         type="button"
         onClick={onClear}
         disabled={clearDisabled}
-        style={{ border: 'none', background: 'none', padding: 0, fontSize: 11.5, fontWeight: 600, fontFamily: 'inherit', color: clearDisabled ? '#CBD5E1' : '#64748B', cursor: clearDisabled ? 'default' : 'pointer' }}>
+        style={{ border: 'none', background: 'none', padding: 0, fontSize: 12, fontWeight: 600, fontFamily: 'inherit', color: clearDisabled ? '#CBD5E1' : '#64748B', cursor: clearDisabled ? 'default' : 'pointer' }}>
         Clear
       </button>
       <button
         type="button"
         onClick={onDone}
-        style={{ padding: '5px 14px', fontSize: 11.5, fontWeight: 700, fontFamily: 'inherit', border: 'none', borderRadius: 6, background: FP_NAVY, color: '#fff', cursor: 'pointer' }}>
+        style={{ padding: '4px 16px', fontSize: 12, fontWeight: 700, fontFamily: 'inherit', border: 'none', borderRadius: 6, background: FP_NAVY, color: '#fff', cursor: 'pointer' }}>
         Done
       </button>
     </div>
@@ -227,7 +226,7 @@ function FPDropdown({ label, trigger, open, onToggle, onClose, footer, width = 2
       const r = btnRef.current.getBoundingClientRect();
       const w = Math.min(width, window.innerWidth - 16);
       setPos({
-        top: r.bottom + 6,
+        top: r.bottom + 8,
         left: Math.max(8, Math.min(r.left, window.innerWidth - w - 8)),
         minWidth: r.width,
       });
@@ -268,15 +267,15 @@ function FPDropdown({ label, trigger, open, onToggle, onClose, footer, width = 2
         onClick={onToggle}
         style={{
           display: 'flex', alignItems: 'center', gap: 8, width: '100%',
-          minHeight: 34, padding: '5px 10px', borderRadius: 7,
+          minHeight: 34, padding: '4px 12px', borderRadius: 7,
           border: `1px solid ${open ? FP_NAVY : FP_CONTROL_BORDER}`,
           background: open ? '#EFF6FF' : '#fff', color: FP_NAVY,
           cursor: 'pointer', fontFamily: 'inherit',
           transition: 'border-color 0.15s, background 0.15s', outline: 'none', textAlign: 'left'
         }}>
         <span style={{
-          flex: 1, minWidth: 0, fontSize: 12.5, lineHeight: 1.2,
-          fontWeight: 650, color: FP_NAVY,
+          flex: 1, minWidth: 0, fontSize: 14, lineHeight: '20px',
+          fontWeight: 600, color: FP_NAVY,
           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
         }}>{trigger}</span>
         <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.18s' }}>
@@ -310,7 +309,18 @@ function FPDropdown({ label, trigger, open, onToggle, onClose, footer, width = 2
 // SEARCH FILTER PANEL — main component
 // ─────────────────────────────────────────────────────────────────────────────
 
-function SearchFilterPanel({ state, onUpdate }) {
+function SearchFilterPanel({
+  state,
+  onUpdate,
+  groupActionLabel,
+  groupActionEnabled,
+  onGroupAction,
+  onGroupBlocked,
+  groupActionError,
+}) {
+  const ScopeSection = window.ReservationScopeSection;
+  const GroupFields = window.GroupSetupFields;
+  const groupSetupActive = state.reservationScope === 'group' && (!state.groupId || state.surface === 'group-setup');
   const {
     isFilterExpanded: isExpanded,
     selectedDestinations,
@@ -323,7 +333,6 @@ function SearchFilterPanel({ state, onUpdate }) {
   const ports = selectedPorts || [];
   const durations = selectedDuration || [];
   const selectedMonths = fpSelectedMonths(selectedMonth);
-  const bookingType = state.bookingType || 'Normal';
 
   // Track if user has made any selections in this session
   const [hasEverInteracted, setHasEverInteracted] = React.useState(false);
@@ -422,124 +431,171 @@ function SearchFilterPanel({ state, onUpdate }) {
     : `${durations.length} selected`;
   return (
     <>
-      <div style={{
-        background: '#fff', borderRadius: 10, overflow: 'hidden',
-        boxShadow: '0 1px 2px rgba(15,23,42,0.08)',
-        border: `1px solid ${FP_BORDER}`
-      }}>
-
-      {/* ══ BOOKING TYPE ════════════════════════════════════════════════════
-          This sets booking context only; inventory filtering remains driven
-          by the date, port, destination and duration facets below. */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 12, padding: '6px 12px',
-        background: WF.fill, borderBottom: `1px solid ${WF.line}`,
-      }}>
-        <div id="booking-type-label" style={{
-          ...FP_SECTION_LABEL_STYLE,
-          flex: '0 0 auto',
-        }}>
-          Booking type
-        </div>
-        <div role="radiogroup" aria-labelledby="booking-type-label" style={{
-          display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6,
-          maxWidth: '100%'
-        }}>
-          {FP_BOOKING_TYPES.map((type) => {
-            const selected = bookingType === type;
-            return (
-              <label
-                key={type}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 7,
-                  minHeight: 28, padding: '4px 9px',
-                  border: `1px solid ${selected ? WF.accent : WF.line}`, borderRadius: 7,
-                  background: selected ? WF.accentTint : '#FFFFFF',
-                  color: selected ? WF.accent : WF.inkSoft,
-                  fontSize: 11.5, fontWeight: selected ? 700 : 600,
-                  cursor: 'pointer', whiteSpace: 'nowrap',
-                  boxShadow: selected ? `inset 0 0 0 1px ${WF.accent}` : 'none',
-                  transition: 'background 0.12s, border-color 0.12s, color 0.12s'
-                }}>
-                <input
-                  type="radio"
-                  name="booking-type"
-                  value={type}
-                  checked={selected}
-                  onChange={() => onUpdate({ bookingType: type })}
-                  style={{
-                    width: 14, height: 14, margin: 0, flexShrink: 0,
-                    accentColor: WF.accent, cursor: 'pointer'
-                  }}
-                />
-                {type}
-              </label>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ══ SEARCH BAR ══════════════════════════════════════════════════════ */}
-      <div style={{ padding: '10px 12px 11px' }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
-          <div style={FP_SECTION_LABEL_STYLE}>
-            Search inventory
-          </div>
-          <div style={{ fontSize: 9.5, color: WF.inkSoft }}>Destination, ship, or sailing code</div>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        {/* Search input — clearly typeable */}
-        <div style={{
-          flex: 1, display: 'flex', alignItems: 'center', gap: 8,
-          background: '#FFFFFF', border: `1px solid ${FP_CONTROL_BORDER}`,
-          height: 34, borderRadius: 7, padding: '0 10px',
-          transition: 'border-color 0.15s'
-        }}
-        onFocusCapture={(e) => e.currentTarget.style.borderColor = FP_NAVY}
-        onBlurCapture={(e) => e.currentTarget.style.borderColor = FP_CONTROL_BORDER}>
-          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, color: '#94A3B8' }}>
-            <circle cx="7" cy="7" r="4.5" stroke="currentColor" strokeWidth="1.5" />
-            <path d="M10.5 10.5L13.5 13.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
-          <input
-            type="text"
-            placeholder="Search destinations, ships, codes…"
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              flex: 1, border: 'none', outline: 'none',
-              fontSize: 13, color: FP_NAVY,
-              background: 'transparent', fontFamily: 'inherit',
-              '::placeholder': { color: '#94A3B8' }
-            }} />
-        </div>
-
-        {/* Toggle arrow — only interaction that changes panel state */}
-        <button
-          onClick={toggle}
-          title={isExpanded ? 'Collapse filters' : 'Expand filters'}
+      {/* Each path uses one setup surface. Group fields embed beneath the
+          scope switcher; individual controls and criteria do the same. */}
+      {groupSetupActive && (ScopeSection || GroupFields) && (
+        <div
+          data-testid="group-setup-container"
           style={{
-            width: 34, height: 34, borderRadius: 7, flexShrink: 0,
-            border: `1px solid ${FP_CONTROL_BORDER}`, background: WF.fill,
-            cursor: 'pointer',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: '#64748B',
-            transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-            transition: 'transform 0.22s ease, background 0.12s'
+            marginBottom: 12, background: WF.panel, borderRadius: 10,
+            overflow: 'hidden', border: `1px solid ${WF.line}`,
+            boxShadow: '0 1px 2px rgba(15,23,42,0.08)'
           }}>
-
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <path d="M2 4L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
+          {ScopeSection && <ScopeSection state={state} onUpdate={onUpdate} />}
+          {GroupFields && <GroupFields state={state} onUpdate={onUpdate} embedded />}
+          <div
+            data-testid="group-setup-actions"
+            style={{
+              minHeight: 58, padding: '8px 12px', borderTop: `1px solid ${WF.line}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+              background: WF.panel,
+            }}>
+            <div role="status" aria-live="polite" style={{ minWidth: 0, fontSize: 12, color: '#B91C1C', fontWeight: 600 }}>
+              {groupActionError || ''}
+            </div>
+            <button
+              type="button"
+              onClick={() => (groupActionEnabled ? onGroupAction?.() : onGroupBlocked?.())}
+              aria-disabled={!groupActionEnabled}
+              title={groupActionEnabled ? undefined : 'Complete the required group details, then select a cruise and sailing date'}
+              style={{
+                minWidth: 170, minHeight: 40, padding: '8px 20px', border: 'none',
+                borderRadius: 8,
+                background: groupActionEnabled ? WF.accent : WF.fillStrong,
+                color: groupActionEnabled ? WF.accentText : WF.inkFaint,
+                fontFamily: 'inherit', fontSize: 14, fontWeight: 700,
+                cursor: groupActionEnabled ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap',
+              }}>
+              {groupActionLabel || 'Create group'}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
+
+      {!groupSetupActive && (
+      <div
+        data-testid="individual-booking-setup-container"
+        style={{
+          marginBottom: 12, background: WF.panel, borderRadius: 10, overflow: 'hidden',
+          boxShadow: '0 1px 2px rgba(15,23,42,0.08)', border: `1px solid ${FP_BORDER}`
+        }}>
+      {ScopeSection && (
+        <div style={{ borderBottom: `1px solid ${WF.line}` }}>
+          <ScopeSection state={state} onUpdate={onUpdate} />
+        </div>
+      )}
+
+      <section data-testid="booking-criteria-section" style={{ background: WF.panel }}>
+      <div
+        data-testid="booking-context-section"
+        style={{
+          padding: '12px 12px 12px', background: WF.panel,
+          display: 'flex', alignItems: 'flex-end', flexWrap: 'wrap', gap: 12,
+        }}>
+          {window.SourcePill2 && state.source !== undefined && (
+            <div style={{ flex: '0 1 180px', minWidth: 155 }}>
+              <window.SourcePill2
+                source={state.source}
+                onChange={(v) => onUpdate({ source: v })}
+                fullWidth />
+            </div>
+          )}
+
+          <div style={{
+            flex: '0 1 270px', minWidth: 215,
+            display: 'flex', flexDirection: 'column', gap: 4, color: FP_NAVY,
+          }}>
+            <label htmlFor="booking-promotion-code" style={FP_FIELD_LABEL_STYLE}>Promotion code</label>
+            <div style={{ display: 'flex', minWidth: 0 }}>
+              <div style={{
+                flex: 1, minWidth: 0, minHeight: 34, display: 'flex', alignItems: 'center',
+                padding: '4px 12px', border: `1px solid ${FP_CONTROL_BORDER}`,
+                borderRadius: '7px 0 0 7px', background: WF.panel,
+              }}>
+                <input
+                  id="booking-promotion-code"
+                  type="text"
+                  placeholder="Enter code"
+                  style={{
+                    width: '100%', padding: 0, fontSize: 14, lineHeight: '20px',
+                    fontFamily: 'inherit', border: 'none', color: FP_NAVY,
+                    background: 'transparent', outline: 'none'
+                  }} />
+              </div>
+              <button type="button" style={{
+                minHeight: 34, marginLeft: -1, padding: '8px 16px',
+                fontSize: 12, fontWeight: 700, fontFamily: 'inherit',
+                border: `1px solid ${FP_NAVY}`, borderRadius: '0 7px 7px 0',
+                background: FP_NAVY, color: '#fff', cursor: 'pointer',
+                transition: 'background 0.12s, border-color 0.12s', whiteSpace: 'nowrap',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#111827'; e.currentTarget.style.borderColor = '#111827'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = FP_NAVY; e.currentTarget.style.borderColor = FP_NAVY; }}>
+                Apply
+              </button>
+            </div>
+          </div>
+          <div style={{ flex: '1 1 300px', minWidth: 260, display: 'flex', alignItems: 'center', gap: 8 }}>
+            {/* Search input — clearly typeable */}
+            <div style={{
+              flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 8,
+              background: '#FFFFFF', border: `1px solid ${FP_CONTROL_BORDER}`,
+              height: 34, borderRadius: 7, padding: '0 12px',
+              transition: 'border-color 0.15s'
+            }}
+            onFocusCapture={(e) => e.currentTarget.style.borderColor = FP_NAVY}
+            onBlurCapture={(e) => e.currentTarget.style.borderColor = FP_CONTROL_BORDER}>
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, color: '#94A3B8' }}>
+                <circle cx="7" cy="7" r="4.5" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M10.5 10.5L13.5 13.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+              <input
+                type="text"
+                aria-label="Search sailings"
+                placeholder="Search destinations, ships, codes…"
+                value={state.inventorySearch || ''}
+                onChange={(e) => {
+                  setHasEverInteracted(true);
+                  onUpdate({ inventorySearch: e.target.value });
+                }}
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  flex: 1, minWidth: 0, border: 'none', outline: 'none',
+                  fontSize: 14, color: FP_NAVY,
+                  background: 'transparent', fontFamily: 'inherit',
+                  '::placeholder': { color: '#94A3B8' }
+                }} />
+            </div>
+
+            {/* Explicit disclosure keeps the filter state understandable without
+                relying on an unlabeled chevron. */}
+            <button
+              type="button"
+              aria-expanded={isExpanded}
+              aria-label={isExpanded ? 'Hide itinerary filters' : 'Show itinerary filters'}
+              onClick={toggle}
+              title={isExpanded ? 'Collapse filters' : 'Expand filters'}
+              style={{
+                width: 34, minWidth: 34, height: 34, padding: 0, borderRadius: '50%', flexShrink: 0,
+                border: `1px solid ${FP_CONTROL_BORDER}`, background: WF.fill,
+                cursor: 'pointer',
+                display: 'grid', placeItems: 'center',
+                color: '#64748B',
+                transition: 'background 0.12s, border-color 0.12s'
+              }}>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform .18s ease' }}>
+                <path d="M2 4L6 8L10 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          </div>
+        </div>
 
       {/* ══ ACTIVE CHIPS (collapsed only) ═══════════════════════════════════ */}
       {!isExpanded && chips.length > 0 &&
       <div style={{ padding: '0 16px 12px', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {chips.map((chip, i) =>
         <button key={i} onClick={toggle} style={{
-          display: 'inline-flex', alignItems: 'center', gap: 5,
+          display: 'inline-flex', alignItems: 'center', gap: 4,
           padding: '4px 12px', borderRadius: 999,
           background: '#fff', border: `1px solid ${FP_BORDER}`,
           fontSize: 12, fontWeight: 500, color: FP_NAVY, whiteSpace: 'nowrap',
@@ -568,26 +624,17 @@ function SearchFilterPanel({ state, onUpdate }) {
       <div style={{
         overflowY: isExpanded ? 'auto' : 'hidden',
         overflowX: 'hidden',
+        background: WF.panel,
         maxHeight: isExpanded ? '3000px' : '0px',
         opacity: isExpanded ? 1 : 0,
         transition: isExpanded ?
         'max-height 0.25s ease-in-out, opacity 0.18s ease 0.04s' :
         'max-height 0.22s ease-in-out, opacity 0.1s ease'
       }}>
-        <div style={{ height: 1, background: FP_BORDER }} />
-
-        <div style={{
-          display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12,
-          padding: '9px 12px 0',
-        }}>
-          <div style={FP_SECTION_LABEL_STYLE}>
-            Itinerary filters
-          </div>
-          <div style={{ fontSize: 9.5, color: WF.inkSoft }}>Select one or more options</div>
-        </div>
+        <div style={{ height: 1, background: WF.lineSoft }} />
 
         {/* ── Primary row: Departure Dates / Departing From / Destination(s) / Duration ── */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: '10px 12px 10px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: 12 }}>
 
           {/* DEPARTURE DATES */}
           <FPDropdown
@@ -603,7 +650,7 @@ function SearchFilterPanel({ state, onUpdate }) {
                 onClear={() => onUpdate({ selectedMonth: { months: [], year: null } })}
                 onDone={closeDropdown} />
             }>
-            <div style={{ display: 'flex', gap: 6, padding: '6px 14px 8px' }}>
+            <div style={{ display: 'flex', gap: 8, padding: '8px 16px 8px' }}>
               {FP_YEARS.map((y) => {
                 const on = selectedMonth.year === y;
                 return (
@@ -613,7 +660,7 @@ function SearchFilterPanel({ state, onUpdate }) {
                     aria-pressed={on}
                     onClick={() => setMonthField('year', y)}
                     style={{
-                      flex: 1, padding: '7px 0', borderRadius: 6,
+                      flex: 1, padding: '8px 0', borderRadius: 6,
                       border: `1.5px solid ${on ? FP_NAVY : FP_BORDER}`,
                       background: on ? FP_NAVY : '#fff', color: on ? '#fff' : FP_NAVY,
                       fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit'
@@ -687,7 +734,7 @@ function SearchFilterPanel({ state, onUpdate }) {
             ) : (
               MVAS_PORT_GROUPS.map((g) => (
                 <div key={g.group}>
-                  <div style={{ padding: '6px 14px 2px', fontSize: 8.5, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', color: WF.inkLabel }}>{g.group}</div>
+                  <div style={{ padding: '8px 16px 4px', fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: WF.inkLabel }}>{g.group}</div>
                   {g.ports.map((p) => (
                     <FPPortRow
                       key={p.id}
@@ -725,66 +772,11 @@ function SearchFilterPanel({ state, onUpdate }) {
           </FPDropdown>
         </div>
 
-        {/* ── Secondary row: Booking Source / Promo Code ── */}
-        <div style={{ padding: '9px 12px 10px', borderTop: `1px solid ${WF.line}`, background: WF.fill }}>
-          <div style={{
-            display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12,
-            marginBottom: 10,
-          }}>
-            <div style={FP_SECTION_LABEL_STYLE}>
-              Booking details
-            </div>
-            <div style={{ fontSize: 9.5, color: WF.inkSoft }}>Source and promotional pricing</div>
-          </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'flex-end' }}>
-          {window.SourcePill2 && state.source !== undefined && (
-            <div style={{ flex: '1 1 200px', minWidth: 170 }}>
-              <window.SourcePill2
-                source={state.source}
-                onChange={(v) => onUpdate({ source: v })}
-                fullWidth />
-            </div>
-          )}
-
-          <div style={{ flex: '1 1 220px', display: 'flex', gap: 6, minWidth: 200, alignItems: 'flex-end' }}>
-            <div style={{
-              flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 4,
-              color: FP_NAVY,
-            }}>
-              <label htmlFor="booking-promotion-code" style={FP_FIELD_LABEL_STYLE}>
-                Promotion code
-              </label>
-              <div style={{
-                minHeight: 34, display: 'flex', alignItems: 'center',
-                padding: '5px 10px', border: `1px solid ${FP_CONTROL_BORDER}`,
-                borderRadius: 7, background: '#fff',
-              }}>
-                <input
-                  id="booking-promotion-code"
-                  type="text"
-                  placeholder="Enter code"
-                  style={{
-                    width: '100%', padding: 0, fontSize: 12.5, lineHeight: 1.2, fontFamily: 'inherit',
-                    border: 'none', color: FP_NAVY, background: 'transparent', outline: 'none'
-                  }} />
-              </div>
-            </div>
-            <button style={{
-              minHeight: 34, padding: '6px 14px', fontSize: 12, fontWeight: 650, fontFamily: 'inherit',
-              border: `1px solid ${FP_CONTROL_BORDER}`, borderRadius: 7,
-              background: '#fff', color: FP_NAVY, cursor: 'pointer',
-              transition: 'all 0.12s', whiteSpace: 'nowrap'
-            }}
-            onMouseEnter={(e) => {e.currentTarget.style.borderColor = FP_NAVY;e.currentTarget.style.background = FP_NAVY;e.currentTarget.style.color = '#fff';}}
-            onMouseLeave={(e) => {e.currentTarget.style.borderColor = FP_CONTROL_BORDER;e.currentTarget.style.background = '#fff';e.currentTarget.style.color = FP_NAVY;}}>
-              Apply
-            </button>
-          </div>
-        </div>
-        </div>
       </div>
 
+      </section>
       </div>
+      )}
     </>);
 
 }

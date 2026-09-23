@@ -42,13 +42,46 @@ const BOOKING_DEFAULTS = {
   bookingId: 'DRAFT-9087',
   source: 'Phone',
   bookingType: 'Normal',
+  // Reservation scope is intentionally separate from booking type. A group
+  // can still be Normal, Future or Channel Partner; scope decides whether the
+  // agent is creating one booking or a durable large-group workspace.
+  reservationScope: 'individual',
+  surface: 'booking',
   step: 1,
+
+  // Group reservation parent record. These fields stay in the same persisted
+  // snapshot as the child booking so the workspace can hand off to the normal
+  // booking flow without duplicating sailing/contact context.
+  groupId: null,
+  groupName: '',
+  groupStatus: null,
+  groupCreatedAt: null,
+  groupContactName: '',
+  groupContactCustomerId: null,
+  groupContactEmail: '',
+  groupContactPhone: '',
+  groupContactCity: '',
+  groupContactState: '',
+  groupContactCountry: '',
+  groupContactAddress: '',
+  groupContactZip: '',
+  groupContactWalletId: '',
+  groupContactWalletBalance: null,
+  groupRemarks: '',
+  groupCruiseId: '',
+  groupSailingCode: null,
+  groupBookingCount: 0,
+  // Completed child bookings belong to the parent group. Keeping compact
+  // snapshots here lets the workspace list and total every booking while the
+  // active draft is cleared for the next cabin/guest party.
+  groupBookings: [],
 
   // Step 1 — trip context
   isFilterExpanded: true,
   selectedDestinations: [],
   selectedPorts: [],
   selectedHomePorts: [],
+  inventorySearch: '',
   guests: { adults: 0, youngAdults: 0, children: 0, infants: 0 },
   guestAges: { adults: [], youngAdults: [], children: [], infants: [] },
   // Multi-select facet. Keep this an array in every state so toggle updates
@@ -113,6 +146,50 @@ function normalizeBooking(raw) {
   delete b.selectedIntent;
   const validBookingTypes = new Set(['Normal', 'Future', 'Channel Partner Booking']);
   b.bookingType = validBookingTypes.has(r.bookingType) ? r.bookingType : 'Normal';
+  b.reservationScope = r.reservationScope === 'group' ? 'group' : 'individual';
+  b.groupId = typeof r.groupId === 'string' && r.groupId.trim() ? r.groupId.trim() : null;
+  b.surface = b.groupId && (r.surface === 'group-workspace' || r.surface === 'group-setup')
+    ? r.surface : 'booking';
+  b.groupName = typeof r.groupName === 'string' ? r.groupName : '';
+  b.groupStatus = b.groupId ? (r.groupStatus || 'Draft') : null;
+  b.groupCreatedAt = b.groupId ? (r.groupCreatedAt || null) : null;
+  b.groupContactName = typeof r.groupContactName === 'string' ? r.groupContactName : '';
+  b.groupContactCustomerId = typeof r.groupContactCustomerId === 'string' && r.groupContactCustomerId.trim()
+    ? r.groupContactCustomerId.trim() : null;
+  const groupContactProfile = b.groupContactCustomerId && typeof GUEST_DIRECTORY !== 'undefined'
+    ? GUEST_DIRECTORY.find((person) => person.id === b.groupContactCustomerId) : null;
+  b.groupContactEmail = typeof r.groupContactEmail === 'string' ? r.groupContactEmail : '';
+  b.groupContactPhone = typeof r.groupContactPhone === 'string' ? r.groupContactPhone : '';
+  b.groupContactCity = typeof r.groupContactCity === 'string' ? r.groupContactCity : (groupContactProfile?.city || '');
+  b.groupContactState = typeof r.groupContactState === 'string' ? r.groupContactState : (groupContactProfile?.state || '');
+  b.groupContactCountry = typeof r.groupContactCountry === 'string' ? r.groupContactCountry : (groupContactProfile?.country || '');
+  b.groupContactAddress = typeof r.groupContactAddress === 'string' ? r.groupContactAddress : (groupContactProfile?.address || '');
+  b.groupContactZip = typeof r.groupContactZip === 'string' ? r.groupContactZip : (groupContactProfile?.zip || '');
+  b.groupContactWalletId = typeof r.groupContactWalletId === 'string' ? r.groupContactWalletId : (groupContactProfile?.walletId || '');
+  b.groupContactWalletBalance = r.groupContactWalletBalance != null && r.groupContactWalletBalance !== '' && Number.isFinite(Number(r.groupContactWalletBalance))
+    ? Number(r.groupContactWalletBalance)
+    : Number.isFinite(groupContactProfile?.walletBalance) ? groupContactProfile.walletBalance : null;
+  delete b.groupEstimatedCabins;
+  delete b.groupEstimatedGuests;
+  b.groupRemarks = typeof r.groupRemarks === 'string' ? r.groupRemarks : '';
+  b.groupCruiseId = typeof r.groupCruiseId === 'string' ? r.groupCruiseId : '';
+  b.groupSailingCode = b.groupId && typeof r.groupSailingCode === 'string'
+    ? r.groupSailingCode : null;
+  b.groupBookings = Array.isArray(r.groupBookings)
+    ? r.groupBookings
+      .filter((row) => row && typeof row === 'object' && typeof row.bookingId === 'string' && row.bookingId.trim())
+      .map((row) => ({
+        bookingId: row.bookingId.trim(),
+        cabins: Math.max(0, parseInt(row.cabins, 10) || 0),
+        guests: Math.max(0, parseInt(row.guests, 10) || 0),
+        totalBeforeDiscount: Number.isFinite(Number(row.totalBeforeDiscount)) ? Number(row.totalBeforeDiscount) : 0,
+        totalAfterDiscount: Number.isFinite(Number(row.totalAfterDiscount)) ? Number(row.totalAfterDiscount) : 0,
+        pendingAmount: Number.isFinite(Number(row.pendingAmount)) ? Number(row.pendingAmount) : 0,
+        status: typeof row.status === 'string' && row.status.trim() ? row.status.trim() : 'Confirmed',
+      }))
+    : [];
+  b.groupBookingCount = Math.max(b.groupBookings.length, parseInt(r.groupBookingCount, 10) || 0);
+  b.inventorySearch = typeof r.inventorySearch === 'string' ? r.inventorySearch : '';
   b.guestData = r.guestData && typeof r.guestData === 'object' ? r.guestData : {};
   b.primaryGuestConfigured = r.primaryGuestConfigured === true;
   b.primaryGuestCode = typeof r.primaryGuestCode === 'string' && r.primaryGuestCode.trim()

@@ -1,0 +1,317 @@
+/*
+ * MVAS Booking Flow design tokens
+ * Source of truth for the compact, desktop-first operations UI.
+ *
+ * Architecture:
+ *   primitive values -> semantic roles -> component contracts
+ *
+ * Keep product data colors (deck/category palettes) outside this file. They
+ * encode inventory, not interface meaning.
+ */
+
+/* === 1. PRIMITIVES ====================================================== */
+:root {
+  /* Neutral and brand color values */
+  --ds-primitive-color-white: #FFFFFF;
+  --ds-primitive-color-ink-950: #0F172A;
+  --ds-primitive-color-ink-700: #475569;
+  --ds-primitive-color-ink-label: #5B6B80;
+  --ds-primitive-color-ink-muted: #5F6F85;
+  --ds-primitive-color-slate-500: #64748B;
+  --ds-primitive-color-slate-400: #94A3B8;
+  --ds-primitive-color-slate-300: #CBD5E1;
+  --ds-primitive-color-slate-200: #E2E8F0;
+  --ds-primitive-color-slate-100: #EEF2F6;
+  --ds-primitive-color-slate-50: #F8FAFC;
+  --ds-primitive-color-canvas: #F1F5F9;
+  --ds-primitive-color-workspace: #F9FAFC;
+  --ds-primitive-color-control-border: #7C8B9F;
+
+  /* The only general interaction family */
+  --ds-primitive-color-navy-900: #1B2434;
+  --ds-primitive-color-navy-800: #2B3B50;
+  --ds-primitive-color-selection-50: #EFF6FF;
+  --ds-primitive-color-selection-100: #DBEAFE;
+
+  /* Status families */
+  --ds-primitive-color-success-700: #047857;
+  --ds-primitive-color-success-600: #059669;
+  --ds-primitive-color-success-200: #A7F3D0;
+  --ds-primitive-color-success-75: #D1FAE5;
+  --ds-primitive-color-success-100: #BBF7D0;
+  --ds-primitive-color-success-50: #F0FDF4;
+  --ds-primitive-color-warning-900: #78350F;
+  --ds-primitive-color-warning-800: #92400E;
+  --ds-primitive-color-warning-700: #A16207;
+  --ds-primitive-color-warning-300: #FCD34D;
+  --ds-primitive-color-warning-200: #FDE68A;
+  --ds-primitive-color-warning-100: #FEF3C7;
+  --ds-primitive-color-warning-50: #FFFBEB;
+  --ds-primitive-color-danger-700: #B91C1C;
+  --ds-primitive-color-danger-600: #DC2626;
+  --ds-primitive-color-danger-200: #FECACA;
+  --ds-primitive-color-danger-100: #FEE2E2;
+  --ds-primitive-color-danger-50: #FEF2F2;
+  --ds-primitive-color-info-700: #1D4ED8;
+  --ds-primitive-color-info-200: #BFDBFE;
+  --ds-primitive-color-info-100: #DBEAFE;
+  --ds-primitive-color-info-50: #F0F9FF;
+
+  /* Branded application-shell exception; never use as form/action colors */
+  --ds-primitive-color-shell-navy: #1B2436;
+  --ds-primitive-color-shell-red: #C03A2B;
+  --ds-primitive-color-shell-coral: #FF7A6B;
+  --ds-primitive-color-shell-muted: #A8B2BE;
+
+  /* Strict 4px spacing scale. One-off 2px/6px/10px optical steps are not
+     spacing tokens; borders, icon geometry and focus rings are separate. */
+  --ds-primitive-space-0: 0;
+  --ds-primitive-space-1: 4px;
+  --ds-primitive-space-2: 8px;
+  --ds-primitive-space-3: 12px;
+  --ds-primitive-space-4: 16px;
+  --ds-primitive-space-5: 20px;
+  --ds-primitive-space-6: 24px;
+  --ds-primitive-space-7: 28px;
+  --ds-primitive-space-8: 32px;
+  --ds-primitive-space-9: 36px;
+  --ds-primitive-space-10: 40px;
+  --ds-primitive-space-11: 44px;
+  --ds-primitive-space-12: 48px;
+  --ds-primitive-space-14: 56px;
+  --ds-primitive-space-16: 64px;
+
+  /* Type: an even-number scale with a 12px readability floor */
+  --ds-primitive-font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --ds-primitive-font-mono: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+  --ds-primitive-font-size-12: 12px;
+  --ds-primitive-font-size-14: 14px;
+  --ds-primitive-font-size-16: 16px;
+  --ds-primitive-font-size-20: 20px;
+  --ds-primitive-font-size-24: 24px;
+  --ds-primitive-font-size-32: 32px;
+  --ds-primitive-font-size-40: 40px;
+  --ds-primitive-font-weight-regular: 400;
+  --ds-primitive-font-weight-medium: 500;
+  --ds-primitive-font-weight-semibold: 600;
+  --ds-primitive-font-weight-bold: 700;
+  --ds-primitive-line-height-16: 16px;
+  --ds-primitive-line-height-20: 20px;
+  --ds-primitive-line-height-24: 24px;
+  --ds-primitive-line-height-28: 28px;
+  --ds-primitive-line-height-32: 32px;
+  --ds-primitive-line-height-40: 40px;
+  --ds-primitive-line-height-48: 48px;
+  --ds-primitive-tracking-tight: -0.01em;
+  --ds-primitive-tracking-normal: 0;
+  --ds-primitive-tracking-label: 0.04em;
+
+  /* Shape, elevation, timing and layers */
+  --ds-primitive-radius-sm: 4px;
+  --ds-primitive-radius-control: 6px;
+  --ds-primitive-radius-md: 8px;
+  --ds-primitive-radius-lg: 10px;
+  --ds-primitive-radius-dialog: 14px;
+  --ds-primitive-radius-pill: 999px;
+  --ds-primitive-shadow-none: none;
+  --ds-primitive-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.08);
+  --ds-primitive-shadow-panel: 0 2px 8px rgba(15, 23, 42, 0.06);
+  --ds-primitive-shadow-float: 0 8px 24px rgba(15, 23, 42, 0.14);
+  --ds-primitive-shadow-dialog: 0 24px 64px rgba(15, 23, 42, 0.28);
+  --ds-primitive-duration-fast: 120ms;
+  --ds-primitive-duration-base: 150ms;
+  --ds-primitive-duration-slow: 200ms;
+  --ds-primitive-ease-standard: ease-in-out;
+  --ds-primitive-ease-enter: ease-out;
+  --ds-primitive-ease-exit: ease-in;
+  --ds-primitive-layer-base: 0;
+  --ds-primitive-layer-sticky: 10;
+  --ds-primitive-layer-popover: 40;
+  --ds-primitive-layer-popover-content: 41;
+  --ds-primitive-layer-tooltip: 60;
+  --ds-primitive-layer-modal: 500;
+  --ds-primitive-layer-modal-nested: 520;
+}
+
+/* === 2. SEMANTIC ROLES ================================================ */
+:root {
+  /* Surfaces and text */
+  --ds-color-canvas: var(--ds-primitive-color-canvas);
+  --ds-color-workspace: var(--ds-primitive-color-workspace);
+  --ds-color-surface: var(--ds-primitive-color-white);
+  --ds-color-surface-subtle: var(--ds-primitive-color-slate-50);
+  --ds-color-surface-strong: var(--ds-primitive-color-slate-200);
+  --ds-color-text-primary: var(--ds-primitive-color-ink-950);
+  --ds-color-text-secondary: var(--ds-primitive-color-ink-700);
+  --ds-color-text-label: var(--ds-primitive-color-ink-label);
+  --ds-color-text-muted: var(--ds-primitive-color-ink-muted);
+  --ds-color-border: var(--ds-primitive-color-slate-200);
+  --ds-color-divider: var(--ds-primitive-color-slate-100);
+  --ds-color-border-strong: var(--ds-primitive-color-slate-300);
+  --ds-color-control-border: var(--ds-primitive-color-control-border);
+
+  /* Interaction */
+  --ds-color-action: var(--ds-primitive-color-navy-900);
+  --ds-color-action-hover: var(--ds-primitive-color-navy-800);
+  --ds-color-on-action: var(--ds-primitive-color-white);
+  --ds-color-selection: var(--ds-primitive-color-selection-50);
+  --ds-color-selection-border: var(--ds-primitive-color-selection-100);
+  --ds-color-focus: var(--ds-primitive-color-navy-900);
+
+  /* Status */
+  --ds-color-success-text: var(--ds-primitive-color-success-700);
+  --ds-color-success-bg: var(--ds-primitive-color-success-50);
+  --ds-color-success-border: var(--ds-primitive-color-success-100);
+  --ds-color-warning-text: var(--ds-primitive-color-warning-800);
+  --ds-color-warning-strong: var(--ds-primitive-color-warning-900);
+  --ds-color-warning-bg: var(--ds-primitive-color-warning-100);
+  --ds-color-warning-border: var(--ds-primitive-color-warning-200);
+  --ds-color-callout-border: var(--ds-primitive-color-warning-300);
+  --ds-color-danger-text: var(--ds-primitive-color-danger-700);
+  --ds-color-danger-bg: var(--ds-primitive-color-danger-50);
+  --ds-color-danger-border: var(--ds-primitive-color-danger-200);
+  --ds-color-info-text: var(--ds-primitive-color-info-700);
+  --ds-color-info-bg: var(--ds-primitive-color-info-50);
+  --ds-color-info-border: var(--ds-primitive-color-info-200);
+
+  /* Branded shell scope */
+  --ds-color-shell-bg: var(--ds-primitive-color-shell-navy);
+  --ds-color-shell-text-muted: var(--ds-primitive-color-shell-muted);
+  --ds-color-shell-nav-active: var(--ds-primitive-color-shell-red);
+  --ds-color-shell-nav-current: var(--ds-primitive-color-shell-coral);
+
+  /* Typography roles */
+  --ds-type-family-body: var(--ds-primitive-font-sans);
+  --ds-type-family-data: var(--ds-primitive-font-mono);
+  --ds-type-caption-size: var(--ds-primitive-font-size-12);
+  --ds-type-caption-line-height: var(--ds-primitive-line-height-16);
+  --ds-type-label-size: var(--ds-primitive-font-size-12);
+  --ds-type-label-line-height: var(--ds-primitive-line-height-16);
+  --ds-type-body-sm-size: var(--ds-primitive-font-size-12);
+  --ds-type-body-sm-line-height: var(--ds-primitive-line-height-16);
+  --ds-type-body-size: var(--ds-primitive-font-size-14);
+  --ds-type-body-line-height: var(--ds-primitive-line-height-20);
+  --ds-type-body-lg-size: var(--ds-primitive-font-size-16);
+  --ds-type-body-lg-line-height: var(--ds-primitive-line-height-24);
+  --ds-type-section-title-size: var(--ds-primitive-font-size-16);
+  --ds-type-section-title-line-height: var(--ds-primitive-line-height-24);
+  --ds-type-dialog-title-size: var(--ds-primitive-font-size-20);
+  --ds-type-dialog-title-line-height: var(--ds-primitive-line-height-28);
+  --ds-type-page-title-size: var(--ds-primitive-font-size-24);
+  --ds-type-page-title-line-height: var(--ds-primitive-line-height-32);
+  --ds-type-display-size: var(--ds-primitive-font-size-32);
+  --ds-type-display-line-height: var(--ds-primitive-line-height-40);
+  --ds-type-hero-size: var(--ds-primitive-font-size-40);
+  --ds-type-hero-line-height: var(--ds-primitive-line-height-48);
+  --ds-type-tracking-tight: var(--ds-primitive-tracking-tight);
+  --ds-type-tracking-label: var(--ds-primitive-tracking-label);
+  --ds-type-value-weight: var(--ds-primitive-font-weight-semibold);
+  --ds-type-label-weight: var(--ds-primitive-font-weight-semibold);
+  --ds-type-title-weight: var(--ds-primitive-font-weight-bold);
+
+  /* Layout roles */
+  --ds-space-control-x: var(--ds-primitive-space-3);
+  --ds-space-control-y: var(--ds-primitive-space-2);
+  --ds-space-card: var(--ds-primitive-space-4);
+  --ds-space-section: var(--ds-primitive-space-6);
+  --ds-space-page-x: var(--ds-primitive-space-7);
+  --ds-space-page-y: var(--ds-primitive-space-5);
+  --ds-radius-control: var(--ds-primitive-radius-control);
+  --ds-radius-card: var(--ds-primitive-radius-md);
+  --ds-radius-panel: var(--ds-primitive-radius-lg);
+  --ds-radius-dialog: var(--ds-primitive-radius-dialog);
+  --ds-radius-pill: var(--ds-primitive-radius-pill);
+  --ds-elevation-surface: var(--ds-primitive-shadow-sm);
+  --ds-elevation-panel: var(--ds-primitive-shadow-panel);
+  --ds-elevation-floating: var(--ds-primitive-shadow-float);
+  --ds-elevation-dialog: var(--ds-primitive-shadow-dialog);
+  --ds-motion-fast: var(--ds-primitive-duration-fast);
+  --ds-motion-base: var(--ds-primitive-duration-base);
+  --ds-motion-slow: var(--ds-primitive-duration-slow);
+  --ds-motion-ease-standard: var(--ds-primitive-ease-standard);
+  --ds-layer-sticky: var(--ds-primitive-layer-sticky);
+  --ds-layer-popover: var(--ds-primitive-layer-popover);
+  --ds-layer-tooltip: var(--ds-primitive-layer-tooltip);
+  --ds-layer-modal: var(--ds-primitive-layer-modal);
+  --ds-layer-modal-nested: var(--ds-primitive-layer-modal-nested);
+  --ds-focus-width: 2px;
+  --ds-focus-offset: 2px;
+}
+
+/* === 3. COMPONENT CONTRACTS =========================================== */
+:root {
+  /* Button */
+  --ds-button-primary-bg: var(--ds-color-action);
+  --ds-button-primary-bg-hover: var(--ds-color-action-hover);
+  --ds-button-primary-text: var(--ds-color-on-action);
+  --ds-button-secondary-bg: var(--ds-color-surface);
+  --ds-button-secondary-text: var(--ds-color-text-primary);
+  --ds-button-secondary-border: var(--ds-color-border);
+  --ds-button-danger-text: var(--ds-color-danger-text);
+  --ds-button-radius: var(--ds-radius-control);
+  --ds-button-height-compact: 32px;
+  --ds-button-height-default: 40px;
+  --ds-button-hit-target: 44px;
+  --ds-button-shadow: var(--ds-elevation-surface);
+
+  /* Field */
+  --ds-field-bg: var(--ds-color-surface);
+  --ds-field-text: var(--ds-color-text-primary);
+  --ds-field-placeholder: var(--ds-color-text-muted);
+  --ds-field-border: var(--ds-color-control-border);
+  --ds-field-focus: var(--ds-color-focus);
+  --ds-field-error: var(--ds-color-danger-text);
+  --ds-field-radius: var(--ds-radius-control);
+  --ds-field-height-compact: 32px;
+  --ds-field-height-default: 40px;
+
+  /* Surface */
+  --ds-card-bg: var(--ds-color-surface);
+  --ds-card-text: var(--ds-color-text-primary);
+  --ds-card-border: var(--ds-color-border);
+  --ds-card-radius: var(--ds-radius-card);
+  --ds-card-shadow: var(--ds-elevation-surface);
+  --ds-panel-radius: var(--ds-radius-panel);
+  --ds-panel-shadow: var(--ds-elevation-panel);
+
+  /* Badge */
+  --ds-badge-neutral-bg: var(--ds-color-surface-subtle);
+  --ds-badge-neutral-text: var(--ds-color-text-secondary);
+  --ds-badge-accent-bg: var(--ds-color-selection);
+  --ds-badge-accent-text: var(--ds-color-action);
+  --ds-badge-info-bg: var(--ds-primitive-color-selection-50);
+  --ds-badge-info-text: var(--ds-color-info-text);
+  --ds-badge-info-border: var(--ds-color-info-border);
+  --ds-badge-success-bg: var(--ds-primitive-color-success-75);
+  --ds-badge-success-text: var(--ds-color-success-text);
+  --ds-badge-success-border: var(--ds-primitive-color-success-200);
+  --ds-badge-warning-bg: var(--ds-color-warning-bg);
+  --ds-badge-warning-text: var(--ds-color-warning-text);
+  --ds-badge-warning-border: var(--ds-color-warning-border);
+  --ds-badge-danger-bg: var(--ds-primitive-color-danger-100);
+  --ds-badge-danger-text: var(--ds-color-danger-text);
+  --ds-badge-danger-border: var(--ds-color-danger-border);
+  --ds-badge-radius: var(--ds-radius-pill);
+
+  /* Dialog */
+  --ds-dialog-bg: var(--ds-color-surface);
+  --ds-dialog-border: var(--ds-color-border);
+  --ds-dialog-radius: var(--ds-radius-dialog);
+  --ds-dialog-shadow: var(--ds-elevation-dialog);
+  --ds-dialog-scrim: rgba(15, 23, 42, 0.55);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --ds-motion-fast: 1ms;
+    --ds-motion-base: 1ms;
+    --ds-motion-slow: 1ms;
+  }
+
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+}

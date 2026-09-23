@@ -4,6 +4,11 @@ A high-fidelity React prototype for the Margaritaville at Sea booking workflow. 
 
 ## Current experience
 
+At entry, agents choose whether they are creating an individual booking or a
+group reservation. Group reservations collect the parent context first, open a
+persistent group workspace, and then hand off into the same sailing, cabin,
+guest, and confirmation flow with the group and sailing already attached.
+
 1. **Sailing, fare & cabin**
    - Search and filter sailing inventory.
    - Select a sailing, farecode, guest count, staterooms, and supplements.
@@ -51,6 +56,7 @@ Internet access is required for Inter, React 18.3.1, ReactDOM 18.3.1, and Babel 
 | `Unified Booking Flow Final.html` | Application entry point, global accessibility styles, review-and-confirm screen, and router |
 | `wireframe-primitives.jsx` | MVAS tokens, application shell, shared controls, and full-width bottom bar |
 | `screens/booking-store.jsx` | Persistent booking state, normalization, migration, and shared pricing calculations |
+| `screens/group-booking.jsx` | Reservation-scope choice, Group setup, persistent workspace, and group-to-booking handoff |
 | `screens/step2-sailing.jsx` | Sailing search, selected-sailing view, fare and cabin workflow |
 | `screens/step2-sailing-detail.jsx` | Expanded sailing details and itinerary UI |
 | `screens/step2-stateroom-matrix.jsx` | Stateroom category matrix and deck-based room assignment modal |
@@ -79,6 +85,14 @@ Integration details and data contracts are documented in:
 The prototype follows the MVAS operations UI language: navy interactions, white working surfaces, cool-grey structure, restrained status colors, compact typography, and hairline borders.
 
 Current accessibility work includes visible keyboard focus, stronger editable-control boundaries, readable compact text, modal focus handling, accessible control names, and discoverable scrolling within the stateroom assignment flow.
+
+Product whitespace follows a strict 4px scale for margins, padding, and gaps. Typography uses 12, 14, 16, 20, 24, 32, and 40px with paired 4px-grid line heights and only the loaded 400, 500, 600, and 700 Inter weights. Borders, radii, icon geometry, and component dimensions remain separate scales.
+
+Run the design-foundation guard before handoff:
+
+```sh
+node design-system/validate-foundation.mjs
+```
 
 ## Prototype scope
 

@@ -83,23 +83,25 @@ const styles = {
     background: TOKENS.panel,
     color: TOKENS.ink,
     fontFamily: 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    fontSize: 14,
+    lineHeight: "20px",
   },
   header: {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 12,
-    padding: "10px 12px",
+    padding: "12px 12px",
     background: TOKENS.fill,
     borderBottom: `1px solid ${TOKENS.line}`,
   },
   stat: {
-    padding: "4px 7px",
+    padding: "4px 8px",
     borderRadius: 6,
     border: `1px solid ${TOKENS.line}`,
     background: TOKENS.panel,
     color: TOKENS.inkSoft,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 700,
     whiteSpace: "nowrap",
   },
@@ -161,8 +163,8 @@ function QuantityStepper({ productName, guestName, value, disabled, onChange }) 
           width: 22,
           textAlign: "center",
           color: TOKENS.ink,
-          fontSize: 13,
-          fontWeight: 750,
+          fontSize: 14,
+          fontWeight: 700,
           fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
         }}
       >
@@ -299,7 +301,7 @@ function AssignmentDialog({ product, cabins, assignment, currency, onChange, onC
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 10,
+            gap: 12,
             padding: "12px 16px",
             flexShrink: 0,
             background: TOKENS.fill,
@@ -318,7 +320,7 @@ function AssignmentDialog({ product, cabins, assignment, currency, onChange, onC
               border: `1px solid ${TOKENS.line}`,
               borderRadius: 8,
               background: TOKENS.panel,
-              fontSize: 19,
+              fontSize: 20,
             }}
           >
             {product.emoji}
@@ -327,54 +329,54 @@ function AssignmentDialog({ product, cabins, assignment, currency, onChange, onC
             <div
               style={{
                 color: TOKENS.inkLabel,
-                fontSize: 11,
-                fontWeight: 800,
-                letterSpacing: 0.55,
+                fontSize: 12,
+                fontWeight: 700,
+                letterSpacing: '0.04em',
                 textTransform: "uppercase",
               }}
             >
               {product.category}
             </div>
-            <div style={{ marginTop: 2, display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
-              <h2 id={titleId} style={{ margin: 0, color: TOKENS.ink, fontSize: 15, fontWeight: 750 }}>
+            <div style={{ marginTop: 4, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <h2 id={titleId} style={{ margin: 0, color: TOKENS.ink, fontSize: 16, fontWeight: 700 }}>
                 {product.name}
               </h2>
               {product.minAge != null && (
                 <span
                   style={{
-                    padding: "2px 5px",
+                    padding: "4px 4px",
                     borderRadius: 4,
                     background: TOKENS.warningBg,
                     color: TOKENS.warning,
-                    fontSize: 11,
-                    fontWeight: 800,
+                    fontSize: 12,
+                    fontWeight: 700,
                   }}
                 >
                   {product.minAge}+
                 </span>
               )}
             </div>
-            <p id={descriptionId} style={{ margin: "3px 0 0", color: TOKENS.inkSoft, fontSize: 11 }}>
+            <p id={descriptionId} style={{ margin: "4px 0 0", color: TOKENS.inkSoft, fontSize: 12 }}>
               Assign quantities by cabin and eligible guest.
             </p>
           </div>
           <div style={{ textAlign: "right", flexShrink: 0 }}>
-            <div style={{ color: TOKENS.inkLabel, fontSize: 11, fontWeight: 800, textTransform: "uppercase" }}>
+            <div style={{ color: TOKENS.inkLabel, fontSize: 12, fontWeight: 700, textTransform: "uppercase" }}>
               Per guest
             </div>
             <div
               style={{
-                marginTop: 2,
+                marginTop: 4,
                 color: TOKENS.ink,
-                fontSize: 13,
-                fontWeight: 800,
+                fontSize: 14,
+                fontWeight: 700,
                 fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
               }}
             >
               {formatMoney(product.pricePerGuest, currency)}
             </div>
             {assignedUnits > 0 && (
-              <div style={{ marginTop: 2, color: TOKENS.positive, fontSize: 11, fontWeight: 700 }}>
+              <div style={{ marginTop: 4, color: TOKENS.positive, fontSize: 12, fontWeight: 700 }}>
                 {assignedGuests} guest{assignedGuests === 1 ? "" : "s"} · +
                 {formatMoney(product.pricePerGuest * assignedUnits, currency)}
               </div>
@@ -398,7 +400,7 @@ function AssignmentDialog({ product, cabins, assignment, currency, onChange, onC
               color: TOKENS.inkSoft,
               cursor: "pointer",
               font: "inherit",
-              fontSize: 17,
+              fontSize: 16,
             }}
           >
             ×
@@ -434,11 +436,11 @@ function AssignmentDialog({ product, cabins, assignment, currency, onChange, onC
                   >
                     <span
                       id={`supplement-cabin-${cabin.id}`}
-                      style={{ color: TOKENS.inkLabel, fontSize: 11, fontWeight: 750, textTransform: "uppercase" }}
+                      style={{ color: TOKENS.inkLabel, fontSize: 12, fontWeight: 700, textTransform: "uppercase" }}
                     >
                       {cabin.label || `Cabin ${cabinIndex + 1}`}
                     </span>
-                    <span style={{ color: TOKENS.inkSoft, fontSize: 11 }}>
+                    <span style={{ color: TOKENS.inkSoft, fontSize: 12 }}>
                       {cabin.guests.length} guest{cabin.guests.length === 1 ? "" : "s"}
                     </span>
                   </div>
@@ -454,27 +456,27 @@ function AssignmentDialog({ product, cabins, assignment, currency, onChange, onC
                           alignItems: "center",
                           justifyContent: "space-between",
                           gap: 12,
-                          padding: "10px 12px",
+                          padding: "12px 12px",
                           borderBottom:
                             guestIndex < cabin.guests.length - 1 ? `1px solid ${TOKENS.lineSoft}` : "none",
                         }}
                       >
                         <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, flexWrap: "wrap" }}>
-                          <span style={{ color: TOKENS.ink, fontSize: 13, fontWeight: 700 }}>{guest.name}</span>
+                          <span style={{ color: TOKENS.ink, fontSize: 14, fontWeight: 700 }}>{guest.name}</span>
                           <span
                             style={{
-                              padding: "2px 7px",
+                              padding: "4px 8px",
                               borderRadius: 4,
                               background: TOKENS.bg,
                               color: TOKENS.inkSoft,
-                              fontSize: 11,
+                              fontSize: 12,
                               fontWeight: 600,
                             }}
                           >
                             Age {ageLabel(guest)}
                           </span>
                           {!eligible && (
-                            <span style={{ color: product.minAge ? TOKENS.warning : TOKENS.inkFaint, fontSize: 11, fontWeight: 700 }}>
+                            <span style={{ color: product.minAge ? TOKENS.warning : TOKENS.inkFaint, fontSize: 12, fontWeight: 700 }}>
                               {product.minAge ? `${product.minAge}+ only` : "Not eligible"}
                             </span>
                           )}
@@ -496,7 +498,7 @@ function AssignmentDialog({ product, cabins, assignment, currency, onChange, onC
                       alignItems: "center",
                       justifyContent: "space-between",
                       gap: 8,
-                      padding: "8px 10px",
+                      padding: "8px 12px",
                       background: TOKENS.fill,
                       borderTop: `1px solid ${TOKENS.lineSoft}`,
                     }}
@@ -507,14 +509,14 @@ function AssignmentDialog({ product, cabins, assignment, currency, onChange, onC
                       onClick={() => clearCabin(cabin)}
                       aria-label={`Remove ${product.name} from all guests in ${cabin.label}`}
                       style={{
-                        padding: "6px 9px",
+                        padding: "8px 8px",
                         borderRadius: 5,
                         border: `1px solid ${cabinQuantity > 0 ? "#FCA5A5" : TOKENS.line}`,
                         background: cabinQuantity > 0 ? TOKENS.dangerBg : TOKENS.panel,
                         color: cabinQuantity > 0 ? TOKENS.danger : TOKENS.inkFaint,
                         cursor: cabinQuantity > 0 ? "pointer" : "default",
                         font: "inherit",
-                        fontSize: 11,
+                        fontSize: 12,
                         fontWeight: 700,
                       }}
                     >
@@ -526,7 +528,7 @@ function AssignmentDialog({ product, cabins, assignment, currency, onChange, onC
                       onClick={() => assignCabin(cabin)}
                       aria-label={`Assign ${product.name} to all eligible guests in ${cabin.label}`}
                       style={{
-                        padding: "6px 9px",
+                        padding: "8px 8px",
                         borderRadius: 5,
                         border: `1px solid ${
                           allEligibleAssigned || eligibleGuests.length === 0 ? TOKENS.line : TOKENS.accentLine
@@ -537,7 +539,7 @@ function AssignmentDialog({ product, cabins, assignment, currency, onChange, onC
                           allEligibleAssigned || eligibleGuests.length === 0 ? TOKENS.inkFaint : TOKENS.accent,
                         cursor: allEligibleAssigned || eligibleGuests.length === 0 ? "default" : "pointer",
                         font: "inherit",
-                        fontSize: 11,
+                        fontSize: 12,
                         fontWeight: 700,
                       }}
                     >
@@ -554,7 +556,7 @@ function AssignmentDialog({ product, cabins, assignment, currency, onChange, onC
               type="button"
               onClick={onClose}
               style={{
-                padding: "9px 20px",
+                padding: "8px 20px",
                 border: "none",
                 borderRadius: 6,
                 background: TOKENS.accent,
@@ -649,6 +651,14 @@ export function SupplementCatalog({
         .mvas-supplement-catalog *,
         .mvas-supplement-catalog *::before,
         .mvas-supplement-catalog *::after { box-sizing: border-box; }
+        .mvas-supplement-catalog button,
+        .mvas-supplement-catalog input,
+        .mvas-supplement-catalog textarea,
+        .mvas-supplement-catalog select,
+        .mvas-supplement-backdrop button,
+        .mvas-supplement-backdrop input,
+        .mvas-supplement-backdrop textarea,
+        .mvas-supplement-backdrop select { font: inherit; }
         .mvas-supplement-catalog button:focus-visible,
         .mvas-supplement-catalog input:focus-visible,
         .mvas-supplement-backdrop button:focus-visible {
@@ -667,12 +677,12 @@ export function SupplementCatalog({
           display: grid;
           grid-template-columns: minmax(0, 1fr) minmax(130px, .42fr) 96px 72px;
           align-items: center;
-          gap: 10px;
+          gap: 12px;
         }
         .mvas-supplement-cabin-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-          gap: 10px;
+          gap: 12px;
           align-items: start;
         }
         .mvas-supplement-dialog-scroll {
@@ -690,7 +700,7 @@ export function SupplementCatalog({
           .mvas-supplement-list-header { display: none; }
           .mvas-supplement-list-row {
             grid-template-columns: minmax(0, 1fr) auto;
-            row-gap: 6px;
+            row-gap: 8px;
           }
           .mvas-supplement-product-cell { grid-column: 1; grid-row: 1; }
           .mvas-supplement-assignment-cell { grid-column: 1; grid-row: 2; }
@@ -704,40 +714,37 @@ export function SupplementCatalog({
           <div
             style={{
               color: TOKENS.inkLabel,
-              fontSize: 11,
-              fontWeight: 800,
-              letterSpacing: 0.55,
+              fontSize: 12,
+              fontWeight: 700,
+              letterSpacing: '0.04em',
               textTransform: "uppercase",
             }}
           >
             {title}
           </div>
-          <div style={{ marginTop: 3, color: TOKENS.inkSoft, fontSize: 11 }}>{description}</div>
+          <div style={{ marginTop: 4, color: TOKENS.inkSoft, fontSize: 12 }}>{description}</div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6, flexWrap: "wrap" }}>
-          <span style={styles.stat}>{filteredProducts.length} shown</span>
-          {selectedProductCount > 0 && (
-            <span
-              role="status"
-              style={{
-                ...styles.stat,
-                borderColor: TOKENS.accentLine,
-                background: TOKENS.accentTint,
-                color: TOKENS.accent,
-              }}
-            >
-              {selectedProductCount} products · {totalAssignedUnits} assignments
-            </span>
-          )}
-        </div>
+        {selectedProductCount > 0 && (
+          <span
+            role="status"
+            style={{
+              ...styles.stat,
+              borderColor: TOKENS.accentLine,
+              background: TOKENS.accentTint,
+              color: TOKENS.accent,
+            }}
+          >
+            {selectedProductCount} products · {totalAssignedUnits} assignments
+          </span>
+        )}
       </header>
 
       {!hasGuests && (
         <div
           role="status"
           style={{
-            margin: "10px 12px 0",
-            padding: "10px 12px",
+            margin: "12px 12px 0",
+            padding: "12px 12px",
             border: "1px solid #FDE68A",
             borderRadius: 8,
             background: "#FFFBEB",
@@ -750,8 +757,8 @@ export function SupplementCatalog({
         </div>
       )}
 
-      <div style={{ padding: "10px 12px 9px" }}>
-        <label style={{ position: "relative", display: "block", marginBottom: 9 }}>
+      <div style={{ padding: "12px 12px 8px" }}>
+        <label style={{ position: "relative", display: "block", marginBottom: 8 }}>
           <span style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}>
             Search supplements
           </span>
@@ -763,7 +770,7 @@ export function SupplementCatalog({
             aria-hidden="true"
             style={{
               position: "absolute",
-              left: 10,
+              left: 12,
               top: "50%",
               transform: "translateY(-50%)",
               color: TOKENS.inkSoft,
@@ -780,18 +787,18 @@ export function SupplementCatalog({
             onChange={(event) => setSearchTerm(event.target.value)}
             style={{
               width: "100%",
-              padding: "9px 12px 9px 36px",
+              padding: "8px 12px 8px 36px",
               border: `1px solid ${TOKENS.controlLine}`,
               borderRadius: 8,
               background: TOKENS.panel,
               color: TOKENS.ink,
               font: "inherit",
-              fontSize: 12.5,
+              fontSize: 14,
             }}
           />
         </label>
 
-        <div role="group" aria-label="Supplement category filters" style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+        <div role="group" aria-label="Supplement category filters" style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
           {categories.map((categoryName) => {
             const selected = categoryName === category;
             return (
@@ -801,14 +808,14 @@ export function SupplementCatalog({
                 aria-pressed={selected}
                 onClick={() => setCategory(categoryName)}
                 style={{
-                  padding: "5px 10px",
+                  padding: "4px 12px",
                   border: `1px solid ${selected ? TOKENS.accent : TOKENS.line}`,
                   borderRadius: 999,
                   background: selected ? TOKENS.accent : TOKENS.panel,
                   color: selected ? TOKENS.panel : TOKENS.ink,
                   cursor: "pointer",
                   font: "inherit",
-                  fontSize: 11,
+                  fontSize: 12,
                   fontWeight: selected ? 700 : 500,
                 }}
               >
@@ -826,11 +833,11 @@ export function SupplementCatalog({
               className="mvas-supplement-list-header"
               aria-hidden="true"
               style={{
-                padding: "6px 10px",
+                padding: "8px 12px",
                 borderBottom: `1px solid ${TOKENS.line}`,
                 background: TOKENS.fill,
                 color: TOKENS.inkSoft,
-                fontSize: 11,
+                fontSize: 12,
                 fontWeight: 600,
               }}
             >
@@ -866,7 +873,7 @@ export function SupplementCatalog({
                     onClick={() => openProduct(product.id)}
                     style={{
                       width: "100%",
-                      padding: "8px 10px",
+                      padding: "8px 12px",
                       border: "none",
                       background: "transparent",
                       color: TOKENS.ink,
@@ -876,7 +883,7 @@ export function SupplementCatalog({
                       textAlign: "left",
                     }}
                   >
-                    <span className="mvas-supplement-product-cell" style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1 }}>
+                    <span className="mvas-supplement-product-cell" style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: 1 }}>
                       <span
                         aria-hidden="true"
                         style={{
@@ -895,42 +902,42 @@ export function SupplementCatalog({
                         {product.emoji}
                       </span>
                       <span style={{ minWidth: 0, flex: 1 }}>
-                        <span style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                          <span style={{ color: TOKENS.ink, fontSize: 12.5, fontWeight: 700 }}>{product.name}</span>
+                        <span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                          <span style={{ color: TOKENS.ink, fontSize: 14, fontWeight: 700 }}>{product.name}</span>
                           {product.minAge != null && (
                             <span
                               style={{
-                                padding: "2px 5px",
+                                padding: "4px 4px",
                                 borderRadius: 4,
                                 background: TOKENS.warningBg,
                                 color: TOKENS.warning,
-                                fontSize: 11,
-                                fontWeight: 800,
+                                fontSize: 12,
+                                fontWeight: 700,
                               }}
                             >
                               {product.minAge}+
                             </span>
                           )}
                         </span>
-                        <span style={{ display: "block", marginTop: 3, color: TOKENS.inkSoft, fontSize: 11, fontWeight: 500 }}>
+                        <span style={{ display: "block", marginTop: 4, color: TOKENS.inkSoft, fontSize: 12, fontWeight: 500 }}>
                           {product.category}
                         </span>
                       </span>
                     </span>
 
-                    <span className="mvas-supplement-assignment-cell" style={{ minWidth: 0, fontSize: 11 }}>
+                    <span className="mvas-supplement-assignment-cell" style={{ minWidth: 0, fontSize: 12 }}>
                       {selected ? (
                         <span
                           style={{
                             display: "inline-flex",
                             alignItems: "center",
                             gap: 4,
-                            padding: "3px 7px",
+                            padding: "4px 8px",
                             border: `1px solid ${TOKENS.positiveLine}`,
                             borderRadius: 999,
                             background: TOKENS.positiveBg,
                             color: TOKENS.positive,
-                            fontSize: 11,
+                            fontSize: 12,
                             fontWeight: 700,
                             whiteSpace: "nowrap",
                           }}
@@ -948,8 +955,8 @@ export function SupplementCatalog({
                           style={{
                             display: "block",
                             color: TOKENS.inkLabel,
-                            fontSize: 11,
-                            fontWeight: 800,
+                            fontSize: 12,
+                            fontWeight: 700,
                             textTransform: "uppercase",
                           }}
                         >
@@ -958,10 +965,10 @@ export function SupplementCatalog({
                         <span
                           style={{
                             display: "block",
-                            marginTop: 2,
+                            marginTop: 4,
                             color: TOKENS.ink,
-                            fontSize: 12.5,
-                            fontWeight: 800,
+                            fontSize: 14,
+                            fontWeight: 700,
                             fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
                           }}
                         >
@@ -976,17 +983,17 @@ export function SupplementCatalog({
                         style={{
                           width: 72,
                           height: 30,
-                          padding: "0 8px 0 10px",
+                          padding: "0 8px 0 12px",
                           display: "inline-flex",
                           alignItems: "center",
                           justifyContent: "space-between",
-                          gap: 6,
+                          gap: 8,
                           border: `1px solid ${selected ? TOKENS.accentLine : TOKENS.line}`,
                           borderRadius: 6,
                           background: selected ? TOKENS.accentTint : TOKENS.panel,
                           color: TOKENS.accent,
-                          fontSize: 11,
-                          fontWeight: 800,
+                          fontSize: 12,
+                          fontWeight: 700,
                         }}
                       >
                         {selected ? "Edit" : "Assign"}
@@ -1019,10 +1026,10 @@ export function SupplementCatalog({
       {selectedProductCount === 0 && (
         <div
           style={{
-            padding: "10px 12px",
+            padding: "12px 12px",
             borderTop: `1px solid ${TOKENS.lineSoft}`,
             color: TOKENS.inkFaint,
-            fontSize: 11,
+            fontSize: 12,
             textAlign: "center",
           }}
         >

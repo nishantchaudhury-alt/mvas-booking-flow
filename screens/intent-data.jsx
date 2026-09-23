@@ -324,6 +324,31 @@ SAILINGS.forEach((sail, i) => {
   sail.ports = mvasBuildStops(t, home.name);
 });
 
+// Group creation asks for a cruise product first, then a departure date. A
+// product is the itinerary shape (region + duration + ports); its available
+// sailing dates are the concrete SAILINGS assigned to that template above.
+const GROUP_CRUISES = MVAS_ITINERARIES.map((itinerary, index) => {
+  const portSummary = itinerary.ports.map(mvasPortShort).join(' · ');
+  return {
+    id: `group-cruise-${index + 1}`,
+    name: `${itinerary.nights}-Night ${itinerary.region}`,
+    label: `${itinerary.nights}-Night ${itinerary.region} — ${portSummary}`,
+    region: itinerary.region,
+    nights: itinerary.nights,
+    portSummary,
+    sailingCodes: SAILINGS
+      .filter((sail, sailingIndex) => sailingIndex % MVAS_ITINERARIES.length === index)
+      .map((sail) => sail.code),
+  };
+});
+
+const getGroupCruise = (id) => GROUP_CRUISES.find((cruise) => cruise.id === id) || null;
+const getGroupCruiseForSailing = (code) => GROUP_CRUISES.find((cruise) => cruise.sailingCodes.includes(code)) || null;
+const getGroupCruiseSailings = (id) => {
+  const cruise = getGroupCruise(id);
+  return cruise ? cruise.sailingCodes.map(getSailing).filter(Boolean) : [];
+};
+
 // ── Intents — bundle of supplements + per-night gratuity rates ──
 // basis: 'per_guest' (× applicable guest count) | 'per_booking' (once)
 // appliesTo: 'all' | 'children'  (for per_guest items)
@@ -484,6 +509,17 @@ function leadFare(sailing, guests) {
 // (Step 2 once read `selectedDuration` — a multi-select array — as a scalar).
 function filterSailings(state) {
   return SAILINGS.filter((sail) => {
+    const inventorySearch = typeof state.inventorySearch === 'string'
+      ? state.inventorySearch.trim().toLowerCase() : '';
+    if (inventorySearch) {
+      const searchable = [
+        sail.region,
+        sail.ship,
+        sail.code,
+        ...(sail.ports || []).map((port) => port.port),
+      ].filter(Boolean).join(' ').toLowerCase();
+      if (!searchable.includes(inventorySearch)) return false;
+    }
     if (state.selectedDestinations && state.selectedDestinations.length > 0) {
       if (!state.selectedDestinations.includes(sail.region)) return false;
     }
@@ -529,16 +565,16 @@ function filterSailings(state) {
 // stores (`name` split into first/last, `dob`, `phone`, `email`), so applying a
 // profile is a copy rather than a translation.
 const GUEST_DIRECTORY = [
-  { id: 'CX-1001', firstName: 'Maya', lastName: 'Okonkwo', email: 'maya.okonkwo@example.com', phone: '(555) 200-1188', dob: '1988-04-12', city: 'Tampa, FL', bookings: 4, tier: 'Gold' },
-  { id: 'CX-1002', firstName: 'Devraj', lastName: 'Patel', email: 'devraj.patel@example.com', phone: '(555) 118-4402', dob: '1985-11-30', city: 'Orlando, FL', bookings: 2, tier: 'Silver' },
-  { id: 'CX-1003', firstName: 'Sofia', lastName: 'Marchetti', email: 'sofia.marchetti@example.com', phone: '(555) 401-7723', dob: '1992-06-08', city: 'Miami, FL', bookings: 7, tier: 'Platinum' },
-  { id: 'CX-1004', firstName: 'Aiden', lastName: 'Okonkwo', email: 'aiden.okonkwo@example.com', phone: '(555) 200-1190', dob: '2012-02-19', city: 'Tampa, FL', bookings: 3, tier: null },
-  { id: 'CX-1005', firstName: 'Priya', lastName: 'Raghavan', email: 'priya.raghavan@example.com', phone: '(555) 664-2087', dob: '1979-09-25', city: 'Atlanta, GA', bookings: 11, tier: 'Platinum' },
-  { id: 'CX-1006', firstName: 'Tomas', lastName: 'Ibarra', email: 'tomas.ibarra@example.com', phone: '(555) 730-5512', dob: '1996-01-14', city: 'San Juan, PR', bookings: 1, tier: null },
-  { id: 'CX-1007', firstName: 'Hannah', lastName: 'Whitfield', email: 'hannah.whitfield@example.com', phone: '(555) 902-3364', dob: '2005-07-03', city: 'Savannah, GA', bookings: 2, tier: 'Silver' },
-  { id: 'CX-1008', firstName: 'Emeka', lastName: 'Nwosu', email: 'emeka.nwosu@example.com', phone: '(555) 447-9910', dob: '1968-03-21', city: 'Houston, TX', bookings: 6, tier: 'Gold' },
-  { id: 'CX-1009', firstName: 'Lena', lastName: 'Fischer', email: 'lena.fischer@example.com', phone: '(555) 315-7728', dob: '2019-10-06', city: 'Tampa, FL', bookings: 1, tier: null },
-  { id: 'CX-1010', firstName: 'Grace', lastName: 'Adeyemi', email: 'grace.adeyemi@example.com', phone: '(555) 208-6641', dob: '1974-12-02', city: 'Charlotte, NC', bookings: 9, tier: 'Gold' },
+  { id: 'CX-1001', firstName: 'Maya', lastName: 'Okonkwo', email: 'maya.okonkwo@example.com', phone: '(555) 200-1188', dob: '1988-04-12', city: 'Tampa', state: 'Florida', country: 'USA', address: '401 Bayshore Boulevard', zip: '33606', walletId: 'WLT-21001', walletBalance: 1245.50, bookings: 4, tier: 'Gold' },
+  { id: 'CX-1002', firstName: 'Devraj', lastName: 'Patel', email: 'devraj.patel@example.com', phone: '(555) 118-4402', dob: '1985-11-30', city: 'Orlando', state: 'Florida', country: 'USA', address: '912 Lake Eola Drive', zip: '32801', walletId: 'WLT-21002', walletBalance: 680.00, bookings: 2, tier: 'Silver' },
+  { id: 'CX-1003', firstName: 'Sofia', lastName: 'Marchetti', email: 'sofia.marchetti@example.com', phone: '(555) 401-7723', dob: '1992-06-08', city: 'Miami', state: 'Florida', country: 'USA', address: '88 Brickell Avenue', zip: '33131', walletId: 'WLT-21003', walletBalance: 2989.20, bookings: 7, tier: 'Platinum' },
+  { id: 'CX-1004', firstName: 'Aiden', lastName: 'Okonkwo', email: 'aiden.okonkwo@example.com', phone: '(555) 200-1190', dob: '2012-02-19', city: 'Tampa', state: 'Florida', country: 'USA', address: '401 Bayshore Boulevard', zip: '33606', walletId: 'WLT-21004', walletBalance: 0, bookings: 3, tier: null },
+  { id: 'CX-1005', firstName: 'Priya', lastName: 'Raghavan', email: 'priya.raghavan@example.com', phone: '(555) 664-2087', dob: '1979-09-25', city: 'Atlanta', state: 'Georgia', country: 'USA', address: '265 Peachtree Center Avenue', zip: '30303', walletId: 'WLT-21005', walletBalance: 1875.75, bookings: 11, tier: 'Platinum' },
+  { id: 'CX-1006', firstName: 'Tomas', lastName: 'Ibarra', email: 'tomas.ibarra@example.com', phone: '(555) 730-5512', dob: '1996-01-14', city: 'San Juan', state: 'Puerto Rico', country: 'USA', address: '150 Calle de San Francisco', zip: '00901', walletId: 'WLT-21006', walletBalance: 340.00, bookings: 1, tier: null },
+  { id: 'CX-1007', firstName: 'Hannah', lastName: 'Whitfield', email: 'hannah.whitfield@example.com', phone: '(555) 902-3364', dob: '2005-07-03', city: 'Savannah', state: 'Georgia', country: 'USA', address: '22 East Bay Street', zip: '31401', walletId: 'WLT-21007', walletBalance: 125.00, bookings: 2, tier: 'Silver' },
+  { id: 'CX-1008', firstName: 'Emeka', lastName: 'Nwosu', email: 'emeka.nwosu@example.com', phone: '(555) 447-9910', dob: '1968-03-21', city: 'Houston', state: 'Texas', country: 'USA', address: '1200 Louisiana Street', zip: '77002', walletId: 'WLT-21008', walletBalance: 910.40, bookings: 6, tier: 'Gold' },
+  { id: 'CX-1009', firstName: 'Lena', lastName: 'Fischer', email: 'lena.fischer@example.com', phone: '(555) 315-7728', dob: '2019-10-06', city: 'Tampa', state: 'Florida', country: 'USA', address: '75 Harbour Island Boulevard', zip: '33602', walletId: 'WLT-21009', walletBalance: 0, bookings: 1, tier: null },
+  { id: 'CX-1010', firstName: 'Grace', lastName: 'Adeyemi', email: 'grace.adeyemi@example.com', phone: '(555) 208-6641', dob: '1974-12-02', city: 'Charlotte', state: 'North Carolina', country: 'USA', address: '101 South Tryon Street', zip: '28280', walletId: 'WLT-21010', walletBalance: 1540.25, bookings: 9, tier: 'Gold' },
 ];
 
 const directoryFullName = (p) => `${p.firstName} ${p.lastName}`.trim();
@@ -565,6 +601,7 @@ Object.assign(window, {
   CABINS, FARECODES, SAILINGS, INTENTS, EXTRA_SUPPLEMENTS,
   TAX_PER_NIGHT_PP, CHILD_CABIN_FACTOR,
   GUEST_DIRECTORY, directoryFullName, searchGuestDirectory,
+  GROUP_CRUISES, getGroupCruise, getGroupCruiseForSailing, getGroupCruiseSailings,
   getIntent, getCabin, getSailing, getFarecode,
   applicableCount, lineQtyTotal, buildBundle, priceQuote, leadFare, filterSailings,
   MVAS_REGIONS, MVAS_PORTS, MVAS_PORT_GROUPS, DURATION_BANDS, MVAS_HOME_PORTS,

@@ -46,14 +46,14 @@ function CruiseItineraryButton({ sailingCode, open, onToggle, onClose }) {
       <button
         onClick={onToggle}
         style={{
-          display: 'inline-flex', alignItems: 'center', gap: 6,
+          display: 'inline-flex', alignItems: 'center', gap: 8,
           background: '#fff', border: `1px solid ${WF.line}`,
           cursor: 'pointer', fontFamily: 'inherit',
-          padding: '6px 12px', borderRadius: 6,
+          padding: '8px 12px', borderRadius: 6,
           fontSize: 12, fontWeight: 600,
           color: WF.inkSoft
         }}>
-        <span style={{ fontSize: 13 }}>⚓</span>
+        <span style={{ fontSize: 14 }}>⚓</span>
         Cruise Itinerary
       </button>
 
@@ -64,16 +64,16 @@ function CruiseItineraryButton({ sailingCode, open, onToggle, onClose }) {
           background: '#fff', border: `1px solid ${WF.line}`, borderRadius: 10,
           boxShadow: '0 12px 32px rgba(15,23,42,0.16)', padding: 12
         }}>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, color: WF.inkLabel, textTransform: 'uppercase', marginBottom: 10, padding: '0 2px' }}>
+          <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', color: WF.inkLabel, textTransform: 'uppercase', marginBottom: 12, padding: '0 4px' }}>
             Cruise Itinerary
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {itinerary.map((day) => (
-              <div key={day.day} style={{ padding: '10px 12px', borderRadius: 6, border: `1.5px solid ${WF.line}`, background: WF.panel }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: WF.ink, marginBottom: 3 }}>
+              <div key={day.day} style={{ padding: '12px 12px', borderRadius: 6, border: `1.5px solid ${WF.line}`, background: WF.panel }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: WF.ink, marginBottom: 4 }}>
                   Day {day.day}: {day.port}
                 </div>
-                <div style={{ fontSize: 10, color: WF.inkSoft, lineHeight: 1.4 }}>
+                <div style={{ fontSize: 12, color: WF.inkSoft, lineHeight: '16px' }}>
                   {day.description}
                 </div>
               </div>
@@ -111,7 +111,7 @@ function SailingDetailTabs({ activeTab, onTabChange, s, children }) {
           just another pill row stacked on top of the farecode pills below it. */}
       <div style={{
         display: 'flex', border: `1px solid ${WF.line}`, borderRadius: 8,
-        overflow: 'hidden', marginBottom: 10, background: WF.panel
+        overflow: 'hidden', marginBottom: 12, background: WF.panel
       }}>
         {tabs.map((tab, i) => {
           const on = activeTab === tab.id;
@@ -121,8 +121,8 @@ function SailingDetailTabs({ activeTab, onTabChange, s, children }) {
               onClick={() => onTabChange(tab.id)}
               aria-current={on ? 'step' : undefined}
               style={{
-                flex: 1, padding: '9px 12px', fontSize: 12, fontWeight: on ? 700 : 500,
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+                flex: 1, padding: '8px 12px', fontSize: 12, fontWeight: on ? 700 : 500,
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 border: 'none', borderRight: i < tabs.length - 1 ? `1px solid ${WF.line}` : 'none',
                 background: on ? WF.accentOn : 'transparent',
                 color: on ? '#fff' : WF.inkSoft,
@@ -134,7 +134,7 @@ function SailingDetailTabs({ activeTab, onTabChange, s, children }) {
               <span style={{
                 width: 16, height: 16, borderRadius: 8, flexShrink: 0,
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 9.5, fontWeight: 700, lineHeight: 1,
+                fontSize: 12, fontWeight: 700, lineHeight: 1,
                 background: on ? 'rgba(255,255,255,0.22)' : (tab.done ? S2_TEAL_TINT : WF.fill),
                 color: on ? '#fff' : (tab.done ? S2_TEAL : WF.inkFaint),
                 border: on ? 'none' : `1px solid ${tab.done ? WF.accentLine : WF.line}`
@@ -187,13 +187,13 @@ function GuestCountAgesSection({ s, update }) {
           instead of also decorating static labels. ── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <div>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, color: WF.inkLabel, textTransform: 'uppercase' }}>
+          <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', color: WF.inkLabel, textTransform: 'uppercase' }}>
             Guests
           </div>
-          <div style={{ fontSize: 11, color: WF.inkSoft, marginTop: 2 }}>Set the count for each guest type</div>
+          <div style={{ fontSize: 12, color: WF.inkSoft, marginTop: 4 }}>Set the count for each guest type</div>
         </div>
         {totalGuests > 0 && (
-          <div style={{ fontSize: 11, fontWeight: 700, color: WF.ink, background: '#F1F5F9', border: `1px solid ${WF.line}`, borderRadius: 20, padding: '4px 10px', flexShrink: 0, whiteSpace: 'nowrap' }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: WF.ink, background: '#F1F5F9', border: `1px solid ${WF.line}`, borderRadius: 20, padding: '4px 12px', flexShrink: 0, whiteSpace: 'nowrap' }}>
             {totalGuests} {totalGuests === 1 ? 'guest' : 'guests'} total
           </div>
         )}
@@ -205,14 +205,14 @@ function GuestCountAgesSection({ s, update }) {
           const count = g[key] || 0;
           return (
             <div key={key} style={{
-              display: 'flex', flexDirection: 'column', gap: 10,
-              padding: '10px 12px', borderRadius: 6,
+              display: 'flex', flexDirection: 'column', gap: 12,
+              padding: '12px 12px', borderRadius: 6,
               border: `1px solid ${WF.line}`,
               background: WF.panel
             }}>
-              <div style={{ lineHeight: 1.1 }}>
+              <div style={{ lineHeight: '16px' }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: WF.ink }}>{label}</div>
-                <div style={{ fontSize: 10, color: WF.inkFaint, marginTop: 2 }}>{sub}</div>
+                <div style={{ fontSize: 12, color: WF.inkFaint, marginTop: 4 }}>{sub}</div>
               </div>
               <GuestCountStepper value={count} min={0} onChange={(v) => setCount(key, v)} />
             </div>
@@ -232,7 +232,7 @@ function GuestCountStepper({ value, min, onChange }) {
     fontSize: 16, fontWeight: 600, color: WF.inkSoft, fontFamily: 'inherit', cursor: 'pointer', lineHeight: 1
   };
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 5 }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
       <button
         type="button"
         onClick={() => onChange(Math.max(min, value - 1))}
@@ -240,7 +240,7 @@ function GuestCountStepper({ value, min, onChange }) {
         style={{ ...btnStyle, color: atMin ? WF.inkFaint : WF.inkSoft, cursor: atMin ? 'not-allowed' : 'pointer' }}>
         −
       </button>
-      <span style={{ fontSize: 22, fontWeight: 700, color: WF.ink, flex: 1, textAlign: 'center' }}>{value}</span>
+      <span style={{ fontSize: 24, fontWeight: 700, color: WF.ink, flex: 1, textAlign: 'center' }}>{value}</span>
       <button
         type="button"
         onClick={() => onChange(value + 1)}
@@ -272,10 +272,7 @@ function SailingDetailView({ sailing, s, update, previewPkgId, onPkgPreview, onC
   const route = routeOf(sailing);
   const g = s.guests;
   const canContinue = !!(s.selectedSailingCode && s.cabinId && s.farecodeId);
-  const availability = availabilityOf(sailing);
   const bookingWindow = getWindowForSailing(sailing.code);
-  const availabilityBg = availability.kind === 'active' ? '#D1FAE5' : availability.kind === 'draft' ? '#FEF3C7' : '#FEE2E2';
-  const availabilityText = availability.kind === 'active' ? '#065F46' : availability.kind === 'draft' ? '#92400E' : '#B91C1C';
 
   const toggleSupp = (qtyObj, assignments) => {
     // qtyObj is { suppId: qty, ... }; assignments remains guest-level even
@@ -289,11 +286,11 @@ function SailingDetailView({ sailing, s, update, previewPkgId, onPkgPreview, onC
   const DeckMap = window.CabinDeckMapSection;
 
   return (
-    <div style={{ padding: '14px 16px 18px' }}>
+    <div style={{ padding: '16px 16px 20px' }}>
       {/* ── SAILING SUMMARY ── */}
       <div style={{
         display: 'grid', gridTemplateColumns: '58px minmax(150px, 1.15fr) minmax(240px, 1.45fr) 112px',
-        alignItems: 'center', gap: 14, marginBottom: 14, padding: '11px 12px',
+        alignItems: 'center', gap: 16, marginBottom: 16, padding: '12px 12px',
         border: `1px solid ${WF.line}`, borderRadius: 9, background: WF.fill,
         boxShadow: '0 1px 2px rgba(15,23,42,0.04)',
       }}>
@@ -301,25 +298,18 @@ function SailingDetailView({ sailing, s, update, previewPkgId, onPkgPreview, onC
           width: 56, height: 50, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
           border: `1px solid ${WF.line}`, borderRadius: 7, background: '#FFFFFF', color: WF.ink,
         }}>
-          <span className="s4-money" style={{ fontSize: 16, lineHeight: 1, fontWeight: 800 }}>{nights}</span>
-          <span style={{ marginTop: 3, fontSize: 8, lineHeight: 1, fontWeight: 750, letterSpacing: 0.55, color: WF.inkLabel }}>NIGHTS</span>
+          <span className="s4-money" style={{ fontSize: 16, lineHeight: 1, fontWeight: 700 }}>{nights}</span>
+          <span style={{ marginTop: 4, fontSize: 12, lineHeight: 1, fontWeight: 700, letterSpacing: '0.04em', color: WF.inkLabel }}>NIGHTS</span>
         </div>
 
         <div style={{ minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 800, color: WF.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{route}</div>
-            <span style={{
-              flexShrink: 0, padding: '2px 6px', borderRadius: 999,
-              background: availabilityBg, color: availabilityText,
-              fontSize: 8.5, lineHeight: 1.15, fontWeight: 750,
-            }}>{availability.label}</span>
-          </div>
-          <div style={{ marginTop: 4, fontSize: 10.5, color: WF.inkSoft }}>Selected sailing</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: WF.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{route}</div>
+          <div style={{ marginTop: 4, fontSize: 12, color: WF.inkSoft }}>Selected sailing</div>
         </div>
 
         <div style={{
           display: 'grid', gridTemplateColumns: '0.85fr 0.95fr 1.45fr', gap: 12,
-          minWidth: 0, paddingLeft: 14, borderLeft: `1px solid ${WF.line}`,
+          minWidth: 0, paddingLeft: 16, borderLeft: `1px solid ${WF.line}`,
         }}>
           {[
             ['Ship', sailing.ship],
@@ -327,26 +317,26 @@ function SailingDetailView({ sailing, s, update, previewPkgId, onPkgPreview, onC
             ['Dates', bookingWindow ? bookingWindow.display : sailing.depart],
           ].map(([label, value]) => (
             <div key={label} style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 8.5, lineHeight: 1, fontWeight: 750, letterSpacing: 0.5, color: WF.inkLabel, textTransform: 'uppercase' }}>{label}</div>
+              <div style={{ fontSize: 12, lineHeight: '16px', fontWeight: 700, letterSpacing: '0.04em', color: WF.inkLabel, textTransform: 'uppercase' }}>{label}</div>
               <div className={label === 'Sailing' ? 's4-money' : undefined} style={{
-                marginTop: 5, fontSize: label === 'Dates' ? 10 : 10.5, lineHeight: 1.2,
-                fontWeight: 650, color: WF.inkSoft, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                marginTop: 4, fontSize: 12, lineHeight: '16px',
+                fontWeight: 600, color: WF.inkSoft, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
               }}>{value}</div>
             </div>
           ))}
         </div>
 
         <div style={{ textAlign: 'right', paddingLeft: 12, borderLeft: `1px solid ${WF.line}` }}>
-          <div style={{ fontSize: 8.5, lineHeight: 1, fontWeight: 750, letterSpacing: 0.5, color: WF.inkLabel, textTransform: 'uppercase' }}>Average fare</div>
-          <div className="s4-money" style={{ marginTop: 5, fontSize: 17, lineHeight: 1, fontWeight: 800, color: WF.ink }}>$451</div>
-          <div style={{ marginTop: 3, fontSize: 9, color: WF.inkFaint }}>per guest</div>
+          <div style={{ fontSize: 12, lineHeight: '16px', fontWeight: 700, letterSpacing: '0.04em', color: WF.inkLabel, textTransform: 'uppercase' }}>Average fare</div>
+          <div className="s4-money" style={{ marginTop: 4, fontSize: 16, lineHeight: 1, fontWeight: 700, color: WF.ink }}>$451</div>
+          <div style={{ marginTop: 4, fontSize: 12, color: WF.inkFaint }}>per guest</div>
         </div>
       </div>
 
       {/* ── TABS ── */}
       <SailingDetailTabs activeTab={activeTab} onTabChange={setActiveTab} s={s}>
         {activeTab === 'fare' && (
-          <div style={{ display: 'grid', gap: 10 }}>
+          <div style={{ display: 'grid', gap: 12 }}>
             {/* ── Rate plan cards ──
                 The farecode decides price, deposit rate AND refund policy —
                 the most consequential commercial choice on this tab — yet it
@@ -361,13 +351,13 @@ function SailingDetailView({ sailing, s, update, previewPkgId, onPkgPreview, onC
               border: `1px solid ${WF.line}`, borderRadius: 9,
               background: '#FFFFFF', overflow: 'hidden',
             }}>
-              <div style={{ padding: '10px 12px', borderBottom: `1px solid ${WF.line}`, background: WF.fill }}>
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, color: WF.inkLabel, textTransform: 'uppercase' }}>
+              <div style={{ padding: '12px 12px', borderBottom: `1px solid ${WF.line}`, background: WF.fill }}>
+                <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', color: WF.inkLabel, textTransform: 'uppercase' }}>
                   Available Farecodes & Promotions ({S2_FC.length})
                 </div>
-                <div style={{ fontSize: 11, color: WF.inkSoft, marginTop: 2 }}>Sets the per-person fare, deposit due now, and refund policy</div>
+                <div style={{ fontSize: 12, color: WF.inkSoft, marginTop: 4 }}>Sets the per-person fare, deposit due now, and refund policy</div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 8, padding: '11px 12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 8, padding: '12px 12px' }}>
                 {S2_FC.map((f) => {
                   const on = s.farecodeId === f.id;
                   return (
@@ -378,7 +368,7 @@ function SailingDetailView({ sailing, s, update, previewPkgId, onPkgPreview, onC
                       onClick={() => update({ farecodeId: on ? null : f.id })}
                       style={{
                         position: 'relative', textAlign: 'left',
-                        padding: '12px 14px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit',
+                        padding: '12px 16px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit',
                         border: `1.5px solid ${on ? WF.accent : WF.line}`,
                         background: on ? WF.accentTint : '#fff',
                         boxShadow: on ? '0 1px 3px rgba(13,37,51,0.10)' : 'none',
@@ -390,31 +380,31 @@ function SailingDetailView({ sailing, s, update, previewPkgId, onPkgPreview, onC
                       onFocus={(e) => { e.currentTarget.style.boxShadow = `0 0 0 3px ${WF.accentLine}`; }}
                       onBlur={(e) => { e.currentTarget.style.boxShadow = on ? '0 1px 3px rgba(13,37,51,0.10)' : 'none'; }}>
                       {/* Code + refund policy */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}>
-                        <span style={{ fontSize: 12.5, fontWeight: 800, letterSpacing: 0.2, color: WF.ink }}>{f.code}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                        <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: '0.04em', color: WF.ink }}>{f.code}</span>
                         <span style={{
-                          fontSize: 9, fontWeight: 700, letterSpacing: 0.3, padding: '2px 6px', borderRadius: 4,
+                          fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', padding: '4px 8px', borderRadius: 4,
                           background: f.refundable ? S2_TEAL_TINT : WF.fill,
                           color: f.refundable ? S2_TEAL : WF.inkSoft,
                           border: `1px solid ${f.refundable ? WF.accentLine : WF.line}`
                         }}>{f.refundable ? 'REFUNDABLE' : 'NON-REFUND'}</span>
                       </div>
                       {/* Price — the comparison number, aligned across cards */}
-                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 3 }}>
-                        <span style={{ fontSize: 18, fontWeight: 800, color: WF.ink, letterSpacing: -0.3, fontFamily: 'ui-monospace, monospace' }}>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+                        <span style={{ fontSize: 20, fontWeight: 700, color: WF.ink, letterSpacing: '-0.01em', fontFamily: 'ui-monospace, monospace' }}>
                           ${f.pricePP.toFixed(0)}
                         </span>
-                        <span style={{ fontSize: 11, fontWeight: 600, color: WF.inkSoft }}>/pp</span>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: WF.inkSoft }}>/pp</span>
                       </div>
-                      <div style={{ fontSize: 10.5, color: WF.inkSoft, marginTop: 3 }}>
+                      <div style={{ fontSize: 12, color: WF.inkSoft, marginTop: 4 }}>
                         {Math.round(f.deposit * 100)}% deposit due now
                       </div>
                       {/* Selected badge — colour-independent signal, same as the
                           destination cards */}
                       <span aria-hidden="true" style={{
-                        position: 'absolute', top: 10, right: 10,
+                        position: 'absolute', top: 8, right: 8,
                         width: 16, height: 16, borderRadius: 8,
-                        background: WF.accent, color: WF.accentText, fontSize: 9.5, fontWeight: 700,
+                        background: WF.accent, color: WF.accentText, fontSize: 12, fontWeight: 700,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         opacity: on ? 1 : 0, transform: on ? 'scale(1)' : 'scale(0.4)',
                         transition: 'opacity 0.15s, transform 0.15s'
@@ -425,7 +415,7 @@ function SailingDetailView({ sailing, s, update, previewPkgId, onPkgPreview, onC
               {s.farecodeId &&
               <div style={{
                 padding: '8px 12px', borderTop: `1px solid ${WF.accentLine}`,
-                background: WF.accentTint, fontSize: 10.5, color: WF.inkSoft,
+                background: WF.accentTint, fontSize: 12, color: WF.inkSoft,
               }}>
                   <span style={{ color: WF.ink, fontWeight: 700 }}>Selected rate plan</span>
                   {' · '}{S2_FC.find(f => f.id === s.farecodeId)?.note}
@@ -444,7 +434,7 @@ function SailingDetailView({ sailing, s, update, previewPkgId, onPkgPreview, onC
           <div>
             {window.StateRoomMatrix
               ? <window.StateRoomMatrix update={update} s={s} onConfirmRooms={() => setActiveTab('supplements')} />
-              : <div style={{ fontSize: 13, color: WF.inkSoft }}>Loading stateroom matrix…</div>
+              : <div style={{ fontSize: 14, color: WF.inkSoft }}>Loading stateroom matrix…</div>
             }
           </div>
         )}
@@ -469,15 +459,15 @@ function SailingDetailView({ sailing, s, update, previewPkgId, onPkgPreview, onC
         const ready = totalGuests > 0 && guestAgesComplete(s);
         return (
           <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14,
-            padding: '10px 12px', marginTop: 10,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
+            padding: '12px 12px', marginTop: 12,
             border: `1px solid ${WF.line}`, borderRadius: 9, background: WF.fill,
           }}>
             <div>
-              <div style={{ fontSize: 10.5, fontWeight: 750, color: WF.ink }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: WF.ink }}>
                 {ready ? 'Fare and guest count complete' : 'Complete fare and guest count'}
               </div>
-              <div style={{ marginTop: 2, fontSize: 9.5, color: WF.inkSoft }}>
+              <div style={{ marginTop: 4, fontSize: 12, color: WF.inkSoft }}>
                 {ready ? `${totalGuests} guests ready for room assignment` : 'Required before choosing staterooms'}
               </div>
             </div>
@@ -485,10 +475,10 @@ function SailingDetailView({ sailing, s, update, previewPkgId, onPkgPreview, onC
               onClick={() => ready && setActiveTab('stateroom')}
               disabled={!ready}
               style={{
-                padding: '9px 16px', fontSize: 12, fontWeight: 700,
+                padding: '8px 16px', fontSize: 12, fontWeight: 700,
                 border: 'none', borderRadius: 8,
                 background: ready ? WF.accent : WF.fillStrong, color: ready ? WF.accentText : WF.inkFaint,
-                cursor: ready ? 'pointer' : 'not-allowed', fontFamily: 'inherit', letterSpacing: 0.1,
+                cursor: ready ? 'pointer' : 'not-allowed', fontFamily: 'inherit', letterSpacing: '0.04em',
                 transition: 'opacity 0.15s'
               }}
               onMouseEnter={(e) => { if (ready) e.currentTarget.style.opacity = '0.88'; }}

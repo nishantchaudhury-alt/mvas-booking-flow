@@ -133,23 +133,23 @@ function GuestDetailsSection({
             context below so travelers never appear detached from their room. */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-          padding: '12px 14px', background: '#fff',
+          padding: '12px 16px', background: '#fff',
           borderBottom: `1px solid ${WF.line}`, borderRadius: '10px 10px 0 0',
         }}>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.75, color: WF.inkLabel, textTransform: 'uppercase' }}>Traveler line-up</div>
-            <div style={{ marginTop: 3, fontSize: 11, color: WF.inkSoft }}>
+            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', color: WF.inkLabel, textTransform: 'uppercase' }}>Traveler line-up</div>
+            <div style={{ marginTop: 4, fontSize: 12, color: WF.inkSoft }}>
               {guestList.length} traveler{guestList.length === 1 ? '' : 's'} · Add or review the profile attached to each guest
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
             <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: 5,
-              padding: '5px 8px', borderRadius: 999,
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              padding: '4px 8px', borderRadius: 999,
               background: unconfirmedCount === 0 ? '#F0FDF4' : WF.fill,
               border: `1px solid ${unconfirmedCount === 0 ? '#BBF7D0' : WF.line}`,
               color: unconfirmedCount === 0 ? '#047857' : WF.inkSoft,
-              fontSize: 10, fontWeight: 800, whiteSpace: 'nowrap',
+              fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap',
             }}>
               {unconfirmedCount === 0 && <span aria-hidden="true">✓</span>}
               {completedCount} of {guestList.length} profiles ready
@@ -159,10 +159,10 @@ function GuestDetailsSection({
                 onClick={handleFillRemainingAsTemp}
                 title="Skip precise database lookups and create fast placeholder records for remaining travelers."
                 style={{
-                  height: 30, padding: '0 10px', borderRadius: 6,
+                  height: 30, padding: '0 12px', borderRadius: 6,
                   background: WF.panel, border: `1px solid ${WF.line}`,
                   cursor: 'pointer', fontFamily: 'inherit', color: WF.ink,
-                  fontSize: 10.5, fontWeight: 700, whiteSpace: 'nowrap',
+                  fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap',
                 }}>
                 Fill {unconfirmedCount < guestList.length ? 'remaining' : 'all'} as temp
               </button>
@@ -173,8 +173,8 @@ function GuestDetailsSection({
         {/* Cabin headers and traveler rows scroll as one clipped surface. This
             avoids a sticky layer revealing or covering cards behind it. */}
         <div style={{
-          display: 'flex', flexDirection: 'column', gap: 10,
-          padding: 10, background: WF.fill,
+          display: 'flex', flexDirection: 'column', gap: 12,
+          padding: 12, background: WF.fill,
         }}>
         <GuestTripProtection
           selected={protection}
@@ -186,21 +186,21 @@ function GuestDetailsSection({
           }}>
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-              padding: '9px 11px', borderBottom: `1px solid ${WF.line}`, background: '#fff',
+              padding: '8px 12px', borderBottom: `1px solid ${WF.line}`, background: '#fff',
             }}>
               <div style={{ minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 7, minWidth: 0 }}>
-                  <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.65, color: WF.inkLabel, textTransform: 'uppercase' }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, minWidth: 0 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', color: WF.inkLabel, textTransform: 'uppercase' }}>
                     {group.label}
                   </span>
-                  {group.room && <span style={{ fontSize: 12, fontWeight: 800, color: WF.ink }}>{group.room}</span>}
+                  {group.room && <span style={{ fontSize: 12, fontWeight: 700, color: WF.ink }}>{group.room}</span>}
                 </div>
-                {group.category && <div style={{ marginTop: 2, fontSize: 10.5, color: WF.inkSoft }}>{group.category}</div>}
+                {group.category && <div style={{ marginTop: 4, fontSize: 12, color: WF.inkSoft }}>{group.category}</div>}
               </div>
               <span style={{
-                flexShrink: 0, padding: '4px 7px', borderRadius: 999,
+                flexShrink: 0, padding: '4px 8px', borderRadius: 999,
                 border: `1px solid ${WF.line}`, background: WF.panel,
-                color: WF.inkSoft, fontSize: 9.5, fontWeight: 800,
+                color: WF.inkSoft, fontSize: 12, fontWeight: 700,
               }}>
                 {group.travelers.length} traveler{group.travelers.length === 1 ? '' : 's'}
               </span>
@@ -237,7 +237,7 @@ function GuestDetailsSection({
                 onClick={() => { setExpandedGuestId(isExpanded ? null : guest.id); setSearchQuery(''); }}
                 style={{
                 display: 'grid', gridTemplateColumns: 'auto minmax(0, 1fr) auto',
-                alignItems: 'center', gap: 10, width: '100%', padding: '11px 12px',
+                alignItems: 'center', gap: 12, width: '100%', padding: '12px 12px',
                 background: isExpanded ? WF.accentTint : '#fff',
                 border: 'none', color: 'inherit', textAlign: 'left', fontFamily: 'inherit', cursor: 'pointer',
               }}>
@@ -249,7 +249,7 @@ function GuestDetailsSection({
                   background: isPrimary ? WF.accent : WF.fill,
                   color: isPrimary ? '#fff' : WF.ink,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 11, fontWeight: 800,
+                  fontSize: 12, fontWeight: 700,
                   border: `1px solid ${isPrimary ? WF.accent : WF.line}`,
                   flexShrink: 0, fontFamily: 'ui-monospace, monospace',
                 }}>
@@ -257,18 +257,18 @@ function GuestDetailsSection({
                 </span>
                 {/* Info */}
                 <span style={{ minWidth: 0, display: 'block' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
-                    <span style={{ fontSize: 12.5, fontWeight: 800, color: WF.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: WF.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {isDone && record.name ? record.name : `${guest.type} ${guest.id.replace(/\D/g, '') || ''}`.trim()}
                     </span>
                     {isTemp && (
-                      <span style={{ background: '#FEF3C7', color: '#92400E', padding: '2px 5px', borderRadius: 4, fontSize: 8.5, fontWeight: 800, flexShrink: 0 }}>TEMP</span>
+                      <span style={{ background: '#FEF3C7', color: '#92400E', padding: '4px 4px', borderRadius: 4, fontSize: 12, fontWeight: 700, flexShrink: 0 }}>TEMP</span>
                     )}
                     {isPrimary && (
-                      <span style={{ background: WF.accentTint, color: WF.accent, border: `1px solid ${WF.accentLine}`, padding: '2px 5px', borderRadius: 4, fontSize: 8.5, fontWeight: 800, flexShrink: 0 }}>PRIMARY</span>
+                      <span style={{ background: WF.accentTint, color: WF.accent, border: `1px solid ${WF.accentLine}`, padding: '4px 4px', borderRadius: 4, fontSize: 12, fontWeight: 700, flexShrink: 0 }}>PRIMARY</span>
                     )}
                   </span>
-                  <span style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 5, color: WF.inkSoft, fontSize: 10.5 }}>
+                  <span style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 4, color: WF.inkSoft, fontSize: 12 }}>
                     <span>{guest.type}</span>
                     <span aria-hidden="true" style={{ color: WF.inkFaint }}>·</span>
                     <span>{ageLabel}</span>
@@ -276,22 +276,22 @@ function GuestDetailsSection({
                 </span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, flexShrink: 0 }}>
                   <span style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 5,
-                    padding: '4px 7px', borderRadius: 999,
+                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                    padding: '4px 8px', borderRadius: 999,
                     background: isDone ? '#F0FDF4' : '#FFF7ED',
                     border: `1px solid ${isDone ? '#BBF7D0' : '#FED7AA'}`,
                     color: isDone ? '#047857' : '#9A3412',
-                    fontSize: 10, fontWeight: 800, whiteSpace: 'nowrap',
+                    fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap',
                   }}>
                     <span aria-hidden="true">{isDone ? '✓' : '!'}</span>
                     {isDone ? 'Profile ready' : 'Add profile'}
                   </span>
                   <span style={{
-                    minWidth: isDone ? 54 : 66, height: 30, padding: '0 8px 0 10px', borderRadius: 6,
-                    display: 'inline-flex', alignItems: 'center', justifyContent: 'space-between', gap: 6,
+                    minWidth: isDone ? 54 : 66, height: 30, padding: '0 8px 0 12px', borderRadius: 6,
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
                     border: `1px solid ${isDone ? WF.accentLine : WF.line}`,
                     background: isDone ? WF.accentTint : '#FFFFFF', color: WF.accent,
-                    fontSize: 10, fontWeight: 800, whiteSpace: 'nowrap',
+                    fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap',
                   }}>
                     {isDone ? 'Edit' : 'Add'}
                     <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
@@ -329,7 +329,7 @@ function GuestDetailsSection({
               overflow: 'hidden', boxShadow: '0 24px 64px rgba(15,23,42,0.28)',
             }}>
             <div style={{
-              display: 'flex', alignItems: 'center', gap: 11, padding: '12px 16px', flexShrink: 0,
+              display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', flexShrink: 0,
               background: WF.fill, borderBottom: `1px solid ${WF.line}`,
             }}>
               <span style={{
@@ -338,38 +338,38 @@ function GuestDetailsSection({
                 color: activeIsPrimary ? '#FFFFFF' : WF.ink,
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 border: `1px solid ${activeIsPrimary ? WF.accent : WF.line}`,
-                fontSize: 11, fontWeight: 800, fontFamily: 'ui-monospace, monospace', flexShrink: 0,
+                fontSize: 12, fontWeight: 700, fontFamily: 'ui-monospace, monospace', flexShrink: 0,
               }}>
                 {activeGuest.id}
               </span>
               <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: 0.6, color: WF.inkLabel, textTransform: 'uppercase' }}>
+                <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', color: WF.inkLabel, textTransform: 'uppercase' }}>
                   Guest profile
                 </div>
-                <div id={`traveler-profile-title-${activeGuest.id}`} style={{ marginTop: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontSize: 14, fontWeight: 750, color: WF.ink }}>
+                <div id={`traveler-profile-title-${activeGuest.id}`} style={{ marginTop: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: WF.ink }}>
                     {activeIsDone && activeRecord.name
                       ? activeRecord.name
                       : `${activeGuest.type} ${activeGuest.id.replace(/\D/g, '') || ''}`.trim()}
                   </span>
                   {activeIsTemp && (
-                    <span style={{ background: '#FEF3C7', color: '#92400E', padding: '2px 5px', borderRadius: 4, fontSize: 9, fontWeight: 800 }}>TEMP</span>
+                    <span style={{ background: '#FEF3C7', color: '#92400E', padding: '4px 4px', borderRadius: 4, fontSize: 12, fontWeight: 700 }}>TEMP</span>
                   )}
                   {activeIsPrimary && (
-                    <span style={{ background: WF.accentTint, color: WF.accent, border: `1px solid ${WF.accentLine}`, padding: '2px 5px', borderRadius: 4, fontSize: 9, fontWeight: 800 }}>PRIMARY</span>
+                    <span style={{ background: WF.accentTint, color: WF.accent, border: `1px solid ${WF.accentLine}`, padding: '4px 4px', borderRadius: 4, fontSize: 12, fontWeight: 700 }}>PRIMARY</span>
                   )}
                 </div>
-                <div style={{ marginTop: 3, fontSize: 10.5, color: WF.inkSoft }}>
+                <div style={{ marginTop: 4, fontSize: 12, color: WF.inkSoft }}>
                   {[activeGroup && activeGroup.label, activeGroup && activeGroup.room, activeGuest.type, activeAgeLabel].filter(Boolean).join(' · ')}
                 </div>
               </div>
               <span style={{
-                display: 'inline-flex', alignItems: 'center', gap: 5,
-                padding: '4px 7px', borderRadius: 999,
+                display: 'inline-flex', alignItems: 'center', gap: 4,
+                padding: '4px 8px', borderRadius: 999,
                 background: activeIsDone ? '#F0FDF4' : '#FFF7ED',
                 border: `1px solid ${activeIsDone ? '#BBF7D0' : '#FED7AA'}`,
                 color: activeIsDone ? '#047857' : '#9A3412',
-                fontSize: 10, fontWeight: 800, whiteSpace: 'nowrap', flexShrink: 0,
+                fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0,
               }}>
                 <span aria-hidden="true">{activeIsDone ? '✓' : '!'}</span>
                 {activeIsDone ? 'Profile ready' : 'Profile required'}
@@ -379,7 +379,7 @@ function GuestDetailsSection({
                 onClick={() => setExpandedGuestId(null)}
                 aria-label="Close guest profile"
                 style={{
-                  width: 30, height: 30, marginLeft: 2, borderRadius: 6, flexShrink: 0,
+                  width: 30, height: 30, marginLeft: 4, borderRadius: 6, flexShrink: 0,
                   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                   border: `1px solid ${WF.line}`, background: '#FFFFFF', color: WF.inkSoft,
                   fontSize: 16, fontFamily: 'inherit', cursor: 'pointer',
@@ -387,35 +387,35 @@ function GuestDetailsSection({
             </div>
 
             <div style={{ minHeight: 0, overflowY: 'auto', padding: 16 }}>
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.8, color: WF.inkLabel, textTransform: 'uppercase', marginBottom: 10 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', color: WF.inkLabel, textTransform: 'uppercase', marginBottom: 12 }}>
                 Query Customer Index
               </div>
-              <div style={{ position: 'relative', marginBottom: 6 }}>
-                <span aria-hidden="true" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: WF.inkFaint, fontSize: 15 }}>🔍</span>
+              <div style={{ position: 'relative', marginBottom: 8 }}>
+                <span aria-hidden="true" style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: WF.inkFaint, fontSize: 16 }}>🔍</span>
                 <input
                   type="text"
                   placeholder="Search by first & last name, phone, or email address..."
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
                   style={{
-                    width: '100%', padding: '11px 14px 11px 42px', fontSize: 13,
+                    width: '100%', padding: '12px 16px 12px 44px', fontSize: 14,
                     border: `1px solid ${WF.line}`, borderRadius: 8,
                     fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
                   }} />
               </div>
-              <div style={{ fontSize: 12, color: WF.inkSoft, marginBottom: 14 }}>
+              <div style={{ fontSize: 12, color: WF.inkSoft, marginBottom: 16 }}>
                 Type at least 2 characters to search the guest database contextually.
               </div>
 
               {!activeIsManual && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
                   <div style={{ flex: 1, height: 1, background: WF.lineSoft }} />
                   <button
                     type="button"
                     onClick={() => setManualMode((prev) => ({ ...prev, [activeGuest.id]: true }))}
                     style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 6,
-                      padding: '6px 14px', borderRadius: 20, fontSize: 12, fontWeight: 600,
+                      display: 'inline-flex', alignItems: 'center', gap: 8,
+                      padding: '8px 16px', borderRadius: 20, fontSize: 12, fontWeight: 600,
                       border: `1.5px solid ${WF.line}`, background: '#fff', color: WF.inkSoft,
                       cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap',
                     }}>
@@ -426,75 +426,75 @@ function GuestDetailsSection({
               )}
 
               {activeIsManual && (
-                <div style={{ border: `1px solid ${WF.line}`, borderRadius: 10, padding: '14px 16px', marginBottom: 16, background: WF.fill }}>
+                <div style={{ border: `1px solid ${WF.line}`, borderRadius: 10, padding: '16px 16px', marginBottom: 16, background: WF.fill }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                    <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.8, color: WF.inkLabel, textTransform: 'uppercase' }}>New Guest Details</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', color: WF.inkLabel, textTransform: 'uppercase' }}>New Guest Details</span>
                     <button
                       type="button"
                       onClick={() => setManualMode((prev) => ({ ...prev, [activeGuest.id]: false }))}
-                      style={{ background: 'none', border: 'none', color: WF.inkSoft, fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                      style={{ background: 'none', border: 'none', color: WF.inkSoft, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
                       Use search instead
                     </button>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
                     <div>
-                      <label htmlFor={`guest-first-name-${activeGuest.id}`} style={{ display: 'block', fontSize: 11, fontWeight: 600, color: WF.inkSoft, marginBottom: 5 }}>First name</label>
+                      <label htmlFor={`guest-first-name-${activeGuest.id}`} style={{ display: 'block', fontSize: 12, fontWeight: 600, color: WF.inkSoft, marginBottom: 4 }}>First name</label>
                       <input
                         id={`guest-first-name-${activeGuest.id}`}
                         type="text"
                         value={activeForm.firstName}
                         onChange={(event) => setManualForm((prev) => ({ ...prev, [activeGuest.id]: { ...activeForm, firstName: event.target.value } }))}
                         placeholder="e.g. Maria"
-                        style={{ width: '100%', padding: '9px 12px', fontSize: 13, border: `1px solid ${WF.line}`, borderRadius: 7, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', background: '#fff' }} />
+                        style={{ width: '100%', padding: '8px 12px', fontSize: 14, border: `1px solid ${WF.line}`, borderRadius: 7, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', background: '#fff' }} />
                     </div>
                     <div>
-                      <label htmlFor={`guest-last-name-${activeGuest.id}`} style={{ display: 'block', fontSize: 11, fontWeight: 600, color: WF.inkSoft, marginBottom: 5 }}>Last name</label>
+                      <label htmlFor={`guest-last-name-${activeGuest.id}`} style={{ display: 'block', fontSize: 12, fontWeight: 600, color: WF.inkSoft, marginBottom: 4 }}>Last name</label>
                       <input
                         id={`guest-last-name-${activeGuest.id}`}
                         type="text"
                         value={activeForm.lastName}
                         onChange={(event) => setManualForm((prev) => ({ ...prev, [activeGuest.id]: { ...activeForm, lastName: event.target.value } }))}
                         placeholder="e.g. Alvarez"
-                        style={{ width: '100%', padding: '9px 12px', fontSize: 13, border: `1px solid ${WF.line}`, borderRadius: 7, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', background: '#fff' }} />
+                        style={{ width: '100%', padding: '8px 12px', fontSize: 14, border: `1px solid ${WF.line}`, borderRadius: 7, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', background: '#fff' }} />
                     </div>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
                     <div>
-                      <label htmlFor={`guest-dob-${activeGuest.id}`} style={{ display: 'block', fontSize: 11, fontWeight: 600, color: WF.inkSoft, marginBottom: 5 }}>Date of birth</label>
+                      <label htmlFor={`guest-dob-${activeGuest.id}`} style={{ display: 'block', fontSize: 12, fontWeight: 600, color: WF.inkSoft, marginBottom: 4 }}>Date of birth</label>
                       <input
                         id={`guest-dob-${activeGuest.id}`}
                         type="date"
                         value={activeForm.dob}
                         onChange={(event) => setManualForm((prev) => ({ ...prev, [activeGuest.id]: { ...activeForm, dob: event.target.value } }))}
-                        style={{ width: '100%', padding: '9px 12px', fontSize: 13, border: `1px solid ${WF.line}`, borderRadius: 7, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', background: '#fff', color: activeForm.dob ? WF.ink : WF.inkFaint }} />
+                        style={{ width: '100%', padding: '8px 12px', fontSize: 14, border: `1px solid ${WF.line}`, borderRadius: 7, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', background: '#fff', color: activeForm.dob ? WF.ink : WF.inkFaint }} />
                     </div>
                     <div>
-                      <label htmlFor={`guest-phone-${activeGuest.id}`} style={{ display: 'block', fontSize: 11, fontWeight: 600, color: WF.inkSoft, marginBottom: 5 }}>Phone number</label>
+                      <label htmlFor={`guest-phone-${activeGuest.id}`} style={{ display: 'block', fontSize: 12, fontWeight: 600, color: WF.inkSoft, marginBottom: 4 }}>Phone number</label>
                       <input
                         id={`guest-phone-${activeGuest.id}`}
                         type="tel"
                         value={activeForm.phone}
                         onChange={(event) => setManualForm((prev) => ({ ...prev, [activeGuest.id]: { ...activeForm, phone: event.target.value } }))}
                         placeholder="e.g. (555) 123-4567"
-                        style={{ width: '100%', padding: '9px 12px', fontSize: 13, border: `1px solid ${WF.line}`, borderRadius: 7, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', background: '#fff' }} />
+                        style={{ width: '100%', padding: '8px 12px', fontSize: 14, border: `1px solid ${WF.line}`, borderRadius: 7, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', background: '#fff' }} />
                     </div>
                   </div>
-                  <div style={{ marginBottom: 14 }}>
-                    <label htmlFor={`guest-email-${activeGuest.id}`} style={{ display: 'block', fontSize: 11, fontWeight: 600, color: WF.inkSoft, marginBottom: 5 }}>Email address</label>
+                  <div style={{ marginBottom: 16 }}>
+                    <label htmlFor={`guest-email-${activeGuest.id}`} style={{ display: 'block', fontSize: 12, fontWeight: 600, color: WF.inkSoft, marginBottom: 4 }}>Email address</label>
                     <input
                       id={`guest-email-${activeGuest.id}`}
                       type="email"
                       value={activeForm.email}
                       onChange={(event) => setManualForm((prev) => ({ ...prev, [activeGuest.id]: { ...activeForm, email: event.target.value } }))}
                       placeholder="e.g. maria.alvarez@email.com"
-                      style={{ width: '100%', padding: '9px 12px', fontSize: 13, border: `1px solid ${WF.line}`, borderRadius: 7, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', background: '#fff' }} />
+                      style={{ width: '100%', padding: '8px 12px', fontSize: 14, border: `1px solid ${WF.line}`, borderRadius: 7, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', background: '#fff' }} />
                   </div>
                   <button
                     type="button"
                     onClick={() => handleSaveManual(activeGuest.id)}
                     disabled={!activeForm.firstName && !activeForm.lastName}
                     style={{
-                      width: '100%', padding: '10px', fontSize: 13, fontWeight: 700, border: 'none', borderRadius: 8,
+                      width: '100%', padding: '12px', fontSize: 14, fontWeight: 700, border: 'none', borderRadius: 8,
                       background: (!activeForm.firstName && !activeForm.lastName) ? '#CBD5E1' : WF.accent,
                       color: (!activeForm.firstName && !activeForm.lastName) ? '#64748B' : '#fff',
                       cursor: (!activeForm.firstName && !activeForm.lastName) ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
@@ -509,7 +509,7 @@ function GuestDetailsSection({
                   type="button"
                   onClick={() => activeIsDone ? setExpandedGuestId(null) : handleConfirm(activeGuest.id)}
                   style={{
-                    width: '100%', padding: '10px', fontSize: 13, fontWeight: 700,
+                    width: '100%', padding: '12px', fontSize: 14, fontWeight: 700,
                     border: 'none', borderRadius: 8, background: WF.accent,
                     color: '#fff', cursor: 'pointer', fontFamily: 'inherit',
                   }}>
@@ -539,7 +539,7 @@ function GuestTripProtection({ selected, guestCount, onToggle }) {
         onClick={onToggle}
         style={{
           width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
-          padding: '11px 13px', borderRadius: 9,
+          padding: '12px 12px', borderRadius: 9,
           border: `1px solid ${selected ? WF.accentLine : WF.line}`,
           background: selected ? WF.accentTint : '#fff',
           boxShadow: '0 1px 2px rgba(15,23,42,0.04)',
@@ -548,21 +548,21 @@ function GuestTripProtection({ selected, guestCount, onToggle }) {
         }}>
         <span style={{ minWidth: 0 }}>
           <span id="guest-trip-protection-title" style={{
-            display: 'block', marginBottom: 7, fontSize: 10.5, fontWeight: 800,
-            letterSpacing: 0.75, color: WF.inkLabel, textTransform: 'uppercase',
+            display: 'block', marginBottom: 8, fontSize: 12, fontWeight: 700,
+            letterSpacing: '0.04em', color: WF.inkLabel, textTransform: 'uppercase',
           }}>
             Trip protection
           </span>
-          <span style={{ display: 'block', fontSize: 12.5, fontWeight: 800, color: WF.ink }}>
+          <span style={{ display: 'block', fontSize: 14, fontWeight: 700, color: WF.ink }}>
             Add trip protection
           </span>
-          <span style={{ display: 'block', marginTop: 3, fontSize: 10.5, color: WF.inkSoft }}>
+          <span style={{ display: 'block', marginTop: 4, fontSize: 12, color: WF.inkSoft }}>
             Medical and cancellation coverage · ${PROTECTION_PP} per guest
           </span>
         </span>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
           <span style={{
-            fontSize: 11.5, fontWeight: 800, color: selected ? WF.ink : WF.inkSoft,
+            fontSize: 12, fontWeight: 700, color: selected ? WF.ink : WF.inkSoft,
             fontFamily: 'ui-monospace, monospace', fontVariantNumeric: 'tabular-nums',
           }}>
             {selected ? `+${money(total)}` : 'Not added'}
@@ -592,7 +592,7 @@ function StepProgress3({ current, onBack }) {
     <div style={{
       display: 'flex', alignItems: 'center',
       background: WF.panel, border: `1px solid ${WF.line}`,
-      borderRadius: 8, padding: '6px 8px', marginBottom: 20
+      borderRadius: 8, padding: '8px 8px', marginBottom: 20
     }}>
       {FLOW4.map((st, i) => {
         const state = st.n < current ? 'done' : st.n === current ? 'current' : 'pending';
@@ -601,7 +601,7 @@ function StepProgress3({ current, onBack }) {
           <React.Fragment key={st.n}>
             <button onClick={() => clickable && onBack(st.n)} style={{
               display: 'flex', alignItems: 'center', gap: 8, border: 'none',
-              padding: '6px 10px', borderRadius: 6, fontFamily: 'inherit',
+              padding: '8px 12px', borderRadius: 6, fontFamily: 'inherit',
               background: state === 'current' ? WF.fill : 'transparent',
               cursor: clickable ? 'pointer' : 'default'
             }}>
@@ -611,7 +611,7 @@ function StepProgress3({ current, onBack }) {
                 background: state === 'pending' ? WF.fillStrong : WF.accent,
                 boxShadow: state === 'current' ? `0 0 0 3px ${WF.accentLine}` : 'none',
                 color: state === 'pending' ? WF.inkSoft : '#fff',
-                fontSize: 10, fontWeight: 700,
+                fontSize: 12, fontWeight: 700,
                 display: 'flex', alignItems: 'center', justifyContent: 'center'
               }}>{state === 'done' ? '✓' : st.n}</div>
               <div style={{
@@ -628,6 +628,7 @@ function StepProgress3({ current, onBack }) {
 }
 
 function Step3App({ booking, update, navigate }) {
+  const GroupContext = window.GroupContextBar;
   // Bound to the router's booking. `guestData` used to live in a second
   // useState here, and handleContinue persisted `state` without it — which is
   // why every guest name turned back into "Adult 1 / Child 2" on Step 4.
@@ -670,8 +671,8 @@ function Step3App({ booking, update, navigate }) {
           notice={unassignedSupps.length > 0 && (
             <div style={{ padding: '12px 16px', borderBottom: `1px solid ${WF.line}` }}>
               <div style={{
-                padding: '9px 11px', background: '#FFFBEB', border: '1px solid #FDE68A',
-                borderRadius: 8, fontSize: 11, color: '#92400E', fontWeight: 500,
+                padding: '8px 12px', background: '#FFFBEB', border: '1px solid #FDE68A',
+                borderRadius: 8, fontSize: 12, color: '#92400E', fontWeight: 500,
               }}>
                 {unassignedSupps.length} supplement{unassignedSupps.length > 1 ? 's are' : ' is'} not yet assigned to a guest.
               </div>
@@ -685,9 +686,9 @@ function Step3App({ booking, update, navigate }) {
               onClick={handleBack}
               aria-label="Back to sailing, fare and cabin"
               style={{
-                minHeight: 40, padding: '9px 14px', border: `1px solid ${WF.line}`,
+                minHeight: 40, padding: '8px 16px', border: `1px solid ${WF.line}`,
                 borderRadius: 8, background: WF.panel, color: WF.inkSoft,
-                fontFamily: 'inherit', fontSize: 12.5, fontWeight: 600,
+                fontFamily: 'inherit', fontSize: 14, fontWeight: 600,
                 cursor: 'pointer', whiteSpace: 'nowrap',
               }}>
               Back to sailing, fare &amp; cabin
@@ -698,11 +699,11 @@ function Step3App({ booking, update, navigate }) {
               disabled={!allGuestsAssigned}
               title={allGuestsAssigned ? undefined : 'Assign all guests to continue'}
               style={{
-                minWidth: 210, minHeight: 40, padding: '9px 18px', border: 'none',
+                minWidth: 210, minHeight: 40, padding: '8px 20px', border: 'none',
                 borderRadius: 8,
                 background: allGuestsAssigned ? WF.accent : WF.fillStrong,
                 color: allGuestsAssigned ? WF.accentText : WF.inkFaint,
-                fontFamily: 'inherit', fontSize: 12.5, fontWeight: 700,
+                fontFamily: 'inherit', fontSize: 14, fontWeight: 700,
                 cursor: allGuestsAssigned ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap',
               }}>
               {allGuestsAssigned ? 'Continue to review' : 'Assign all guests to continue'}
@@ -712,12 +713,13 @@ function Step3App({ booking, update, navigate }) {
         progressBar={<StepProgress3 current={2} onBack={handleBack} />}>
 
         <div data-screen-label="Step 2 · Add Guests">
-          <div style={{ fontWeight: 700, color: WF.ink, letterSpacing: -0.3, marginBottom: 8, fontSize: "20px" }}>
+          {state.groupId && GroupContext && <GroupContext booking={state} update={update} />}
+          <div style={{ fontWeight: 700, color: WF.ink, letterSpacing: '-0.01em', marginBottom: 8, fontSize: "20px" }}>
             Add guest details
           </div>
 
           {/* Sub-header copy */}
-          <div style={{ fontSize: 13, color: WF.inkSoft, marginBottom: 20 }}>
+          <div style={{ fontSize: 14, color: WF.inkSoft, marginBottom: 20 }}>
             Search an existing profile, add new, or use a temporary guest.
           </div>
 

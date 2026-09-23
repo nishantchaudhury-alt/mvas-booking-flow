@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MVAS Booking Flow · Design System Foundation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="tokens.css?v=3" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; }
+    html { background: var(--ds-color-canvas); }
+    body {
+      margin: 0;
+      background: var(--ds-color-canvas);
+      color: var(--ds-color-text-primary);
+      font-family: var(--ds-type-family-body);
+      font-size: var(--ds-type-body-size);
+      line-height: var(--ds-type-body-line-height);
+    }
+    button, input, textarea, select { font: inherit; }
+    button:focus-visible, input:focus-visible, a:focus-visible {
+      outline: var(--ds-focus-width) solid var(--ds-color-focus);
+      outline-offset: var(--ds-focus-offset);
+    }
+    .skip-link {
+      position: fixed;
+      left: var(--ds-primitive-space-4);
+      top: var(--ds-primitive-space-2);
+      z-index: var(--ds-layer-modal-nested);
+      padding: var(--ds-primitive-space-2) var(--ds-primitive-space-3);
+      border-radius: var(--ds-radius-control);
+      background: var(--ds-color-surface);
+      color: var(--ds-color-action);
+      transform: translateY(-160%);
+    }
+    .skip-link:focus { transform: translateY(0); }
+    .topbar {
+      min-height: 70px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--ds-primitive-space-6);
+      padding: var(--ds-primitive-space-3) var(--ds-primitive-space-14);
+      background: var(--ds-color-shell-bg);
+      color: var(--ds-color-on-action);
+      border-bottom: 1px solid var(--ds-color-shell-bg);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: var(--ds-primitive-space-4);
+      min-width: 0;
+    }
+    .brand img { width: 132px; height: auto; display: block; }
+    .brand-copy { border-left: 1px solid rgba(255,255,255,.2); padding-left: var(--ds-primitive-space-4); }
+    .brand-copy strong { display: block; font-size: var(--ds-type-body-size); }
+    .brand-copy span { display: block; color: var(--ds-color-shell-text-muted); font-size: var(--ds-type-caption-size); }
+    .version {
+      border: 1px solid rgba(255,255,255,.24);
+      border-radius: var(--ds-radius-pill);
+      padding: var(--ds-primitive-space-1) var(--ds-primitive-space-3);
+      color: var(--ds-color-shell-text-muted);
+      font-size: var(--ds-type-caption-size);
+      font-weight: var(--ds-primitive-font-weight-semibold);
+      white-space: nowrap;
+    }
+    main { width: min(1180px, calc(100% - 40px)); margin: 0 auto; padding: 48px 0 72px; }
+    .hero { max-width: 780px; margin-bottom: 36px; }
+    .eyebrow {
+      margin: 0 0 var(--ds-primitive-space-2);
+      color: var(--ds-color-text-label);
+      font-size: var(--ds-type-label-size);
+      font-weight: var(--ds-type-label-weight);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    h1 { margin: 0; font-size: var(--ds-type-hero-size); line-height: var(--ds-type-hero-line-height); letter-spacing: var(--ds-type-tracking-tight); }
+    .lede { margin: var(--ds-primitive-space-4) 0 0; color: var(--ds-color-text-secondary); font-size: var(--ds-type-body-lg-size); line-height: var(--ds-type-body-lg-line-height); max-width: 68ch; }
+    .principles { display: flex; flex-wrap: wrap; gap: var(--ds-primitive-space-2); margin-top: var(--ds-primitive-space-5); }
+    .principle {
+      padding: var(--ds-primitive-space-1) var(--ds-primitive-space-3);
+      background: var(--ds-color-selection);
+      border: 1px solid var(--ds-color-selection-border);
+      border-radius: var(--ds-radius-pill);
+      color: var(--ds-color-action);
+      font-size: var(--ds-type-body-sm-size);
+      font-weight: var(--ds-primitive-font-weight-semibold);
+    }
+    .layout { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--ds-primitive-space-5); }
+    .panel {
+      grid-column: span 12;
+      padding: var(--ds-primitive-space-7);
+      background: var(--ds-card-bg);
+      border: 1px solid var(--ds-card-border);
+      border-radius: var(--ds-panel-radius);
+      box-shadow: var(--ds-panel-shadow);
+    }
+    .panel.half { grid-column: span 6; }
+    .panel.third { grid-column: span 4; }
+    .section-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--ds-primitive-space-4); margin-bottom: var(--ds-primitive-space-5); }
+    h2 { margin: 0; font-size: var(--ds-type-section-title-size); line-height: var(--ds-type-section-title-line-height); }
+    .section-note { margin: 4px 0 0; color: var(--ds-color-text-secondary); font-size: var(--ds-type-body-sm-size); }
+    .token-label {
+      color: var(--ds-color-text-label);
+      font-family: var(--ds-type-family-data);
+      font-size: var(--ds-type-caption-size);
+    }
+    .swatches { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: var(--ds-primitive-space-3); }
+    .swatch {
+      overflow: hidden;
+      border: 1px solid var(--ds-color-border);
+      border-radius: var(--ds-radius-card);
+      background: var(--ds-color-surface);
+    }
+    .swatch-color { height: 72px; background: var(--swatch); border-bottom: 1px solid var(--ds-color-border); }
+    .swatch-copy { padding: var(--ds-primitive-space-3); }
+    .swatch-copy strong { display: block; font-size: var(--ds-type-body-sm-size); }
+    .swatch-copy code { display: block; margin-top: var(--ds-primitive-space-1); color: var(--ds-color-text-muted); font-size: var(--ds-type-caption-size); overflow-wrap: anywhere; }
+    .type-list { display: grid; gap: var(--ds-primitive-space-4); }
+    .type-row { display: grid; grid-template-columns: 120px minmax(0,1fr); align-items: baseline; gap: var(--ds-primitive-space-4); padding-bottom: var(--ds-primitive-space-3); border-bottom: 1px solid var(--ds-color-divider); }
+    .type-row:last-child { padding-bottom: 0; border-bottom: 0; }
+    .type-sample.title { font-size: var(--ds-type-page-title-size); font-weight: var(--ds-type-title-weight); line-height: var(--ds-type-page-title-line-height); }
+    .type-sample.section { font-size: var(--ds-type-section-title-size); line-height: var(--ds-type-section-title-line-height); font-weight: var(--ds-type-title-weight); }
+    .type-sample.body { font-size: var(--ds-type-body-size); line-height: var(--ds-type-body-line-height); }
+    .type-sample.caption { font-size: var(--ds-type-caption-size); line-height: var(--ds-type-caption-line-height); color: var(--ds-color-text-secondary); }
+    .type-sample.data { font-family: var(--ds-type-family-data); font-size: var(--ds-type-body-lg-size); line-height: var(--ds-type-body-lg-line-height); font-variant-numeric: tabular-nums; font-weight: var(--ds-type-value-weight); }
+    .scale { display: grid; gap: var(--ds-primitive-space-2); }
+    .scale-row { display: grid; grid-template-columns: 44px 1fr 42px; align-items: center; gap: var(--ds-primitive-space-3); }
+    .scale-bar { height: 10px; width: var(--bar); max-width: 100%; background: var(--ds-color-action); border-radius: var(--ds-radius-pill); }
+    .scale-row code { color: var(--ds-color-text-muted); font-size: var(--ds-type-caption-size); text-align: right; }
+    .radius-row { display: flex; flex-wrap: wrap; gap: var(--ds-primitive-space-3); margin-top: var(--ds-primitive-space-5); }
+    .radius-sample { width: 68px; height: 48px; display: grid; place-items: center; background: var(--ds-color-selection); border: 1px solid var(--ds-color-selection-border); color: var(--ds-color-action); font-size: 12px; font-weight: 700; border-radius: var(--radius); }
+    .component-stack { display: grid; gap: var(--ds-primitive-space-5); }
+    .component-group { display: grid; gap: var(--ds-primitive-space-3); }
+    .component-label { margin: 0; color: var(--ds-color-text-label); font-size: var(--ds-type-caption-size); font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+    .button-row, .badge-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--ds-primitive-space-2); }
+    .btn {
+      min-height: var(--ds-button-height-default);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--ds-primitive-space-2);
+      padding: 0 var(--ds-primitive-space-4);
+      border-radius: var(--ds-button-radius);
+      border: 1px solid transparent;
+      cursor: pointer;
+      font-weight: var(--ds-primitive-font-weight-semibold);
+      transition: background var(--ds-motion-fast) var(--ds-motion-ease-standard), border-color var(--ds-motion-fast) var(--ds-motion-ease-standard);
+    }
+    .btn.primary { background: var(--ds-button-primary-bg); color: var(--ds-button-primary-text); box-shadow: var(--ds-button-shadow); }
+    .btn.primary:hover { background: var(--ds-button-primary-bg-hover); }
+    .btn.secondary { background: var(--ds-button-secondary-bg); color: var(--ds-button-secondary-text); border-color: var(--ds-button-secondary-border); }
+    .btn.secondary:hover { background: var(--ds-color-surface-subtle); border-color: var(--ds-color-control-border); }
+    .btn.quiet { background: transparent; color: var(--ds-color-action); }
+    .btn.danger { background: transparent; color: var(--ds-button-danger-text); }
+    .btn:disabled { background: var(--ds-color-surface-strong); color: var(--ds-color-text-label); border-color: transparent; box-shadow: none; cursor: not-allowed; }
+    .field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--ds-primitive-space-4); }
+    .field { display: grid; gap: var(--ds-primitive-space-2); }
+    .field label { color: var(--ds-color-text-secondary); font-size: var(--ds-type-caption-size); font-weight: var(--ds-primitive-font-weight-semibold); }
+    .field input {
+      width: 100%;
+      min-height: var(--ds-field-height-default);
+      padding: 0 var(--ds-space-control-x);
+      color: var(--ds-field-text);
+      background: var(--ds-field-bg);
+      border: 1px solid var(--ds-field-border);
+      border-radius: var(--ds-field-radius);
+    }
+    .field input::placeholder { color: var(--ds-field-placeholder); opacity: 1; }
+    .field small { color: var(--ds-color-text-muted); font-size: var(--ds-type-caption-size); }
+    .field.error input { border-color: var(--ds-field-error); }
+    .field.error small { color: var(--ds-field-error); }
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: var(--ds-badge-radius); border: 1px solid transparent; font-size: var(--ds-type-caption-size); font-weight: 700; }
+    .badge.neutral { background: var(--ds-badge-neutral-bg); color: var(--ds-badge-neutral-text); border-color: var(--ds-color-border); }
+    .badge.accent { background: var(--ds-badge-accent-bg); color: var(--ds-badge-accent-text); border-color: var(--ds-color-selection-border); }
+    .badge.success { background: var(--ds-color-success-bg); color: var(--ds-color-success-text); border-color: var(--ds-color-success-border); }
+    .badge.warning { background: var(--ds-color-warning-bg); color: var(--ds-color-warning-text); border-color: var(--ds-color-warning-border); }
+    .badge.danger { background: var(--ds-color-danger-bg); color: var(--ds-color-danger-text); border-color: var(--ds-color-danger-border); }
+    .data-card { overflow: hidden; border: 1px solid var(--ds-card-border); border-radius: var(--ds-card-radius); box-shadow: var(--ds-card-shadow); }
+    .data-card header { display: flex; align-items: center; justify-content: space-between; padding: var(--ds-primitive-space-3) var(--ds-primitive-space-4); background: var(--ds-color-surface-subtle); border-bottom: 1px solid var(--ds-color-border); }
+    .data-card header strong { font-size: var(--ds-type-body-size); }
+    .data-row { display: grid; grid-template-columns: 1.4fr .8fr .7fr; gap: var(--ds-primitive-space-3); align-items: center; min-height: 46px; padding: var(--ds-primitive-space-2) var(--ds-primitive-space-4); border-bottom: 1px solid var(--ds-color-divider); }
+    .data-row:last-child { border-bottom: 0; }
+    .data-row .sub { color: var(--ds-color-text-secondary); font-size: var(--ds-type-caption-size); }
+    .money { text-align: right; font-family: var(--ds-type-family-data); font-variant-numeric: tabular-nums; font-weight: var(--ds-type-value-weight); }
+    .focus-demo { padding: var(--ds-primitive-space-3); border-radius: var(--ds-radius-card); background: var(--ds-color-selection); border: 1px solid var(--ds-color-selection-border); color: var(--ds-color-action); }
+    .footer-note { margin: var(--ds-primitive-space-8) 0 0; color: var(--ds-color-text-secondary); font-size: var(--ds-type-body-sm-size); }
+    .footer-note a { color: var(--ds-color-action); font-weight: var(--ds-primitive-font-weight-semibold); }
+    @media (max-width: 820px) {
+      .panel.half, .panel.third { grid-column: span 12; }
+      .field-grid { grid-template-columns: 1fr; }
+      .topbar { align-items: flex-start; padding-inline: var(--ds-primitive-space-5); }
+      .panel { padding: var(--ds-primitive-space-5); }
+      h1 { font-size: var(--ds-type-display-size); line-height: var(--ds-type-display-line-height); }
+      .brand-copy { display: none; }
+    }
+    @media (max-width: 520px) {
+      main { width: min(100% - 32px, 1180px); padding-top: 32px; }
+      .topbar { padding-inline: var(--ds-primitive-space-5); }
+      h1 { font-size: var(--ds-type-page-title-size); line-height: var(--ds-type-page-title-line-height); }
+      .brand img { width: 112px; }
+      .type-row { grid-template-columns: 1fr; gap: var(--ds-primitive-space-1); }
+      .data-row { grid-template-columns: 1fr auto; }
+      .data-row .status { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to foundation</a>
+  <header class="topbar">
+    <div class="brand">
+      <img src="../MVas Logo.png" alt="Margaritaville at Sea" />
+      <div class="brand-copy">
+        <strong>Booking Flow Design System</strong>
+        <span>Compact operations foundation</span>
+      </div>
+    </div>
+    <span class="version">Foundation v0.1</span>
+  </header>
+
+  <main id="main">
+    <section class="hero" aria-labelledby="page-title">
+      <p class="eyebrow">MVAS product UI</p>
+      <h1 id="page-title">A calm, compact foundation for confident booking work.</h1>
+      <p class="lede">The system preserves the current interface character while centralizing the decisions that should stay consistent across sailing, cabin, guest, and confirmation workflows.</p>
+      <div class="principles" aria-label="Design principles">
+        <span class="principle">Scan speed</span>
+        <span class="principle">State clarity</span>
+        <span class="principle">Price confidence</span>
+        <span class="principle">Navy interaction</span>
+      </div>
+    </section>
+
+    <div class="layout">
+      <section class="panel" aria-labelledby="colors-title">
+        <div class="section-head">
+          <div><h2 id="colors-title">Semantic color</h2><p class="section-note">Use roles in product code; primitives stay inside the token layer.</p></div>
+          <span class="token-label">color.*</span>
+        </div>
+        <div class="swatches">
+          <article class="swatch"><div class="swatch-color" style="--swatch:var(--ds-color-action)"></div><div class="swatch-copy"><strong>Action</strong><code>--ds-color-action</code></div></article>
+          <article class="swatch"><div class="swatch-color" style="--swatch:var(--ds-color-canvas)"></div><div class="swatch-copy"><strong>Canvas</strong><code>--ds-color-canvas</code></div></article>
+          <article class="swatch"><div class="swatch-color" style="--swatch:var(--ds-color-surface)"></div><div class="swatch-copy"><strong>Surface</strong><code>--ds-color-surface</code></div></article>
+          <article class="swatch"><div class="swatch-color" style="--swatch:var(--ds-color-selection)"></div><div class="swatch-copy"><strong>Selection</strong><code>--ds-color-selection</code></div></article>
+          <article class="swatch"><div class="swatch-color" style="--swatch:var(--ds-color-success-text)"></div><div class="swatch-copy"><strong>Success</strong><code>--ds-color-success-text</code></div></article>
+          <article class="swatch"><div class="swatch-color" style="--swatch:var(--ds-color-warning-text)"></div><div class="swatch-copy"><strong>Warning</strong><code>--ds-color-warning-text</code></div></article>
+          <article class="swatch"><div class="swatch-color" style="--swatch:var(--ds-color-danger-text)"></div><div class="swatch-copy"><strong>Danger</strong><code>--ds-color-danger-text</code></div></article>
+        </div>
+      </section>
+
+      <section class="panel half" aria-labelledby="type-title">
+        <div class="section-head"><div><h2 id="type-title">Typography</h2><p class="section-note">Inter for UI, monospaced figures for prices and codes.</p></div><span class="token-label">type.*</span></div>
+        <div class="type-list">
+          <div class="type-row"><span class="token-label">Page title</span><span class="type-sample title">Select a sailing</span></div>
+          <div class="type-row"><span class="token-label">Section</span><span class="type-sample section">Fare &amp; stateroom</span></div>
+          <div class="type-row"><span class="token-label">Body</span><span class="type-sample body">Choose the best option for your guest.</span></div>
+          <div class="type-row"><span class="token-label">Metadata</span><span class="type-sample caption">DEPARTS · SEP 14, 2026</span></div>
+          <div class="type-row"><span class="token-label">Data</span><span class="type-sample data">$2,486.00</span></div>
+        </div>
+      </section>
+
+      <section class="panel half" aria-labelledby="scale-title">
+        <div class="section-head"><div><h2 id="scale-title">Spacing &amp; shape</h2><p class="section-note">A strict 4px rhythm for every margin, padding, and gap.</p></div><span class="token-label">space.*</span></div>
+        <div class="scale" aria-label="Spacing scale">
+          <div class="scale-row"><span>4</span><span class="scale-bar" style="--bar:16px"></span><code>space-1</code></div>
+          <div class="scale-row"><span>8</span><span class="scale-bar" style="--bar:32px"></span><code>space-2</code></div>
+          <div class="scale-row"><span>12</span><span class="scale-bar" style="--bar:48px"></span><code>space-3</code></div>
+          <div class="scale-row"><span>16</span><span class="scale-bar" style="--bar:64px"></span><code>space-4</code></div>
+          <div class="scale-row"><span>24</span><span class="scale-bar" style="--bar:96px"></span><code>space-6</code></div>
+          <div class="scale-row"><span>32</span><span class="scale-bar" style="--bar:128px"></span><code>space-8</code></div>
+        </div>
+        <div class="radius-row" aria-label="Radius scale">
+          <span class="radius-sample" style="--radius:var(--ds-primitive-radius-sm)">4</span>
+          <span class="radius-sample" style="--radius:var(--ds-radius-control)">6</span>
+          <span class="radius-sample" style="--radius:var(--ds-radius-card)">8</span>
+          <span class="radius-sample" style="--radius:var(--ds-radius-panel)">10</span>
+          <span class="radius-sample" style="--radius:var(--ds-radius-pill)">pill</span>
+        </div>
+      </section>
+
+      <section class="panel half" aria-labelledby="controls-title">
+        <div class="section-head"><div><h2 id="controls-title">Controls</h2><p class="section-note">One primary action per decision surface.</p></div><span class="token-label">component.*</span></div>
+        <div class="component-stack">
+          <div class="component-group">
+            <p class="component-label">Buttons</p>
+            <div class="button-row"><button class="btn primary">Continue to guests</button><button class="btn secondary">Back</button><button class="btn quiet">View details</button><button class="btn danger">Discard</button><button class="btn" disabled>Unavailable</button></div>
+          </div>
+          <div class="component-group">
+            <p class="component-label">Fields</p>
+            <div class="field-grid">
+              <div class="field"><label for="promo">Promotion code</label><input id="promo" placeholder="Enter code" /><small>Codes apply to eligible base fares.</small></div>
+              <div class="field error"><label for="guest">Guest name</label><input id="guest" aria-invalid="true" aria-describedby="guest-error" value="" /><small id="guest-error">Enter the guest’s legal name.</small></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel half" aria-labelledby="status-title">
+        <div class="section-head"><div><h2 id="status-title">Status &amp; data</h2><p class="section-note">Color always travels with text or a shape cue.</p></div><span class="token-label">status.*</span></div>
+        <div class="component-stack">
+          <div class="badge-row"><span class="badge neutral">Draft</span><span class="badge accent">Selected</span><span class="badge success">Bookable</span><span class="badge warning">Override</span><span class="badge danger">Unavailable</span></div>
+          <div class="data-card">
+            <header><strong>Cabin selection</strong><span class="token-label">3 options</span></header>
+            <div class="data-row"><div><strong>Oceanview</strong><div class="sub">Deck 6 · Forward</div></div><span class="status badge success">Bookable</span><span class="money">$486</span></div>
+            <div class="data-row"><div><strong>Balcony</strong><div class="sub">Deck 8 · Midship</div></div><span class="status badge accent">Selected</span><span class="money">$624</span></div>
+            <div class="data-row"><div><strong>Suite</strong><div class="sub">Deck 9 · Aft</div></div><span class="status badge danger">Sold out</span><span class="money">—</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel third" aria-labelledby="surface-title">
+        <div class="section-head"><div><h2 id="surface-title">Surface</h2><p class="section-note">Border first, shadow second.</p></div></div>
+        <div style="padding:20px;border:1px solid var(--ds-card-border);border-radius:var(--ds-card-radius);box-shadow:var(--ds-card-shadow)"><strong>Working card</strong><p style="margin:8px 0 0;color:var(--ds-color-text-secondary)">Quiet containment keeps dense content scannable.</p></div>
+      </section>
+      <section class="panel third" aria-labelledby="focus-title">
+        <div class="section-head"><div><h2 id="focus-title">Focus</h2><p class="section-note">Visible, consistent, and never color-only.</p></div></div>
+        <div class="focus-demo">Press Tab to inspect the controls above.</div>
+      </section>
+      <section class="panel third" aria-labelledby="motion-title">
+        <div class="section-head"><div><h2 id="motion-title">Motion</h2><p class="section-note">120 / 150 / 200ms, with reduced-motion support.</p></div></div>
+        <p style="margin:0;color:var(--ds-color-text-secondary)">Use motion to explain state change—not to decorate routine operations.</p>
+      </section>
+    </div>
+
+    <p class="footer-note">Implementation guidance lives in <a href="MASTER.md">MASTER.md</a>; audit evidence and priorities live in <a href="AUDIT.md">AUDIT.md</a>.</p>
+  </main>
+</body>
+</html>

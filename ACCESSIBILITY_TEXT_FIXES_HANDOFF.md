@@ -22,22 +22,22 @@ This is not a WCAG certification. It documents the fixes applied to the MVAS boo
 
 ## 1. Text size and hierarchy
 
-Do not use microcopy below 11px for visible interface text.
+Do not use visible interface text below 12px. Keep all type sizes on the even-number scale so hierarchy stays predictable across screens and portable components.
 
 Recommended scale:
 
-| Purpose | Size | Weight |
-| --- | ---: | ---: |
-| Page title | 19–22px | 700 |
-| Modal title | 15–16px | 700–750 |
-| Section or card title | 12–14px | 700–750 |
-| Standard body and controls | 12–13px | 500–700 |
-| Metadata and helper text | 11px minimum | 400–600 |
-| Important codes and values | 12–15px | 700–800 |
+| Purpose | Size | Line height | Weight |
+| --- | ---: | ---: | ---: |
+| Page title | 24px | 32px | 700 |
+| Modal title | 20px | 28px | 700 |
+| Section or card title | 16px | 24px | 600–700 |
+| Standard body and controls | 14px | 20px | 400–600 |
+| Metadata and helper text | 12px | 16px | 400–600 |
+| Important codes and values | 14–20px | 20–28px | 600–700 |
 
 Use weight, spacing, and neutral color before introducing additional accent colors.
 
-For an existing application with scattered inline font sizes, first inventory every value below 11px. Replace those values in the owning components or typography tokens. A global override can be used temporarily during migration, but it should not be the long-term architecture.
+For an existing application with scattered inline font sizes, inventory every value outside the approved scale. Replace those values in the owning components or typography tokens. A global override can be used temporarily during migration, but it should not be the long-term architecture.
 
 ```css
 :root {
@@ -49,12 +49,14 @@ For an existing application with scattered inline font sizes, first inventory ev
 
 .text-body {
   color: var(--text-primary);
-  font-size: 13px;
+  font-size: 14px;
+  line-height: 20px;
 }
 
 .text-meta {
   color: var(--text-secondary);
-  font-size: 11px;
+  font-size: 12px;
+  line-height: 16px;
 }
 ```
 
@@ -355,7 +357,7 @@ Check that:
 
 ### Text and visual quality
 
-- [ ] Visible interface text is at least 11px.
+- [ ] Visible interface text is at least 12px and uses the approved even-number scale.
 - [ ] Placeholder and secondary text remain readable.
 - [ ] Inputs are identifiable without hover or focus.
 - [ ] State is never communicated through color alone.
@@ -394,4 +396,3 @@ The primary examples in the MVAS prototype are located in:
 - `screens/step3-guests.jsx` — traveler disclosure cards, profile labels, placeholders, and guest-state copy.
 - `screens/where-when-step1.jsx` — filter and tab semantics.
 - `screens/summary-panel.jsx` — expanded-state semantics and summary labels.
-
