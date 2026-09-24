@@ -134,6 +134,276 @@ function WFField({ label, value, hint, kind = 'text', width, badge, required, st
   );
 }
 
+let WF_SELECT_ID = 0;
+
+function WFSelect({
+  value,
+  options = [],
+  onValueChange,
+  ariaLabel,
+  ariaDescribedBy,
+  disabled = false,
+  width = '100%',
+  menuMinWidth = 200,
+  height = 32,
+  fontSize = 12,
+  fontWeight = 600,
+  showSelectedMeta = true,
+  menuZIndex = 'var(--ds-layer-popover, 40)',
+  placeholder = 'Select an option',
+  style = {},
+}) {
+  const normalizedOptions = options.map((option) => (
+    typeof option === 'string'
+      ? { value: option, label: option }
+      : option
+  ));
+  const normalizedValue = value == null ? '' : String(value);
+  const selectedIndex = normalizedOptions.findIndex((option) => String(option.value) === normalizedValue);
+  const selectedOption = selectedIndex >= 0 ? normalizedOptions[selectedIndex] : null;
+  const [open, setOpen] = React.useState(false);
+  const [activeIndex, setActiveIndex] = React.useState(selectedIndex);
+  const [triggerHovered, setTriggerHovered] = React.useState(false);
+  const [menuPosition, setMenuPosition] = React.useState(null);
+  const triggerRef = React.useRef(null);
+  const menuRef = React.useRef(null);
+  const rootRef = React.useRef(null);
+  const typeaheadRef = React.useRef({ value: '', timer: null });
+  const menuIdRef = React.useRef(null);
+  if (!menuIdRef.current) menuIdRef.current = `wf-select-${++WF_SELECT_ID}`;
+  const menuId = menuIdRef.current;
+
+  const enabledIndices = normalizedOptions
+    .map((option, index) => (!option.disabled ? index : -1))
+    .filter((index) => index >= 0);
+
+  const moveActive = (direction) => {
+    if (!enabledIndices.length) return;
+    const currentPosition = enabledIndices.indexOf(activeIndex);
+    const nextPosition = currentPosition < 0
+      ? (direction > 0 ? 0 : enabledIndices.length - 1)
+      : (currentPosition + direction + enabledIndices.length) % enabledIndices.length;
+    setActiveIndex(enabledIndices[nextPosition]);
+  };
+
+  const openMenu = (direction = 0) => {
+    if (disabled || !enabledIndices.length) return;
+    const fallback = direction < 0 ? enabledIndices[enabledIndices.length - 1] : enabledIndices[0];
+    setActiveIndex(selectedIndex >= 0 && !normalizedOptions[selectedIndex].disabled ? selectedIndex : fallback);
+    setOpen(true);
+  };
+
+  const closeMenu = (restoreFocus = false) => {
+    setOpen(false);
+    if (restoreFocus) window.requestAnimationFrame(() => triggerRef.current && triggerRef.current.focus());
+  };
+
+  const chooseOption = (index) => {
+    const option = normalizedOptions[index];
+    if (!option || option.disabled) return;
+    onValueChange && onValueChange(option.value);
+    setOpen(false);
+    window.requestAnimationFrame(() => triggerRef.current && triggerRef.current.focus());
+  };
+
+  React.useLayoutEffect(() => {
+    if (!open || !triggerRef.current) return undefined;
+    const placeMenu = () => {
+      const rect = triggerRef.current.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const menuWidth = Math.min(Math.max(rect.width, menuMinWidth), viewportWidth - 16);
+      const spaceBelow = viewportHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      const openAbove = spaceBelow < 200 && spaceAbove > spaceBelow;
+      const left = Math.max(8, Math.min(rect.left, viewportWidth - menuWidth - 8));
+      setMenuPosition(openAbove
+        ? { left, bottom: viewportHeight - rect.top + 4, width: menuWidth }
+        : { left, top: rect.bottom + 4, width: menuWidth });
+    };
+    placeMenu();
+    window.addEventListener('resize', placeMenu);
+    window.addEventListener('scroll', placeMenu, true);
+    return () => {
+      window.removeEventListener('resize', placeMenu);
+      window.removeEventListener('scroll', placeMenu, true);
+    };
+  }, [open, width, menuMinWidth]);
+
+  React.useEffect(() => {
+    if (!open) return undefined;
+    const onPointerDown = (event) => {
+      if (rootRef.current && rootRef.current.contains(event.target)) return;
+      if (menuRef.current && menuRef.current.contains(event.target)) return;
+      setOpen(false);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    return () => document.removeEventListener('mousedown', onPointerDown);
+  }, [open]);
+
+  React.useEffect(() => {
+    if (!open || activeIndex < 0) return;
+    const activeOption = document.getElementById(`${menuId}-option-${activeIndex}`);
+    if (activeOption) activeOption.scrollIntoView({ block: 'nearest' });
+  }, [open, activeIndex, menuId]);
+
+  React.useEffect(() => () => {
+    if (typeaheadRef.current.timer) window.clearTimeout(typeaheadRef.current.timer);
+  }, []);
+
+  const onTriggerKeyDown = (event) => {
+    if (disabled) return;
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (!open) openMenu(event.key === 'ArrowUp' ? -1 : 1);
+      else moveActive(event.key === 'ArrowUp' ? -1 : 1);
+      return;
+    }
+    if (event.key === 'Home' || event.key === 'End') {
+      if (!open) return;
+      event.preventDefault();
+      setActiveIndex(event.key === 'Home' ? enabledIndices[0] : enabledIndices[enabledIndices.length - 1]);
+      return;
+    }
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      if (!open) openMenu();
+      else if (activeIndex >= 0) chooseOption(activeIndex);
+      return;
+    }
+    if (event.key === 'Escape' && open) {
+      event.preventDefault();
+      closeMenu(true);
+      return;
+    }
+    if (event.key === 'Tab') {
+      setOpen(false);
+      return;
+    }
+    if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      const query = `${typeaheadRef.current.value}${event.key}`.toLowerCase();
+      typeaheadRef.current.value = query;
+      if (typeaheadRef.current.timer) window.clearTimeout(typeaheadRef.current.timer);
+      typeaheadRef.current.timer = window.setTimeout(() => { typeaheadRef.current.value = ''; }, 500);
+      const match = normalizedOptions.findIndex((option) => !option.disabled && String(option.label).toLowerCase().startsWith(query));
+      if (match >= 0) {
+        event.preventDefault();
+        if (!open) setOpen(true);
+        setActiveIndex(match);
+      }
+    }
+  };
+
+  const menu = open && menuPosition && (
+    <div
+      ref={menuRef}
+      id={menuId}
+      role="listbox"
+      aria-label={ariaLabel}
+      style={{
+        position: 'fixed', ...menuPosition, zIndex: menuZIndex,
+        maxHeight: 240, overflowY: 'auto', padding: 4,
+        border: '1px solid var(--ds-select-menu-border, #E2E8F0)',
+        borderRadius: 'var(--ds-select-menu-radius, 8px)',
+        background: 'var(--ds-select-menu-bg, #FFFFFF)',
+        boxShadow: 'var(--ds-select-menu-shadow, 0 8px 24px rgba(15,23,42,.14))',
+        fontFamily: 'inherit',
+      }}>
+      {normalizedOptions.map((option, index) => {
+        const selected = index === selectedIndex;
+        const active = index === activeIndex;
+        return (
+          <button
+            key={`${option.value}-${index}`}
+            id={`${menuId}-option-${index}`}
+            type="button"
+            role="option"
+            aria-selected={selected}
+            aria-disabled={option.disabled || undefined}
+            disabled={option.disabled}
+            onMouseDown={(event) => event.preventDefault()}
+            onMouseEnter={() => !option.disabled && setActiveIndex(index)}
+            onClick={() => chooseOption(index)}
+            style={{
+              width: '100%', minHeight: 36, display: 'flex', alignItems: 'center', gap: 8,
+              padding: '8px 12px', border: 0, borderRadius: 6, textAlign: 'left',
+              background: active || selected ? 'var(--ds-select-option-bg-active, #EFF6FF)' : 'transparent',
+              color: option.disabled ? WF.inkFaint : 'var(--ds-select-option-text, #0F172A)',
+              fontFamily: 'inherit', fontSize, fontWeight: selected ? 700 : 500,
+              cursor: option.disabled ? 'not-allowed' : 'pointer', opacity: option.disabled ? 0.56 : 1,
+            }}>
+            <span style={{ minWidth: 0, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{option.label}</span>
+            {option.meta != null && (
+              <span style={{
+                flexShrink: 0, padding: '4px 8px', borderRadius: 999,
+                background: 'var(--ds-select-option-meta-bg, #F8FAFC)',
+                color: 'var(--ds-select-option-meta-text, #475569)',
+                fontSize: 12, fontWeight: 600, lineHeight: '16px',
+              }}>{option.meta}</span>
+            )}
+            {selected && (
+              <svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, color: WF.accent }}>
+                <path d="M2.5 7.2 5.4 10 11.5 3.8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  return (
+    <div ref={rootRef} style={{ position: 'relative', width, minWidth: 0, ...style }}>
+      <button
+        ref={triggerRef}
+        type="button"
+        role="combobox"
+        aria-label={ariaLabel}
+        aria-describedby={ariaDescribedBy}
+        aria-haspopup="listbox"
+        aria-autocomplete="none"
+        aria-expanded={open}
+        aria-controls={menuId}
+        aria-activedescendant={open && activeIndex >= 0 ? `${menuId}-option-${activeIndex}` : undefined}
+        disabled={disabled}
+        onClick={() => open ? closeMenu() : openMenu()}
+        onKeyDown={onTriggerKeyDown}
+        onMouseEnter={() => setTriggerHovered(true)}
+        onMouseLeave={() => setTriggerHovered(false)}
+        style={{
+          width: '100%', height, display: 'flex', alignItems: 'center', gap: 8,
+          padding: '0 12px', borderRadius: 'var(--ds-field-radius, 6px)',
+          border: `1px solid ${open ? 'var(--ds-select-trigger-border-open, #1B2434)' : 'var(--ds-select-trigger-border, #7C8B9F)'}`,
+          background: disabled
+            ? WF.fill
+            : triggerHovered
+              ? 'var(--ds-select-trigger-bg-hover, #F8FAFC)'
+              : 'var(--ds-select-trigger-bg, #FFFFFF)',
+          color: selectedOption && !selectedOption.placeholder ? 'var(--ds-select-trigger-text, #0F172A)' : WF.inkFaint,
+          boxShadow: open ? '0 0 0 2px var(--ds-color-selection-border, #DBEAFE)' : 'none',
+          fontFamily: 'inherit', fontSize, fontWeight,
+          cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.64 : 1,
+          transition: 'background-color var(--ds-motion-fast, 120ms) ease, border-color var(--ds-motion-fast, 120ms) ease, box-shadow var(--ds-motion-fast, 120ms) ease',
+        }}>
+        <span style={{ minWidth: 0, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'left' }}>
+          {selectedOption ? selectedOption.label : placeholder}
+        </span>
+        {showSelectedMeta && selectedOption && selectedOption.meta != null && (
+          <span style={{
+            flexShrink: 0, padding: '4px 8px', borderRadius: 999,
+            background: WF.fill, color: WF.inkSoft,
+            fontSize: 12, fontWeight: 600, lineHeight: '16px',
+          }}>{selectedOption.meta}</span>
+        )}
+        <svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, color: WF.inkSoft, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform var(--ds-motion-fast, 120ms) ease' }}>
+          <path d="m3 5 4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      {menu && typeof ReactDOM !== 'undefined' ? ReactDOM.createPortal(menu, document.body) : menu}
+    </div>
+  );
+}
+
 // Read-only definition-list label/value (matches the reference exactly)
 function WFKV({ label, value, badge, mono, style = {} }) {
   return (
@@ -350,9 +620,11 @@ function MVIcon({ id, size = 18 }) {
 // inset as a floating card instead of reading like a full-height page column.
 // The progress bar sits pinned above the content scrollport; only the content
 // beneath it moves.
-const RAIL_W = 320;
+// Give the summary more room on large desktops without taking that width away
+// from the booking canvas at the app's minimum desktop size.
+const RAIL_TRACK = 'clamp(320px, 22vw, 344px)';
 
-function WFAppShell({ active = 'fares', activeGroup = 'fares', breadcrumb, title, actions, children, rightRail, progressBar, bottomBar }) {
+function WFAppShell({ active = 'fares', activeGroup = 'fares', breadcrumb, title, actions, children, rightRail, progressBar, bottomBar, contentPaddingTop }) {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'bookings', label: 'Bookings', children: [
@@ -378,7 +650,10 @@ function WFAppShell({ active = 'fares', activeGroup = 'fares', breadcrumb, title
   // minmax(0, 1fr) rather than 1fr: a bare 1fr is minmax(auto, 1fr), which lets a
   // wide min-content child (the 9-column stateroom table) push the middle column
   // past its share and squeeze the rail.
-  const cols = rightRail ? `200px minmax(0, 1fr) ${RAIL_W}px` : '200px minmax(0, 1fr)';
+  const cols = rightRail ? `200px minmax(0, 1fr) ${RAIL_TRACK}` : '200px minmax(0, 1fr)';
+  const resolvedContentPaddingTop = contentPaddingTop == null
+    ? (progressBar ? 16 : 20)
+    : contentPaddingTop;
   return (
     <div style={{
       width: '100%', height: '100%',
@@ -471,8 +746,8 @@ function WFAppShell({ active = 'fares', activeGroup = 'fares', breadcrumb, title
           // the bar card carries a 20px marginBottom, and without this the
           // scrolling content would show through that gap.
           // Width-constrained to match the content below so they align.
-          <div style={{ padding: '20px 28px 0 28px', flexShrink: 0, background: 'var(--ds-color-workspace, #F9FAFC)', display: 'flex', justifyContent: 'center' }}>
-            <div style={{ maxWidth: 1140, width: '100%' }}>
+          <div className="booking-progress-shell" style={{ padding: '20px 20px 0 28px', flexShrink: 0, background: 'var(--ds-color-workspace, #F9FAFC)', display: 'flex', justifyContent: 'center' }}>
+            <div style={{ minWidth: 0, width: '100%' }}>
               {progressBar}
             </div>
           </div>
@@ -480,7 +755,7 @@ function WFAppShell({ active = 'fares', activeGroup = 'fares', breadcrumb, title
         {/* The scroll container. Deliberately a plain block, not a flex column —
             WebKit drops padding-bottom at scroll end on flex scrollports. */}
         <div style={{
-          padding: `${progressBar ? 16 : 20}px 28px 20px 28px`,
+          padding: `${resolvedContentPaddingTop}px 20px 20px 28px`,
           flex: 1, minHeight: 0,
           // overflowY: auto alone would compute overflow-x to auto as well, so
           // anything escaping sideways would raise a horizontal scrollbar.
@@ -506,7 +781,7 @@ function WFAppShell({ active = 'fares', activeGroup = 'fares', breadcrumb, title
       {rightRail && (
         <div style={{
           gridColumn: 3, gridRow: 2,
-          padding: '16px 12px 16px 12px', background: 'var(--ds-color-workspace, #F9FAFC)',
+          padding: '16px 12px 16px 8px', background: 'var(--ds-color-workspace, #F9FAFC)',
           minHeight: 0, overflow: 'hidden', boxSizing: 'border-box',
         }}>
           <div style={{
@@ -816,7 +1091,7 @@ function WFDLRow({ label, value, mono, icon, span = 1, badge, style = {} }) {
 }
 
 Object.assign(window, {
-  WF, WFBox, WFPlaceholder, WFLine, WFLines, WFField, WFKV,
+  WF, WFBox, WFPlaceholder, WFLine, WFLines, WFField, WFSelect, WFKV,
   WFToggle, WFCheckbox, WFBadge, WFButton,
   WFCallout, WFMarker, WFAppShell, WFTitle, WFSectionHead, WFCard,
   WFTabs, WFTable, WFChip, WFSearch, WFInheritedRow,

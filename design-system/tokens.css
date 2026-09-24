@@ -265,6 +265,21 @@
   --ds-field-height-compact: 32px;
   --ds-field-height-default: 40px;
 
+  /* Select */
+  --ds-select-trigger-bg: var(--ds-field-bg);
+  --ds-select-trigger-bg-hover: var(--ds-color-surface-subtle);
+  --ds-select-trigger-text: var(--ds-field-text);
+  --ds-select-trigger-border: var(--ds-field-border);
+  --ds-select-trigger-border-open: var(--ds-color-action);
+  --ds-select-menu-bg: var(--ds-color-surface);
+  --ds-select-menu-border: var(--ds-color-border);
+  --ds-select-menu-radius: var(--ds-radius-card);
+  --ds-select-menu-shadow: var(--ds-elevation-floating);
+  --ds-select-option-bg-active: var(--ds-color-selection);
+  --ds-select-option-text: var(--ds-color-text-primary);
+  --ds-select-option-meta-bg: var(--ds-color-surface-subtle);
+  --ds-select-option-meta-text: var(--ds-color-text-secondary);
+
   /* Surface */
   --ds-card-bg: var(--ds-color-surface);
   --ds-card-text: var(--ds-color-text-primary);

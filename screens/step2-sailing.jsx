@@ -35,11 +35,11 @@ const S2_CAB = [
 // Prices keyed to SAIL-77834 (fareIndex 1.15), 4 guests
 const S2_FC = [
 { id: 'NR-SAVER', code: 'NR–SAVER', refundable: false, pricePP: 778, deposit: 0.25,
-  note: 'Non-refundable saver rate · 25% deposit due down.' },
+  note: 'Non-refundable saver rate · 25% deposit due now.' },
 { id: 'FLEX-STD', code: 'FLEX–STD', refundable: true, pricePP: 863, deposit: 0.25,
-  note: 'Refundable standard rate · 25% deposit due down.' },
+  note: 'Refundable standard rate · 25% deposit due now.' },
 { id: 'EARLY-IS', code: 'EARLY–IS', refundable: false, pricePP: 738, deposit: 0.20,
-  note: 'Early booking interior saver · 20% deposit due down.' }];
+  note: 'Early booking interior saver · 20% deposit due now.' }];
 
 
 const S2_SUPP = [
@@ -912,13 +912,37 @@ function sailingLeadFare(sailing, guests) {
   return perPerson(price.baseFareTotal, quoteGuests);
 }
 
-function SailingCard({ s, update, sailing, expanded, onToggle }) {
+function sailingDateSummary(sailing, bookingWindow) {
+  const match = bookingWindow && bookingWindow.display.match(
+    /^([A-Z]{3})\s*-\s*([A-Z]{3})\s+(\d{2})\/(\d{2})\s*-\s*(\d{2})\/(\d{2})$/
+  );
+  if (!match) {
+    return {
+      primary: sailing.depart,
+      secondary: sailing.ret ? `Returns ${sailing.ret}` : 'Departure date',
+    };
+  }
+
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const [, startDay, endDay, startMonth, startDate, endMonth, endDate] = match;
+  const startMonthLabel = months[Number(startMonth) - 1];
+  const endMonthLabel = months[Number(endMonth) - 1];
+  const range = startMonth === endMonth
+    ? `${startMonthLabel} ${Number(startDate)}–${Number(endDate)}`
+    : `${startMonthLabel} ${Number(startDate)} – ${endMonthLabel} ${Number(endDate)}`;
+  const year = (sailing.depart.match(/\b\d{4}\b/) || [])[0];
+  const dayLabel = `${startDay[0]}${startDay.slice(1).toLowerCase()}–${endDay[0]}${endDay.slice(1).toLowerCase()}`;
+  return { primary: range, secondary: year ? `${dayLabel} · ${year}` : dayLabel };
+}
+
+function SailingCard({ s, update, sailing, expanded, onToggle, resultRow = false }) {
   const g = s.guests;
   const DeckMap = window.CabinDeckMapSection;
   const selectedHere = s.selectedSailingCode === sailing.code;
   const nights = sailing.nights;
   const guestCount = g.adults + (g.youngAdults || 0) + g.children + g.infants;
   const bookingWindow = getWindowForSailing(sailing.code);
+  const dateSummary = sailingDateSummary(sailing, bookingWindow);
 
   // Collapsed "from" price — cheapest farecode, IS cabin, via priceQuote.
   // Falls back to double occupancy before the party is entered, so the lead-in
@@ -958,47 +982,36 @@ function SailingCard({ s, update, sailing, expanded, onToggle }) {
   };
 
   return (
-    <div style={{
-      border: `1px solid ${selectedHere ? WF.accent : WF.line}`,
-      borderRadius: 9,
-      background: selectedHere ? WF.accentTint : WF.panel,
-      boxShadow: selectedHere ? `0 0 0 1px ${WF.accentLine}` : '0 1px 2px rgba(15,23,42,0.05)',
+    <div
+      className={resultRow ? 'sailing-result' : undefined}
+      role={resultRow ? 'listitem' : undefined}
+      style={{
+      border: resultRow ? undefined : `1px solid ${selectedHere ? WF.accent : WF.line}`,
+      borderRadius: resultRow ? 0 : 9,
+      background: resultRow ? WF.panel : selectedHere ? WF.accentTint : WF.panel,
+      boxShadow: resultRow
+        ? 'none'
+        : selectedHere ? `0 0 0 1px ${WF.accentLine}` : '0 1px 2px rgba(15,23,42,0.05)',
       transition: 'background 0.15s, border-color 0.15s, box-shadow 0.15s',
       overflow: 'hidden'
     }}>
-      {/* ── Collapsed header (always visible) — fixed comparison columns ── */}
+      {/* ── Collapsed header (always visible) — aligned comparison row ── */}
       <button
+        type="button"
+        className="sailing-result__button"
         onClick={handleToggle}
         aria-expanded={expanded}
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '54px minmax(150px, 1fr) minmax(175px, 0.95fr) 110px 28px',
-          alignItems: 'center',
-          gap: 16,
-          width: '100%',
-          textAlign: 'left',
-          padding: '12px 12px',
-          background: 'transparent',
-          border: 'none',
-          cursor: 'pointer',
-          fontFamily: 'inherit'
-        }} data-comment-anchor="f0c77595d9-button-605-7">
+        aria-label={`${nights} ${nights === 1 ? 'night' : 'nights'}, ${routeOf(sailing)}, ${sailing.ship}, ${dateSummary.primary}, from $${fromPP.toLocaleString()} per guest. ${expanded ? 'Close details' : 'Book this sailing'}`}
+        data-comment-anchor="f0c77595d9-button-605-7">
 
-        {/* Col 1: Duration tile */}
-        <div style={{
-          width: 52, minHeight: 46, display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center',
-          background: selectedHere ? '#FFFFFF' : WF.fill,
-          color: WF.ink, border: `1px solid ${selectedHere ? WF.accentLine : WF.line}`,
-          borderRadius: 7,
-          textAlign: 'center',
-        }}>
-          <span className="s4-money" style={{ fontSize: 16, lineHeight: 1, fontWeight: 700 }}>{nights}</span>
-          <span style={{ marginTop: 4, fontSize: 12, lineHeight: 1, fontWeight: 700, letterSpacing: '0.04em', color: WF.inkLabel }}>NIGHTS</span>
+        {/* Col 1: Duration */}
+        <div className="sailing-result__duration" style={{ minWidth: 0 }}>
+          <div className="s4-money" style={{ fontSize: 16, lineHeight: '20px', fontWeight: 700, color: WF.ink }}>{nights}</div>
+          <div style={{ marginTop: 4, fontSize: 12, lineHeight: '16px', color: WF.inkSoft }}>{nights === 1 ? 'night' : 'nights'}</div>
         </div>
 
         {/* Col 2: Sailing identity */}
-        <div style={{ minWidth: 0 }}>
+        <div className="sailing-result__identity" style={{ minWidth: 0 }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: WF.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {routeOf(sailing)}
           </div>
@@ -1009,14 +1022,11 @@ function SailingCard({ s, update, sailing, expanded, onToggle }) {
           </div>
         </div>
 
-        {/* Col 3: Sailing window and offer */}
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 12, lineHeight: '16px', fontWeight: 700, letterSpacing: '0.04em', color: WF.inkLabel, textTransform: 'uppercase' }}>
-            Sailing dates
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, minWidth: 0 }}>
-            <span style={{ fontSize: 12, lineHeight: '16px', fontWeight: 600, color: WF.inkSoft, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {bookingWindow ? bookingWindow.display : sailing.depart}
+        {/* Col 3: Departure window and offer */}
+        <div className="sailing-result__departure" style={{ minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+            <span style={{ fontSize: 14, lineHeight: '20px', fontWeight: 600, color: WF.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {dateSummary.primary}
             </span>
             {bookingWindow && bookingWindow.discount && (
               <span style={{
@@ -1026,27 +1036,24 @@ function SailingCard({ s, update, sailing, expanded, onToggle }) {
               }}>50% OFF</span>
             )}
           </div>
+          <div style={{ marginTop: 4, fontSize: 12, lineHeight: '16px', color: WF.inkSoft }}>{dateSummary.secondary}</div>
         </div>
 
         {/* Col 4: Price */}
-        <div style={{ textAlign: 'right', minWidth: 0 }}>
-          <div style={{ fontSize: 12, lineHeight: '16px', fontWeight: 700, letterSpacing: '0.04em', color: WF.inkLabel, textTransform: 'uppercase' }}>
-            From / guest
-          </div>
-          <div className="s4-money" style={{ marginTop: 4, fontSize: 16, lineHeight: '24px', fontWeight: 700, color: WF.ink }}>
+        <div className="sailing-result__price" style={{ textAlign: 'right', minWidth: 0 }}>
+          <div className="s4-money" style={{ fontSize: 16, lineHeight: '20px', fontWeight: 700, color: WF.ink }}>
             ${fromPP.toLocaleString()}
           </div>
-          <div style={{ marginTop: 4, fontSize: 12, color: WF.inkFaint }}>average fare</div>
+          <div style={{ marginTop: 4, fontSize: 12, lineHeight: '16px', color: WF.inkSoft }}>per guest</div>
         </div>
 
-        {/* Col 5: disclosure affordance */}
-        <div aria-hidden="true" style={{
-          width: 28, height: 28, display: 'grid', placeItems: 'center',
-          borderRadius: 7, border: `1px solid ${WF.line}`, background: '#FFFFFF', color: WF.inkLabel,
+        {/* Col 5: booking action */}
+        <div className="sailing-result__action" aria-hidden="true" style={{
+          minHeight: 32, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+          padding: '4px 8px', borderRadius: 6, border: `1px solid ${resultRow ? WF.line : selectedHere ? WF.accentLine : WF.line}`,
+          background: '#FFFFFF', color: WF.ink, fontSize: 12, lineHeight: '16px', fontWeight: 600,
         }}>
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.18s ease' }}>
-            <path d="M4 2L8 6L4 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <span>{expanded ? 'Close' : 'Book'}</span>
         </div>
       </button>
 
@@ -1386,8 +1393,7 @@ function Step2App({ booking, update, navigate }) {
   // sailing list, making a fully-configured booking look like it needs redoing.
   const [expandedCard, setExpandedCard] = React.useState(() => groupSetupActive ? null : (state.selectedSailingCode || null));
   const [selectedBookingWindow] = React.useState(null);
-  const [showItinerary, setShowItinerary] = React.useState(false);
-  const [inventoryView, setInventoryView] = React.useState('calendar');
+  const [inventoryView, setInventoryView] = React.useState('list');
 
   const sailing = getSailing(state.selectedSailingCode);
   const expandedSailing = getSailing(expandedCard);
@@ -1473,9 +1479,16 @@ function Step2App({ booking, update, navigate }) {
       <WFAppShell
         activeGroup="bookings"
         active="create-booking"
-        breadcrumb={['CRM', 'Bookings', 'Create', 'Sailing, fare & cabin']}
+        breadcrumb={['CRM', 'Bookings', 'Create', expandedCard ? 'Cabin & Supplements' : 'Sailing']}
+        contentPaddingTop={!groupSetupActive && expandedCard ? 0 : undefined}
         rightRail={groupSetupActive && GroupSummaryRail
-          ? <GroupSummaryRail booking={state} />
+          ? <GroupSummaryRail
+              booking={state}
+              actionLabel={editingGroupSetup ? 'Save group changes' : 'Create group'}
+              actionEnabled={groupSetupEnabled}
+              onAction={saveGroupSetup}
+              onBlocked={handleBlocked}
+              actionError={blockedMsg} />
           : <BookingSummaryPanel
               booking={state}
               update={handleUpdate}
@@ -1522,9 +1535,13 @@ function Step2App({ booking, update, navigate }) {
             </button>
           </div>
         ) : null}
-        progressBar={groupSetupActive && GroupProgress ? <GroupProgress /> : <StepProgress2 current={1} />}>
+        progressBar={groupSetupActive && GroupProgress
+          ? <GroupProgress />
+          : <StepProgress2
+              current={expandedCard ? 2 : 1}
+              onBack={expandedCard ? () => setExpandedCard(null) : undefined} />}>
 
-        <div data-screen-label="Step 1 · Sailing, fare & cabin">
+        <div data-screen-label={expandedCard ? 'Step 2 · Cabin & Supplements' : 'Step 1 · Sailing'}>
           {state.groupId && !editingGroupSetup && GroupContext && <GroupContext booking={state} update={handleUpdate} />}
           {!expandedCard &&
           <div>
@@ -1543,12 +1560,7 @@ function Step2App({ booking, update, navigate }) {
               {/* ── SEARCH FILTER PANEL ── */}
               {SFPanel && <SFPanel
                 state={state}
-                onUpdate={handleUpdate}
-                groupActionLabel={editingGroupSetup ? 'Save group changes' : 'Create group'}
-                groupActionEnabled={groupSetupEnabled}
-                onGroupAction={saveGroupSetup}
-                onGroupBlocked={handleBlocked}
-                groupActionError={blockedMsg} />}
+                onUpdate={handleUpdate} />}
             </div>
           }
 
@@ -1557,27 +1569,16 @@ function Step2App({ booking, update, navigate }) {
                 live; Group setup continues to use its dedicated selectors. ── */}
           {!groupSetupActive && (
           expandedCard ? (
-          /* ── DETAIL VIEW: toolbar band + single expanded card. The toolbar is
-                part of the container's chrome — a filled band with its own
-                hairline — rather than two buttons floating in a padding zone
-                that didn't line up with the content gutter below them. ── */
-          <div style={{
-            border: `1px solid ${WF.line}`, borderRadius: 10, background: WF.panel, padding: 0, marginBottom: 0, marginTop: 16
-          }}>
-                <div style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
-                  padding: '12px 16px', background: WF.fill,
-                  borderBottom: `1px solid ${WF.line}`, borderRadius: '10px 10px 0 0'
-                }}>
-                  {window.CruiseItineraryButton &&
-                  <window.CruiseItineraryButton
-                    sailingCode={expandedCard}
-                    open={showItinerary}
-                    onToggle={() => setShowItinerary((v) => !v)}
-                    onClose={() => setShowItinerary(false)} />
-                  }
-                </div>
-                <div style={{ borderRadius: 10, overflow: 'hidden', background: WF.panel }}>
+          /* ── DETAIL VIEW: trip context sits above, outside the transactional
+                fare / stateroom / supplement workspace. ── */
+          <div style={{ marginTop: 16 }}>
+            {expandedSailing && window.SelectedSailingSummary &&
+              <window.SelectedSailingSummary sailing={expandedSailing} />}
+            <div style={{
+              border: `1px solid ${WF.line}`, borderRadius: 10, background: WF.panel,
+              padding: 0, marginTop: 16, marginBottom: 0
+            }}>
+                <div style={{ borderRadius: 10, background: WF.panel }}>
                   {expandedSailing && (() => {
                     const DetailView = window.SailingDetailView;
                     return DetailView ?
@@ -1596,7 +1597,8 @@ function Step2App({ booking, update, navigate }) {
                         onToggle={() => {}} />;
                   })()}
                 </div>
-              </div>) : (
+            </div>
+          </div>) : (
 
           /* ── LIST VIEW: match count + collapsed rows, both growing with the page ── */
           <div style={{
@@ -1606,13 +1608,9 @@ function Step2App({ booking, update, navigate }) {
           }}>
                 <div style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-                  padding: '12px 12px', background: WF.fill, borderBottom: `1px solid ${WF.line}`,
+                  padding: '12px 12px', background: WF.panel, borderBottom: `1px solid ${WF.line}`,
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span className="s4-money" style={{
-                      width: 22, height: 22, borderRadius: 6, display: 'grid', placeItems: 'center',
-                      background: WF.accent, color: WF.accentText, fontSize: 12, fontWeight: 700,
-                    }}>{visibleSailings.length}</span>
                     <div>
                       <div style={{ fontSize: 12, lineHeight: '16px', fontWeight: 700, color: WF.ink }}>Sailing options</div>
                       <div style={{ marginTop: 4, fontSize: 12, lineHeight: '16px', color: WF.inkSoft }}>
@@ -1658,19 +1656,29 @@ function Step2App({ booking, update, navigate }) {
                 </div>
                 {visibleSailings.length > 0 ? (
                   inventoryView === 'list' ? (
-                    <div style={{ display: 'grid', gap: 8, padding: 12, background: '#FFFFFF' }}>
-                      {visibleSailings.map((sail) =>
-                        <SailingCard
-                          key={sail.code}
-                          s={state}
-                          update={(changes) => {
-                            handleUpdate(changes);
-                            if (!groupSetupActive) setExpandedCard(sail.code);
-                          }}
-                          sailing={sail}
-                          expanded={false}
-                          onToggle={() => { if (!groupSetupActive) setExpandedCard(sail.code); }} />
-                      )}
+                    <div className="sailing-results-list">
+                      <div className="sailing-results__columns" aria-hidden="true">
+                        <div>Nights</div>
+                        <div>Itinerary</div>
+                        <div>Departure</div>
+                        <div style={{ textAlign: 'right' }}>From / guest</div>
+                        <div></div>
+                      </div>
+                      <div role="list" aria-label="Available sailings">
+                        {visibleSailings.map((sail) =>
+                          <SailingCard
+                            key={sail.code}
+                            s={state}
+                            update={(changes) => {
+                              handleUpdate(changes);
+                              if (!groupSetupActive) setExpandedCard(sail.code);
+                            }}
+                            sailing={sail}
+                            expanded={false}
+                            resultRow
+                            onToggle={() => { if (!groupSetupActive) setExpandedCard(sail.code); }} />
+                        )}
+                      </div>
                     </div>
                   ) : (
                     <SailingCalendarView

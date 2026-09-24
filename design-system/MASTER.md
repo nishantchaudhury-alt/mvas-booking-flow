@@ -121,6 +121,19 @@ Variants: text, search, select, date, and grouped promo/quantity control.
 
 Use `--ds-field-border`, not the lighter structural border, for editable controls.
 
+### Select
+
+Use the shared `WFSelect` pattern for product dropdowns instead of a native
+expanded menu. The trigger follows the field contract; the floating list uses
+the popover layer, surface tokens, and floating elevation. Options support a
+primary label, optional right-aligned metadata, selected checkmark, disabled
+state, hover/active state, and type-ahead matching.
+
+Keyboard behavior: Enter or Space opens/selects, Arrow Up/Down moves the active
+option, Home/End jumps to the first/last enabled option, Escape closes and
+returns focus, and Tab closes without trapping focus. Keep a persistent visual
+label near the trigger and provide an accessible name programmatically.
+
 ### Surface and card
 
 Variants: panel, section card, selectable card, disclosure card, amount card.  

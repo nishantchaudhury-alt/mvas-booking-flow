@@ -312,11 +312,6 @@ function FPDropdown({ label, trigger, open, onToggle, onClose, footer, width = 2
 function SearchFilterPanel({
   state,
   onUpdate,
-  groupActionLabel,
-  groupActionEnabled,
-  onGroupAction,
-  onGroupBlocked,
-  groupActionError,
 }) {
   const ScopeSection = window.ReservationScopeSection;
   const GroupFields = window.GroupSetupFields;
@@ -443,32 +438,6 @@ function SearchFilterPanel({
           }}>
           {ScopeSection && <ScopeSection state={state} onUpdate={onUpdate} />}
           {GroupFields && <GroupFields state={state} onUpdate={onUpdate} embedded />}
-          <div
-            data-testid="group-setup-actions"
-            style={{
-              minHeight: 58, padding: '8px 12px', borderTop: `1px solid ${WF.line}`,
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-              background: WF.panel,
-            }}>
-            <div role="status" aria-live="polite" style={{ minWidth: 0, fontSize: 12, color: '#B91C1C', fontWeight: 600 }}>
-              {groupActionError || ''}
-            </div>
-            <button
-              type="button"
-              onClick={() => (groupActionEnabled ? onGroupAction?.() : onGroupBlocked?.())}
-              aria-disabled={!groupActionEnabled}
-              title={groupActionEnabled ? undefined : 'Complete the required group details, then select a cruise and sailing date'}
-              style={{
-                minWidth: 170, minHeight: 40, padding: '8px 20px', border: 'none',
-                borderRadius: 8,
-                background: groupActionEnabled ? WF.accent : WF.fillStrong,
-                color: groupActionEnabled ? WF.accentText : WF.inkFaint,
-                fontFamily: 'inherit', fontSize: 14, fontWeight: 700,
-                cursor: groupActionEnabled ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap',
-              }}>
-              {groupActionLabel || 'Create group'}
-            </button>
-          </div>
         </div>
       )}
 
@@ -500,41 +469,6 @@ function SearchFilterPanel({
                 fullWidth />
             </div>
           )}
-
-          <div style={{
-            flex: '0 1 270px', minWidth: 215,
-            display: 'flex', flexDirection: 'column', gap: 4, color: FP_NAVY,
-          }}>
-            <label htmlFor="booking-promotion-code" style={FP_FIELD_LABEL_STYLE}>Promotion code</label>
-            <div style={{ display: 'flex', minWidth: 0 }}>
-              <div style={{
-                flex: 1, minWidth: 0, minHeight: 34, display: 'flex', alignItems: 'center',
-                padding: '4px 12px', border: `1px solid ${FP_CONTROL_BORDER}`,
-                borderRadius: '7px 0 0 7px', background: WF.panel,
-              }}>
-                <input
-                  id="booking-promotion-code"
-                  type="text"
-                  placeholder="Enter code"
-                  style={{
-                    width: '100%', padding: 0, fontSize: 14, lineHeight: '20px',
-                    fontFamily: 'inherit', border: 'none', color: FP_NAVY,
-                    background: 'transparent', outline: 'none'
-                  }} />
-              </div>
-              <button type="button" style={{
-                minHeight: 34, marginLeft: -1, padding: '8px 16px',
-                fontSize: 12, fontWeight: 700, fontFamily: 'inherit',
-                border: `1px solid ${FP_NAVY}`, borderRadius: '0 7px 7px 0',
-                background: FP_NAVY, color: '#fff', cursor: 'pointer',
-                transition: 'background 0.12s, border-color 0.12s', whiteSpace: 'nowrap',
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = '#111827'; e.currentTarget.style.borderColor = '#111827'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = FP_NAVY; e.currentTarget.style.borderColor = FP_NAVY; }}>
-                Apply
-              </button>
-            </div>
-          </div>
           <div style={{ flex: '1 1 300px', minWidth: 260, display: 'flex', alignItems: 'center', gap: 8 }}>
             {/* Search input — clearly typeable */}
             <div style={{
