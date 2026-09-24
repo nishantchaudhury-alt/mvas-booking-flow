@@ -682,23 +682,23 @@ function SPCabinRoomCard({ rm, p }) {
   return (
     <div style={{ border: `1px solid ${WF.line}`, borderRadius: 9, overflow: 'hidden', background: WF.panel, boxShadow: '0 1px 2px rgba(15,23,42,.06)' }}>
       <div style={{
-        display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12,
-        padding: '8px 12px', background: WF.fill, borderBottom: `1px solid ${WF.line}`,
+        padding: 12, background: WF.fill, borderBottom: `1px solid ${WF.line}`,
       }}>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: WF.ink }}>{rm.label}</span>
-            <span style={{
-              padding: '4px 8px', borderRadius: 999, background: WF.panel,
-              border: `1px solid ${WF.line}`, color: WF.inkSoft,
-              fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap',
-            }}>{rm.occupants} guest{rm.occupants === 1 ? '' : 's'}</span>
-          </div>
-          {rm.cat && <div style={{ fontSize: 12, fontWeight: 500, color: WF.inkSoft, marginTop: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{rm.cat}</div>}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+          <span style={{ minWidth: 0, fontSize: 14, lineHeight: '20px', fontWeight: 700, color: WF.ink, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{rm.label}</span>
+          <span style={{
+            padding: '4px 8px', borderRadius: 999, background: WF.panel,
+            border: `1px solid ${WF.line}`, color: WF.inkSoft,
+            fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0,
+          }}>{rm.occupants} guest{rm.occupants === 1 ? '' : 's'}</span>
         </div>
-        <div style={{ textAlign: 'right', flexShrink: 0 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', color: WF.inkLabel, textTransform: 'uppercase' }}>Room total</div>
-          <div style={{ ...amountStyle, fontSize: 14, marginTop: 4 }}>{money(rm.subtotal)}</div>
+        {rm.cat && <div style={{ fontSize: 12, fontWeight: 500, color: WF.inkSoft, marginTop: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{rm.cat}</div>}
+        <div style={{
+          display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12,
+          marginTop: 8, paddingTop: 8, borderTop: `1px solid ${WF.line}`,
+        }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: WF.inkLabel }}>Room total</span>
+          <span style={{ ...amountStyle, fontSize: 16, lineHeight: '24px' }}>{money(rm.subtotal)}</span>
         </div>
       </div>
       <div>
@@ -730,13 +730,10 @@ function SPCabinRoomCard({ rm, p }) {
             <div style={{ marginTop: 8, padding: '4px 8px', borderRadius: 6, background: WF.fill, border: `1px solid ${WF.line}` }}>
               {rm.people.map((pax, index) => (
                 <div key={pax.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '4px 0', borderTop: index === 0 ? 'none' : `1px solid ${WF.lineSoft}` }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-                    <span style={{ padding: '4px 4px', borderRadius: 4, border: `1px solid ${WF.line}`, background: WF.panel, color: WF.inkSoft, fontSize: 12, fontWeight: 700, fontFamily: 'ui-monospace, monospace', flexShrink: 0 }}>{pax.code}</span>
-                    <span style={{ minWidth: 0 }}>
-                      <span style={{ display: 'block', fontSize: 12, color: WF.ink, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pax.name}</span>
-                      <span style={{ display: 'block', fontSize: 12, color: WF.inkSoft, marginTop: 4 }}>{pax.type} · {pax.berthLabel}</span>
-                    </span>
-                  </div>
+                  <span style={{ minWidth: 0 }}>
+                    <span style={{ display: 'block', fontSize: 12, color: WF.ink, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pax.name}</span>
+                    <span style={{ display: 'block', fontSize: 12, color: WF.inkSoft, marginTop: 4 }}>{pax.type} · {pax.berthLabel}</span>
+                  </span>
                   <span style={{ fontSize: 12, fontWeight: 700, color: WF.inkSoft, fontFamily: 'ui-monospace, monospace', fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{money(pax.fare)}</span>
                 </div>
               ))}

@@ -721,13 +721,13 @@ function CabinAssignmentTable({ row, qty, categoryBySlot, roomsBySlot, cabinGues
                         }}>
                         <span style={{ display: 'block', fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap' }}>Cabin {i + 1}</span>
                       </button>
-                      <div style={{ marginTop: 4, textAlign: 'left' }}>
+                      <div style={{ width: '100%', maxWidth: 260, margin: '4px auto 0', textAlign: 'left' }}>
                         <WFSelect
                           value={slotRow.id}
                           onValueChange={(newRowId) => { onSelectSlot(i); onSwitchCategory(i, newRowId); }}
                           ariaLabel={`Stateroom category for Cabin ${i + 1}`}
                           width="100%"
-                          menuMinWidth={300}
+                          menuMinWidth={260}
                           menuZIndex="var(--ds-layer-modal-nested, 520)"
                           showSelectedMeta={false}
                           fontWeight={700}
@@ -1420,10 +1420,7 @@ function SelectRoomPanel({ row, qty, maxQty, categoryBySlot, roomsBySlot, cabinG
                   role="tabpanel"
                   aria-labelledby={`deck-tab-${activeRow.id}-${activeDeck}`}
                   style={{
-                    width: 'auto', margin: '12px 16px 12px',
-                    border: `1px solid ${WF.line}`, borderRadius: RD.sm,
-                    background: '#FFFFFF', overflow: 'hidden',
-                    boxShadow: '0 1px 2px rgba(15,23,42,0.08)'
+                    width: 'auto', minWidth: 0, background: WF.fill
                   }}>
                   <div style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
