@@ -37,8 +37,9 @@ const PROTECTION_PP = 29;
 const COUPONS = { 'None': 0, 'SAVE10': 0.10, 'EARLYBIRD': 0.06 };
 
 const BOOKING_DEFAULTS = {
-  // Identity + flow position. `step` is persisted so a refresh resumes where
-  // the agent was. 1 = Sailing/fare/cabin, 2 = Add guests, 3 = Review & confirm.
+  // Identity + router position. `step` persists the three rendered screens;
+  // the progress indicator presents four user-facing stages because Sailing
+  // and Cabin & Supplements share the first screen.
   bookingId: 'DRAFT-9087',
   source: 'Phone',
   bookingType: 'Normal',
@@ -233,9 +234,9 @@ function normalizeBooking(raw) {
   b.selectedHomePorts = (Array.isArray(r.selectedHomePorts) ? r.selectedHomePorts : [])
     .filter((p) => homePortIds.includes(p));
   b.cabins = Array.isArray(r.cabins) ? r.cabins : [];
-  // The flow is three steps. An out-of-range `step` (a stale 4 from the old
-  // four-step router, or garbage) would fall through the router's dispatch and
-  // render a blank page, so clamp rather than trust what was persisted.
+  // The router has three screens even though the progress indicator has four
+  // user-facing stages. An out-of-range value would render a blank page, so
+  // clamp rather than trust what was persisted.
   b.step = Math.min(Math.max(parseInt(b.step, 10) || 1, 1), 3);
   // The deposit pill used to be labelled with a hardcoded 25%; anything that
   // isn't "pay in full" means deposit.

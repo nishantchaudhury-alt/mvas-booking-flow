@@ -313,49 +313,33 @@ function GroupMasterContactSearch({ state, onUpdate, onChoose }) {
   );
 }
 
-function GroupSelectControl({ label, value, disabled, onChange, children }) {
+function GroupSelectControl({ label, value, disabled, onValueChange, options }) {
   return (
-    <div style={{ position: 'relative', width: '100%' }}>
-      <select
-        aria-label={label}
-        value={value}
-        disabled={disabled}
-        onChange={onChange}
-        style={{
-          ...groupInputStyle,
-          boxSizing: 'border-box', paddingRight: 40,
-          appearance: 'none', WebkitAppearance: 'none', MozAppearance: 'none',
-          cursor: disabled ? 'not-allowed' : 'pointer',
-          color: disabled ? WF.inkFaint : WF.ink,
-          background: disabled ? WF.fill : WF.panel,
-        }}>
-        {children}
-      </select>
-      <svg
-        aria-hidden="true"
-        width="12"
-        height="12"
-        viewBox="0 0 12 12"
-        fill="none"
-        style={{
-          position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
-          pointerEvents: 'none', color: disabled ? WF.inkFaint : WF.inkSoft,
-        }}>
-        <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    </div>
+    <WFSelect
+      ariaLabel={label}
+      value={value}
+      disabled={disabled}
+      onValueChange={onValueChange}
+      options={options}
+      height={36}
+      fontSize={14}
+      width="100%"
+      menuMinWidth={420}
+    />
   );
 }
 
 function GroupSetupCard({ number, title, help, optional, children }) {
+  const titleId = `group-setup-step-${number}-title`;
   return (
-    <section style={{
+    <section aria-labelledby={titleId} style={{
       background: WF.panel,
-      borderTop: number === '1' ? 'none' : `1px solid ${WF.line}`,
+      border: `1px solid ${WF.line}`, borderRadius: 8, overflow: 'hidden',
+      boxShadow: '0 1px 2px rgba(15,23,42,.05)',
     }}>
       <div style={{
-        minHeight: 52, padding: '12px 12px', display: 'flex', alignItems: 'center', gap: 12,
-        background: WF.panel, borderBottom: `1px solid ${WF.lineSoft}`,
+        minHeight: 52, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12,
+        background: WF.fill, borderBottom: `1px solid ${WF.lineSoft}`,
       }}>
         <div aria-hidden="true" style={{
           flex: '0 0 auto', width: 24, height: 24, borderRadius: 7,
@@ -363,7 +347,7 @@ function GroupSetupCard({ number, title, help, optional, children }) {
           color: WF.accentText, fontSize: 12, fontWeight: 700,
         }}>{number}</div>
         <div style={{ minWidth: 0, flex: 1 }}>
-          <div style={{ color: WF.ink, fontSize: 12, lineHeight: '16px', fontWeight: 700 }}>{title}</div>
+          <h2 id={titleId} style={{ margin: 0, color: WF.ink, fontSize: 12, lineHeight: '16px', fontWeight: 700 }}>{title}</h2>
           <div style={{ marginTop: 4, color: WF.inkSoft, fontSize: 12, lineHeight: '16px' }}>{help}</div>
         </div>
         {optional && (
@@ -374,7 +358,7 @@ function GroupSetupCard({ number, title, help, optional, children }) {
           }}>Optional</span>
         )}
       </div>
-      <div style={{ padding: 12 }}>{children}</div>
+      <div style={{ padding: 16 }}>{children}</div>
     </section>
   );
 }
@@ -391,12 +375,12 @@ function GroupCruiseSelectors({ state, onUpdate }) {
           <GroupSelectControl
             label="Select cruise"
             value={cruiseId}
-            onChange={(e) => onUpdate({ groupCruiseId: e.target.value, selectedSailingCode: null })}>
-            <option value="">Select a cruise</option>
-            {GROUP_CRUISES.map((cruise) => (
-              <option key={cruise.id} value={cruise.id}>{cruise.label}</option>
-            ))}
-          </GroupSelectControl>
+            onValueChange={(nextValue) => onUpdate({ groupCruiseId: nextValue, selectedSailingCode: null })}
+            options={[
+              { value: '', label: 'Select a cruise', placeholder: true },
+              ...GROUP_CRUISES.map((cruise) => ({ value: cruise.id, label: cruise.label })),
+            ]}
+          />
         </GroupField>
         <GroupField
           label="Select sailing date"
@@ -407,14 +391,15 @@ function GroupCruiseSelectors({ state, onUpdate }) {
             label="Select sailing date"
             value={state.selectedSailingCode || ''}
             disabled={!cruiseId}
-            onChange={(e) => onUpdate({ selectedSailingCode: e.target.value || null })}>
-            <option value="">Select a sailing date</option>
-            {sailings.map((sailing) => (
-              <option key={sailing.code} value={sailing.code}>
-                {sailing.depart} — {sailing.ship} · {mvasHomePortName(sailing.homePort)}
-              </option>
-            ))}
-          </GroupSelectControl>
+            onValueChange={(nextValue) => onUpdate({ selectedSailingCode: nextValue || null })}
+            options={[
+              { value: '', label: 'Select a sailing date', placeholder: true },
+              ...sailings.map((sailing) => ({
+                value: sailing.code,
+                label: `${sailing.depart} — ${sailing.ship} · ${mvasHomePortName(sailing.homePort)}`,
+              })),
+            ]}
+          />
         </GroupField>
       </div>
     </div>
@@ -433,7 +418,8 @@ function GroupSetupFields({ state, onUpdate, embedded = false }) {
   if ((state.reservationScope || 'individual') !== 'group' || (state.groupId && !editingCreatedGroup)) return null;
   return (
     <div data-testid={embedded ? 'group-setup-sections' : 'group-setup-container'} style={{
-      marginBottom: embedded ? 0 : 12, background: WF.panel,
+      marginBottom: embedded ? 0 : 12, padding: 12, background: WF.panel,
+      display: 'grid', gap: 12,
       border: embedded ? 'none' : `1px solid ${WF.line}`,
       borderTop: embedded ? `1px solid ${WF.line}` : undefined,
       borderRadius: embedded ? 0 : 9, overflow: 'hidden',
@@ -599,34 +585,42 @@ function GroupSetupFields({ state, onUpdate, embedded = false }) {
 
 function GroupSetupProgress() {
   const items = [
-    { n: 1, label: 'Group setup', state: 'current' },
-    { n: 2, label: 'Build group booking', state: 'pending' },
+    { n: 1, label: 'Group setup', shortLabel: 'Setup', state: 'current' },
+    { n: 2, label: 'Build group booking', shortLabel: 'Build', state: 'pending' },
   ];
   return (
-    <div style={{
+    <div className="booking-progress" aria-label="Group booking progress" style={{
       display: 'flex', alignItems: 'center', background: WF.panel,
       border: `1px solid ${WF.line}`, borderRadius: 8, padding: '8px 8px', marginBottom: 20,
     }}>
       {items.map((item, index) => (
         <React.Fragment key={item.n}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 6, background: item.state === 'current' ? WF.fill : 'transparent' }}>
-            <div style={{
+          <div className={`booking-progress__step booking-progress__step--${item.state}`} aria-current={item.state === 'current' ? 'step' : undefined} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 6, background: item.state === 'current' ? WF.fill : 'transparent' }}>
+            <div className="booking-progress__dot" aria-hidden="true" style={{
               width: 18, height: 18, borderRadius: 9, display: 'grid', placeItems: 'center',
               background: item.state === 'current' ? WF.accent : WF.fillStrong,
               color: item.state === 'current' ? WF.accentText : WF.inkSoft,
               boxShadow: item.state === 'current' ? `0 0 0 3px ${WF.accentLine}` : 'none',
               fontSize: 12, fontWeight: 700,
             }}>{item.n}</div>
-            <span style={{ fontSize: 12, color: item.state === 'current' ? WF.ink : WF.inkFaint, fontWeight: item.state === 'current' ? 600 : 500 }}>{item.label}</span>
+            <span className="booking-progress__label booking-progress__label--full" style={{ fontSize: 12, color: item.state === 'current' ? WF.ink : WF.inkFaint, fontWeight: item.state === 'current' ? 600 : 500 }}>{item.label}</span>
+            <span className="booking-progress__label booking-progress__label--short" aria-hidden="true" style={{ fontSize: 12, color: item.state === 'current' ? WF.ink : WF.inkFaint, fontWeight: item.state === 'current' ? 600 : 500 }}>{item.shortLabel}</span>
           </div>
-          {index < items.length - 1 && <div style={{ flex: 1, height: 1, background: WF.line, minWidth: 8 }} />}
+          {index < items.length - 1 && <div className="booking-progress__connector" aria-hidden="true" style={{ flex: 1, height: 1, background: WF.line, minWidth: 8 }} />}
         </React.Fragment>
       ))}
     </div>
   );
 }
 
-function GroupSetupSummaryRail({ booking }) {
+function GroupSetupSummaryRail({
+  booking,
+  actionLabel = 'Create group',
+  actionEnabled = false,
+  onAction,
+  onBlocked,
+  actionError,
+}) {
   const sailing = getSailing(booking.selectedSailingCode);
   const cruise = getGroupCruise(booking.groupCruiseId) || getGroupCruiseForSailing(booking.selectedSailingCode);
   const rows = [
@@ -636,35 +630,62 @@ function GroupSetupSummaryRail({ booking }) {
     ...(booking.groupContactCustomerId ? [['Customer ID', booking.groupContactCustomerId]] : []),
   ];
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div style={{ padding: '16px', borderBottom: `1px solid ${WF.line}` }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: WF.ink }}>Group setup</div>
-        <div style={{ marginTop: 4, fontSize: 12, color: WF.inkSoft }}>A workspace is created before cabins and guests.</div>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+        <div style={{ padding: '16px', borderBottom: `1px solid ${WF.line}` }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: WF.ink }}>Group setup</div>
+          <div style={{ marginTop: 4, fontSize: 12, color: WF.inkSoft }}>A workspace is created before cabins and guests.</div>
+        </div>
+        <div style={{ padding: '12px 16px', borderBottom: `1px solid ${WF.line}` }}>
+          {rows.map(([label, value]) => (
+            <div key={label} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '8px 0', borderBottom: `1px solid ${WF.lineSoft}` }}>
+              <span style={{ fontSize: 12, color: WF.inkLabel }}>{label}</span>
+              <span style={{ fontSize: 12, color: WF.ink, fontWeight: 600, textAlign: 'right' }}>{value}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ padding: '16px' }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: WF.inkLabel, letterSpacing: '0.04em', textTransform: 'uppercase' }}>Cruise &amp; sailing</div>
+          {cruise && (
+            <div style={{ marginTop: 8, color: WF.ink, fontSize: 12, fontWeight: 700 }}>{cruise.label}</div>
+          )}
+          {sailing ? (
+            <div style={{ marginTop: 8, padding: 12, borderRadius: 8, border: `1px solid ${WF.accentLine}`, background: WF.accentTint }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: WF.ink }}>{sailing.depart}</div>
+              <div style={{ marginTop: 4, fontSize: 12, color: WF.inkSoft }}>{sailing.ship} · {mvasHomePortName(sailing.homePort)}</div>
+              <div className="s4-money" style={{ marginTop: 4, fontSize: 12, color: WF.inkLabel }}>{sailing.code}</div>
+            </div>
+          ) : (
+            <div style={{ marginTop: 8, padding: 12, borderRadius: 8, border: `1px dashed ${WF.controlLine}`, color: WF.inkFaint, fontSize: 12 }}>
+              Select a cruise and sailing date.
+            </div>
+          )}
+        </div>
       </div>
-      <div style={{ padding: '12px 16px', borderBottom: `1px solid ${WF.line}` }}>
-        {rows.map(([label, value]) => (
-          <div key={label} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '8px 0', borderBottom: `1px solid ${WF.lineSoft}` }}>
-            <span style={{ fontSize: 12, color: WF.inkLabel }}>{label}</span>
-            <span style={{ fontSize: 12, color: WF.ink, fontWeight: 600, textAlign: 'right' }}>{value}</span>
-          </div>
-        ))}
-      </div>
-      <div style={{ padding: '16px 16px' }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: WF.inkLabel, letterSpacing: '0.04em', textTransform: 'uppercase' }}>Cruise &amp; sailing</div>
-        {cruise && (
-          <div style={{ marginTop: 8, color: WF.ink, fontSize: 12, fontWeight: 700 }}>{cruise.label}</div>
-        )}
-        {sailing ? (
-          <div style={{ marginTop: 8, padding: 12, borderRadius: 8, border: `1px solid ${WF.accentLine}`, background: WF.accentTint }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: WF.ink }}>{sailing.depart}</div>
-            <div style={{ marginTop: 4, fontSize: 12, color: WF.inkSoft }}>{sailing.ship} · {mvasHomePortName(sailing.homePort)}</div>
-            <div className="s4-money" style={{ marginTop: 4, fontSize: 12, color: WF.inkLabel }}>{sailing.code}</div>
-          </div>
-        ) : (
-          <div style={{ marginTop: 8, padding: 12, borderRadius: 8, border: `1px dashed ${WF.controlLine}`, color: WF.inkFaint, fontSize: 12 }}>
-            Select a cruise and sailing date.
-          </div>
-        )}
+      <div data-testid="group-setup-actions" style={{
+        flexShrink: 0, padding: '12px 16px 16px', borderTop: `1px solid ${WF.line}`,
+        background: WF.panel,
+      }}>
+        <div role="status" aria-live="polite" style={{
+          marginBottom: actionError ? 8 : 0, color: '#B91C1C', fontSize: 12,
+          lineHeight: '16px', fontWeight: 600,
+        }}>
+          {actionError || ''}
+        </div>
+        <button
+          type="button"
+          onClick={() => (actionEnabled ? onAction?.() : onBlocked?.())}
+          aria-disabled={!actionEnabled}
+          title={actionEnabled ? undefined : 'Complete the required group details, then select a cruise and sailing date'}
+          style={{
+            width: '100%', minHeight: 40, padding: '8px 16px', border: 'none', borderRadius: 8,
+            background: actionEnabled ? WF.accent : WF.fillStrong,
+            color: actionEnabled ? WF.accentText : WF.inkFaint,
+            fontFamily: 'inherit', fontSize: 14, fontWeight: 700,
+            cursor: actionEnabled ? 'pointer' : 'not-allowed',
+          }}>
+          {actionLabel}
+        </button>
       </div>
     </div>
   );

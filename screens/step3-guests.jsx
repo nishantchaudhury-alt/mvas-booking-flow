@@ -1,4 +1,4 @@
-// Step 3 · Add Guests
+// Step 3 · Guest Details
 // Middle section kept blank for future implementation
 // ───────────────────────────────────────────────────────────────────────────
 
@@ -589,7 +589,7 @@ function GuestTripProtection({ selected, guestCount, onToggle }) {
 
 function StepProgress3({ current, onBack }) {
   return (
-    <div style={{
+    <div className="booking-progress" aria-label="Booking progress" style={{
       display: 'flex', alignItems: 'center',
       background: WF.panel, border: `1px solid ${WF.line}`,
       borderRadius: 8, padding: '8px 8px', marginBottom: 20
@@ -599,13 +599,20 @@ function StepProgress3({ current, onBack }) {
         const clickable = (st.n === 1 || st.n === 2) && st.n < current;
         return (
           <React.Fragment key={st.n}>
-            <button onClick={() => clickable && onBack(st.n)} style={{
+            <button
+              type="button"
+              className={`booking-progress__step booking-progress__step--${state}`}
+              aria-label={st.label}
+              aria-current={state === 'current' ? 'step' : undefined}
+              tabIndex={clickable ? 0 : -1}
+              onClick={() => clickable && onBack(st.n)}
+              style={{
               display: 'flex', alignItems: 'center', gap: 8, border: 'none',
               padding: '8px 12px', borderRadius: 6, fontFamily: 'inherit',
               background: state === 'current' ? WF.fill : 'transparent',
               cursor: clickable ? 'pointer' : 'default'
             }}>
-              <div style={{
+              <div className="booking-progress__dot" aria-hidden="true" style={{
                 width: 18, height: 18, borderRadius: 9, flexShrink: 0,
                 // See step2-common.jsx — current gets the halo, done the bare fill.
                 background: state === 'pending' ? WF.fillStrong : WF.accent,
@@ -614,12 +621,16 @@ function StepProgress3({ current, onBack }) {
                 fontSize: 12, fontWeight: 700,
                 display: 'flex', alignItems: 'center', justifyContent: 'center'
               }}>{state === 'done' ? '✓' : st.n}</div>
-              <div style={{
+              <div className="booking-progress__label booking-progress__label--full" style={{
                 fontSize: 12, fontWeight: state === 'current' ? 600 : 500,
                 color: state === 'pending' ? WF.inkFaint : WF.ink, whiteSpace: 'nowrap'
               }}>{st.label}</div>
+              <div className="booking-progress__label booking-progress__label--short" aria-hidden="true" style={{
+                fontSize: 12, fontWeight: state === 'current' ? 600 : 500,
+                color: state === 'pending' ? WF.inkFaint : WF.ink,
+              }}>{st.shortLabel}</div>
             </button>
-            {i < FLOW4.length - 1 && <div style={{ flex: 1, height: 1, minWidth: 8, background: st.n < current ? WF.accentOn : WF.line, opacity: st.n < current ? 0.4 : 1 }} />}
+            {i < FLOW4.length - 1 && <div className="booking-progress__connector" aria-hidden="true" style={{ flex: 1, height: 1, minWidth: 8, background: st.n < current ? WF.accentOn : WF.line, opacity: st.n < current ? 0.4 : 1 }} />}
           </React.Fragment>);
 
       })}
@@ -658,7 +669,7 @@ function Step3App({ booking, update, navigate }) {
       <WFAppShell
         activeGroup="bookings"
         active="create-booking"
-        breadcrumb={['CRM', 'Bookings', 'Create', 'Add guests']}
+        breadcrumb={['CRM', 'Bookings', 'Create', 'Guest Details']}
         rightRail={
         <BookingSummaryPanel
           booking={state}
@@ -684,14 +695,14 @@ function Step3App({ booking, update, navigate }) {
             <button
               type="button"
               onClick={handleBack}
-              aria-label="Back to sailing, fare and cabin"
+              aria-label="Back to Cabin & Supplements"
               style={{
                 minHeight: 40, padding: '8px 16px', border: `1px solid ${WF.line}`,
                 borderRadius: 8, background: WF.panel, color: WF.inkSoft,
                 fontFamily: 'inherit', fontSize: 14, fontWeight: 600,
                 cursor: 'pointer', whiteSpace: 'nowrap',
               }}>
-              Back to sailing, fare &amp; cabin
+              Back to Cabin &amp; Supplements
             </button>
             <button
               type="button"
@@ -710,9 +721,9 @@ function Step3App({ booking, update, navigate }) {
             </button>
           </div>
         }
-        progressBar={<StepProgress3 current={2} onBack={handleBack} />}>
+        progressBar={<StepProgress3 current={3} onBack={handleBack} />}>
 
-        <div data-screen-label="Step 2 · Add Guests">
+        <div data-screen-label="Step 3 · Guest Details">
           {state.groupId && GroupContext && <GroupContext booking={state} update={update} />}
           <div style={{ fontWeight: 700, color: WF.ink, letterSpacing: '-0.01em', marginBottom: 8, fontSize: "20px" }}>
             Add guest details

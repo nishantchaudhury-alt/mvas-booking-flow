@@ -216,7 +216,7 @@ function SPDatum({ label, value, dim, mono, align = 'left' }) {
 }
 
 function SPBookingSnapshot({
-  b, p, destStr, guestStr, durationStr,
+  b, p, guestStr,
   roomLabel, roomStr, showSupps, setShowSupps,
 }) {
   const bookingType = b.bookingType || 'Normal';
@@ -226,17 +226,7 @@ function SPBookingSnapshot({
       <SPGroup label="Trip" first>
         <SPRow label="Booking Type" value={bookingType} />
         <SPRow label="Source" value={b.source || SP_DASH} dim={!b.source} />
-        <SPRow label="Destination" value={destStr || SP_DASH} dim={!destStr} />
         <SPRow label="Guests" value={guestStr} dim={p.guestCount === 0} mono />
-        <SPRow label="Duration" value={durationStr || SP_DASH} dim={!durationStr} />
-      </SPGroup>
-
-      <SPGroup label="Sailing">
-        <SPRow
-          label="Sailing"
-          value={p.sailing ? `${p.sailing.region} · ${p.sailing.nights}N` : SP_DASH}
-          dim={!p.sailing} />
-        <SPRow label="Departs" value={p.sailing ? p.sailing.depart : SP_DASH} dim={!p.sailing} />
       </SPGroup>
 
       <SPGroup label="Stateroom">
@@ -340,6 +330,87 @@ function SPPriceSummary({ b, p }) {
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+function SPPromotionControl({ b, p, set, showOffers }) {
+  const code = b.customCode || '';
+  const applied = b.appliedCoupon && b.appliedCoupon !== 'None';
+  const applyCode = () => {
+    const nextCode = code.trim().toUpperCase();
+    if (nextCode) set({ customCode: nextCode, appliedCoupon: nextCode });
+  };
+
+  return (
+    <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${WF.line}` }}>
+      <label htmlFor="summary-promotion-code" style={{ display: 'block', fontSize: 12, lineHeight: '16px', fontWeight: 600, color: WF.inkSoft }}>
+        Promotion code
+      </label>
+      <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
+        <input
+          id="summary-promotion-code"
+          type="text"
+          placeholder="Enter code"
+          value={code}
+          onChange={(e) => set({ customCode: e.target.value.toUpperCase() })}
+          onKeyDown={(e) => { if (e.key === 'Enter') applyCode(); }}
+          style={{
+            flex: 1, minWidth: 0, padding: '8px 12px', fontSize: 12,
+            border: `1px solid ${WF.line}`, borderRadius: 6,
+            background: WF.panel, color: WF.ink, fontFamily: 'inherit', outline: 'none',
+          }} />
+        <button
+          type="button"
+          onClick={applyCode}
+          disabled={!code.trim()}
+          style={{
+            padding: '8px 12px', fontSize: 12, fontWeight: 700,
+            border: 'none', borderRadius: 6,
+            background: code.trim() ? WF.accent : WF.fillStrong,
+            color: code.trim() ? WF.accentText : WF.inkFaint,
+            cursor: code.trim() ? 'pointer' : 'not-allowed', fontFamily: 'inherit',
+          }}>
+          Apply
+        </button>
+      </div>
+
+      {showOffers && (
+        <div style={{ marginTop: 8 }}>
+          <SPPills
+            options={['None', 'SAVE10', 'EARLYBIRD']}
+            value={b.appliedCoupon}
+            onChange={(coupon) => set({ appliedCoupon: coupon, customCode: coupon === 'None' ? '' : coupon })} />
+        </div>
+      )}
+
+      {applied && (
+        <div style={{
+          marginTop: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8,
+          padding: '8px 12px', background: p.couponIsCustom ? 'var(--ds-primitive-color-warning-50, #FFFBEB)' : 'var(--ds-color-success-bg, #F0FDF4)',
+          borderRadius: 7, border: `1px solid ${p.couponIsCustom ? 'var(--ds-color-warning-border, #FDE68A)' : 'var(--ds-color-success-border, #BBF7D0)'}`,
+        }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: p.couponIsCustom ? 'var(--ds-color-warning-text, #92400E)' : 'var(--ds-color-success-text, #047857)' }}>
+              {b.appliedCoupon}
+            </div>
+            <div style={{ marginTop: 4, fontSize: 12, color: p.couponIsCustom ? 'var(--ds-color-warning-text, #92400E)' : 'var(--ds-color-success-text, #047857)' }}>
+              {p.couponIsCustom ? 'Pending validation' : `${Math.round(p.couponPct * 100)}% off eligible fare`}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => set({ appliedCoupon: 'None', customCode: '' })}
+            aria-label={`Remove promotion ${b.appliedCoupon}`}
+            style={{
+              flexShrink: 0, padding: '4px 8px', border: 'none', background: 'transparent',
+              color: p.couponIsCustom ? 'var(--ds-color-warning-text, #92400E)' : 'var(--ds-color-success-text, #047857)',
+              fontFamily: 'inherit', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+            }}>
+            Remove
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -733,7 +804,6 @@ function BookingSummaryPanel({
   notice,
 }) {
   const b = booking || {};
-  const [showHoldMenu, setShowHoldMenu] = React.useState(false);
   const [showSupps, setShowSupps] = React.useState(false);
   // Which lens the "Your selection" section shows: the whole-booking rows, or
   // the per-stateroom breakdown. Local state — a view toggle, not booking data.
@@ -744,15 +814,6 @@ function BookingSummaryPanel({
   const guestStr = p.guestCount > 0
     ? `${g.adults || 0}A · ${g.youngAdults || 0}YA · ${g.children || 0}C · ${g.infants || 0}I`
     : SP_DASH;
-  // Regions plus any port-of-call refinements, one line — the ports are part
-  // of the same "where" answer, not a separate fact.
-  const destStr = [
-    ...(b.selectedDestinations || []),
-    ...(b.selectedPorts || []).map((pid) => `⚓ ${mvasPortShort(pid)}`),
-  ].join(', ');
-  const durationStr = (b.selectedDuration || [])
-    .map((id) => { const band = getDurationBand(id); return band ? band.short : id; })
-    .join(', ');
   // The stateroom matrix persists every confirmed room in `cabins`; the legacy
   // selectedCabinNum field only stores the first room for base-fare
   // compatibility. Build the visible summary from the complete cabin record so
@@ -764,6 +825,7 @@ function BookingSummaryPanel({
       ? `#${b.selectedCabinNum}${b.selectedCabinDeck ? ` · Deck ${b.selectedCabinDeck}` : ''}`
       : b.assignmentMethod === 'auto' ? 'Auto-assign' : '';
   const roomLabel = selectedRoomNums.length > 1 ? 'Rooms' : 'Room';
+  const SelectedSailingRailSummary = window.SelectedSailingRailSummary;
 
   // Shown on the collapsed heading so the section still says something useful.
   const selectionSummary = [
@@ -773,56 +835,6 @@ function BookingSummaryPanel({
   ].filter(Boolean).join(' · ') || 'Nothing selected yet';
 
   const set = (changes) => update && update(changes);
-
-  const discard = () => {
-    if (!window.confirm('Discard this booking and start over?')) return;
-    update && update({ ...BOOKING_DEFAULTS, step: 1 }, { replace: true });
-  };
-
-  const secondaryActions = (
-    <div style={{ display: 'flex', gap: 8 }}>
-      <div style={{ position: 'relative', flex: 1 }}>
-        <button
-          onClick={() => setShowHoldMenu((v) => !v)}
-          style={{
-            width: '100%', padding: '8px 12px', fontSize: 12, fontWeight: 600, border: `1px solid ${WF.line}`,
-            borderRadius: 7, background: '#fff', color: WF.ink, cursor: 'pointer', fontFamily: 'inherit',
-          }}>Hold</button>
-        {showHoldMenu && (
-          <>
-            <div onClick={() => setShowHoldMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
-            <div style={{
-              position: 'absolute', bottom: '100%', left: 0, marginBottom: 8, zIndex: 41,
-              width: 160, background: '#fff', border: `1px solid ${WF.line}`, borderRadius: 9,
-              boxShadow: '0 12px 32px rgba(15,31,61,0.16)', overflow: 'hidden',
-            }}>
-              <div style={{ padding: '8px 12px 8px', fontSize: 12, fontWeight: 700, color: WF.inkSoft, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                Hold for
-              </div>
-              {['24h', '48h', '72h'].map((d) => (
-                <button
-                  key={d}
-                  onClick={() => { set({ holdDur: d }); setShowHoldMenu(false); }}
-                  style={{
-                    display: 'block', width: '100%', padding: '8px 12px', border: 'none',
-                    background: 'transparent', color: WF.ink, fontSize: 14, fontWeight: 500,
-                    textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit',
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = '#F8FAFC'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
-                  {d}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
-      <button onClick={discard} style={{
-        flex: 1, padding: '8px 12px', fontSize: 12, fontWeight: 600, border: `1px solid ${WF.line}`,
-        borderRadius: 7, background: '#fff', color: WF.ink, cursor: 'pointer', fontFamily: 'inherit',
-      }}>Discard</button>
-    </div>
-  );
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
@@ -854,15 +866,19 @@ function BookingSummaryPanel({
               onChange={setSelectionView} />
           </div>
 
+          {p.sailing && SelectedSailingRailSummary && (
+            <div style={{ marginBottom: 16 }}>
+              <SelectedSailingRailSummary sailing={p.sailing} />
+            </div>
+          )}
+
           {selectionView === 'Cabin-wise Details' ? (
             <SPCabinDetails b={b} p={p} />
           ) : (
             <SPBookingSnapshot
               b={b}
               p={p}
-              destStr={destStr}
               guestStr={guestStr}
-              durationStr={durationStr}
               roomLabel={roomLabel}
               roomStr={roomStr}
               showSupps={showSupps}
@@ -879,51 +895,17 @@ function BookingSummaryPanel({
           ) : (
             <SPPriceSummary b={b} p={p} />
           )}
+          {selectionView === 'Global Details' && (
+            <SPPromotionControl b={b} p={p} set={set} showOffers={step === 3} />
+          )}
         </SPSection>
 
-        {/* ── Promotions, trip protection, hold policy, payment terms ──
+        {/* ── Trip protection, hold policy, payment terms ──
             These only apply at checkout, so they only show on Review & confirm —
             surfacing them earlier let an agent set a hold policy before there
             was even a cabin to hold. ── */}
         {step === 3 && (
           <>
-            {/* ── Promotions ── */}
-            <SPSection title="Promotions">
-              <SPPills options={['None', 'SAVE10', 'EARLYBIRD']} value={b.appliedCoupon} onChange={(c) => set({ appliedCoupon: c })} />
-              <div style={{ display: 'flex', gap: 4, marginTop: 8 }}>
-                <input
-                  type="text" placeholder="Custom code…" value={b.customCode || ''}
-                  onChange={(e) => set({ customCode: e.target.value.toUpperCase() })}
-                  onKeyDown={(e) => { if (e.key === 'Enter' && (b.customCode || '').trim()) set({ appliedCoupon: b.customCode.trim() }); }}
-                  style={{
-                    flex: 1, minWidth: 0, padding: '8px 12px', fontSize: 12, border: `1px solid ${WF.line}`,
-                    borderRadius: 6, fontFamily: 'inherit', outline: 'none',
-                  }} />
-                <button
-                  onClick={() => { if ((b.customCode || '').trim()) set({ appliedCoupon: b.customCode.trim() }); }}
-                  disabled={!(b.customCode || '').trim()}
-                  style={{
-                    padding: '8px 12px', fontSize: 12, fontWeight: 600, border: 'none', borderRadius: 6,
-                    background: (b.customCode || '').trim() ? '#1B2434' : '#CBD5E1', color: '#fff',
-                    cursor: (b.customCode || '').trim() ? 'pointer' : 'default', fontFamily: 'inherit',
-                  }}>Apply</button>
-              </div>
-              {b.appliedCoupon !== 'None' && (
-                <div style={{
-                  marginTop: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  padding: '8px 12px', background: p.couponIsCustom ? 'var(--ds-primitive-color-warning-50, #FFFBEB)' : 'var(--ds-color-success-bg, #F0FDF4)',
-                  borderRadius: 7, border: `1px solid ${p.couponIsCustom ? 'var(--ds-color-warning-border, #FDE68A)' : 'var(--ds-color-success-border, #BBF7D0)'}`,
-                }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: p.couponIsCustom ? 'var(--ds-color-warning-text, #92400E)' : 'var(--ds-color-success-text, #047857)' }}>
-                    {p.couponIsCustom ? '⏳ Pending validation' : `✨ ${Math.round(p.couponPct * 100)}% off base fare`}
-                  </div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: p.couponIsCustom ? 'var(--ds-color-warning-text, #92400E)' : 'var(--ds-color-success-text, #047857)', fontFamily: 'ui-monospace, monospace' }}>
-                    {spMoney(p.couponDisc)}
-                  </div>
-                </div>
-              )}
-            </SPSection>
-
             {/* ── Trip protection ── */}
             <SPSection title="Trip protection">
               <div
@@ -988,11 +970,6 @@ function BookingSummaryPanel({
           )}
         </div>
 
-        {!showFlowNavigation && (
-          <div style={{ padding: '0 16px 16px' }}>
-            {secondaryActions}
-          </div>
-        )}
       </div>
 
       {/* ── Footer ── */}
@@ -1001,7 +978,6 @@ function BookingSummaryPanel({
           padding: '12px 16px 16px', borderTop: `1px solid ${WF.line}`,
           display: 'flex', flexDirection: 'column', gap: 8, background: WF.panel, flexShrink: 0,
         }}>
-          {secondaryActions}
           <button
             onClick={() => (continueEnabled ? onContinue && onContinue() : onBlocked && onBlocked())}
             title={continueEnabled ? undefined : 'Complete this step to continue'}

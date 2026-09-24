@@ -1,19 +1,20 @@
 // ───────────────────────────────────────────────────────────────────────────
-// Step 2 · Sailing, fare & cabin — agent booking flow
+// Shared booking-flow progress and controls
 // Reuses WF tokens/primitives + intent-data (SAILINGS, CABINS, FARECODES, priceQuote)
 // Self-contained page: carries Step-1 selections from the shared store.
 // ───────────────────────────────────────────────────────────────────────────
 
-// ── 4-step progress bar (step 2 active, step 1 done) ──
+// ── Four-stage booking progress ──
 const FLOW4 = [
-  { n: 1, label: 'Sailing, fare & cabin' },
-  { n: 2, label: 'Add guests' },
-  { n: 3, label: 'Review & confirm' },
+  { n: 1, label: 'Sailing', shortLabel: 'Sailing' },
+  { n: 2, label: 'Cabin & Supplements', shortLabel: 'Cabin' },
+  { n: 3, label: 'Guest Details', shortLabel: 'Guests' },
+  { n: 4, label: 'Review & Confirm', shortLabel: 'Review' },
 ];
 
 function StepProgress2({ current, onBack }) {
   return (
-    <div style={{
+    <div className="booking-progress" aria-label="Booking progress" style={{
       display: 'flex', alignItems: 'center',
       background: WF.panel, border: `1px solid ${WF.line}`,
       borderRadius: 8, padding: '8px 8px', marginBottom: 20,
@@ -23,13 +24,20 @@ function StepProgress2({ current, onBack }) {
         const clickable = st.n === 1 && onBack;
         return (
           <React.Fragment key={st.n}>
-            <button onClick={() => clickable && onBack()} style={{
+            <button
+              type="button"
+              className={`booking-progress__step booking-progress__step--${state}`}
+              aria-label={st.label}
+              aria-current={state === 'current' ? 'step' : undefined}
+              tabIndex={clickable ? 0 : -1}
+              onClick={() => clickable && onBack()}
+              style={{
               display: 'flex', alignItems: 'center', gap: 8, border: 'none',
               padding: '8px 12px', borderRadius: 6, fontFamily: 'inherit',
               background: state === 'current' ? WF.fill : 'transparent',
               cursor: clickable ? 'pointer' : 'default',
             }}>
-              <div style={{
+              <div className="booking-progress__dot" aria-hidden="true" style={{
                 width: 18, height: 18, borderRadius: 9, flexShrink: 0,
                 // Done and current are both the brand navy now, so the two are
                 // told apart by treatment rather than hue: current wears a halo
@@ -41,12 +49,16 @@ function StepProgress2({ current, onBack }) {
                 fontSize: 12, fontWeight: 700,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>{state === 'done' ? '✓' : st.n}</div>
-              <div style={{
+              <div className="booking-progress__label booking-progress__label--full" style={{
                 fontSize: 12, fontWeight: state === 'current' ? 600 : 500,
                 color: state === 'pending' ? WF.inkFaint : WF.ink, whiteSpace: 'nowrap',
               }}>{st.label}</div>
+              <div className="booking-progress__label booking-progress__label--short" aria-hidden="true" style={{
+                fontSize: 12, fontWeight: state === 'current' ? 600 : 500,
+                color: state === 'pending' ? WF.inkFaint : WF.ink,
+              }}>{st.shortLabel}</div>
             </button>
-            {i < FLOW4.length - 1 && <div style={{ flex: 1, height: 1, minWidth: 8, background: st.n < current ? WF.accentOn : WF.line, opacity: st.n < current ? 0.4 : 1 }} />}
+            {i < FLOW4.length - 1 && <div className="booking-progress__connector" aria-hidden="true" style={{ flex: 1, height: 1, minWidth: 8, background: st.n < current ? WF.accentOn : WF.line, opacity: st.n < current ? 0.4 : 1 }} />}
           </React.Fragment>
         );
       })}
