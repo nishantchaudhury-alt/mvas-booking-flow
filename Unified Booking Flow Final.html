@@ -1758,14 +1758,11 @@ function Step4App({ booking, update }) {
           sticky bar at the bottom of this scrollport. */}
       <div data-screen-label="Step 4 · Review & Confirm">
 
-        {/* One capped, centred container for the whole screen — heading included.
-            Past ~1140px nothing gains from being wider: it would only drag a
-            guest's name and their Add/Edit button apart. The heading used to sit
-            outside this cap and run full-width, so the page had two different
-            measures stacked on each other; and without `margin: 0 auto` the
-            block hugged the left edge, leaving the whole surplus as one void on
-            the right. Now the surplus is symmetric gutters. */}
-        <div style={{ maxWidth: 1140, margin: '0 auto' }}>
+        {/* Share the working column's responsive measure with the progress bar
+            above. A review-only max-width created visibly different left and
+            right edges at wide viewports, even though both elements belong to
+            the same stage of the flow. */}
+        <div style={{ width: '100%', minWidth: 0 }}>
           {st.groupId && GroupContext && <GroupContext booking={st} update={setSt} />}
           <div style={{ fontWeight: 700, color: WF.ink, letterSpacing: '-0.01em', marginBottom: 4, fontSize: 24 }}>Review &amp; Confirm</div>
           <div style={{ fontSize: 14, color: WF.inkSoft, marginBottom: 20 }}>Verify every line below matches what the guest agreed to, then confirm.</div>
