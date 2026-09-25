@@ -426,37 +426,32 @@ function GroupSetupFields({ state, onUpdate, embedded = false }) {
       borderRadius: embedded ? 0 : 9, overflow: 'hidden',
       boxShadow: embedded ? 'none' : '0 1px 2px rgba(15,23,42,.05)',
     }}>
-      <GroupSetupCard
-        number="1"
-        title={editingCreatedGroup ? 'Edit group identity' : 'Group identity'}
-        help="Give this parent reservation a recognizable name.">
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 420px) 1fr', gap: 16, alignItems: 'end' }}>
-          <GroupField label="Group name" required>
-            <input
-              aria-label="Group name"
-              value={state.groupName || ''}
-              onChange={(e) => onUpdate({ groupName: e.target.value })}
-              placeholder="e.g. Patel Family Celebration"
-              style={groupInputStyle}
-            />
-          </GroupField>
-          {editingCreatedGroup && (
-            <div style={{ minHeight: 36, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-              <WFBadge kind="draft">Existing group</WFBadge>
-            </div>
-          )}
-        </div>
-      </GroupSetupCard>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 420px) 1fr', gap: 16, alignItems: 'end', padding: '0 0 4px' }}>
+        <GroupField label="Group name" required>
+          <input
+            aria-label="Group name"
+            value={state.groupName || ''}
+            onChange={(e) => onUpdate({ groupName: e.target.value })}
+            placeholder="e.g. Patel Family Celebration"
+            style={groupInputStyle}
+          />
+        </GroupField>
+        {editingCreatedGroup && (
+          <div style={{ minHeight: 36, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+            <WFBadge kind="draft">Existing group</WFBadge>
+          </div>
+        )}
+      </div>
 
       <GroupSetupCard
-        number="2"
+        number="1"
         title="Cruise & sailing"
         help="Choose the cruise, then select the departure this group will use.">
         <GroupCruiseSelectors state={state} onUpdate={onUpdate} />
       </GroupSetupCard>
 
       <GroupSetupCard
-        number="3"
+        number="2"
         title="Primary contact"
         help="Link an existing customer or enter the group coordinator manually.">
         <GroupMasterContactSearch
@@ -566,7 +561,7 @@ function GroupSetupFields({ state, onUpdate, embedded = false }) {
       </GroupSetupCard>
 
       <GroupSetupCard
-        number="4"
+        number="3"
         title="Internal notes"
         help="Capture accessibility, celebration, or partner context for the team."
         optional>

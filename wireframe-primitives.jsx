@@ -628,9 +628,9 @@ function WFAppShell({ active = 'fares', activeGroup = 'fares', breadcrumb, title
   const navItems = [
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'bookings', label: 'Bookings', children: [
-      { id: 'all-bookings', label: 'All bookings' },
       { id: 'create-booking', label: 'Create booking' },
-      { id: 'group-reservations', label: 'Group reservations' },
+      { id: 'all-bookings', label: 'All bookings' },
+      { id: 'group-reservations', label: 'Group bookings' },
       { id: 'holds', label: 'Holds & waitlist' },
       { id: 'guests', label: 'Guest profiles' },
     ]},
