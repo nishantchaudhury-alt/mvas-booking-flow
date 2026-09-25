@@ -198,6 +198,19 @@
     scrollbar-width: thin;
     scrollbar-color: var(--ds-color-border-strong) transparent;
   }
+  .stateroom-cabin-scroll {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .stateroom-cabin-scroll[data-scrollable="true"] {
+    scrollbar-width: thin;
+    scrollbar-color: var(--ds-color-text-muted) var(--ds-color-surface-subtle);
+  }
+  .stateroom-cabin-scroll::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
   .stateroom-modal-scroll::-webkit-scrollbar {
     display: block;
     width: 6px;
@@ -205,6 +218,20 @@
   .stateroom-deck-scroll::-webkit-scrollbar {
     display: block;
     width: 5px;
+  }
+  .stateroom-cabin-scroll[data-scrollable="true"]::-webkit-scrollbar {
+    display: block !important;
+    width: 0 !important;
+    height: 12px !important;
+  }
+  .stateroom-cabin-scroll[data-scrollable="true"]::-webkit-scrollbar-track {
+    background: var(--ds-color-surface-subtle);
+  }
+  .stateroom-cabin-scroll[data-scrollable="true"]::-webkit-scrollbar-thumb {
+    background: var(--ds-color-text-label);
+    background-clip: padding-box;
+    border: 3px solid transparent;
+    border-radius: 999px;
   }
   .stateroom-modal-scroll::-webkit-scrollbar-track,
   .stateroom-deck-scroll::-webkit-scrollbar-track {
@@ -261,13 +288,13 @@
 <script type="text/babel" src="screens/intent-data.jsx?v=128"></script>
 
 <!-- 2b · Booking store: one state shape, one storage key, one pricing fn ── -->
-<script type="text/babel" src="screens/booking-store.jsx?v=133"></script>
+<script type="text/babel" src="screens/booking-store.jsx?v=134"></script>
 
 <!-- 2c · Group reservation entry, workspace, and booking context ───────── -->
   <script type="text/babel" src="screens/group-booking.jsx?v=60"></script>
 
 <!-- 2c · The single right-rail summary panel shared by all four steps ───── -->
-<script type="text/babel" src="screens/summary-panel.jsx?v=137"></script>
+<script type="text/babel" src="screens/summary-panel.jsx?v=139"></script>
 
 <!-- 3 · Shared Step-2 atoms: FLOW4, StepProgress2, SourcePill2, ContextBar -->
 <script type="text/babel" src="screens/step2-common.jsx?v=131"></script>
@@ -313,13 +340,13 @@ window.MiniStep = MiniStep;
 <script type="text/babel" src="screens/step2-sailing.jsx?v=163"></script>
 
 <!-- 5b · Step 2 Deck Map — ship orientation + structural deck picker ─────  -->
-<script type="text/babel" src="screens/step2-deck-map.jsx?v=126"></script>
+<script type="text/babel" src="screens/step2-deck-map.jsx?v=127"></script>
 
 <!-- 5c · Step 2 Sailing Detail — redesigned detail view with tabs ────── -->
-<script type="text/babel" src="screens/step2-sailing-detail.jsx?v=137"></script>
+<script type="text/babel" src="screens/step2-sailing-detail.jsx?v=138"></script>
 
 <!-- 5d · Step 2 Stateroom Matrix — availability table + room panel ──────  -->
-<script type="text/babel" src="screens/step2-stateroom-matrix.jsx?v=163"></script>
+  <script type="text/babel" src="screens/step2-stateroom-matrix.jsx?v=196"></script>
 
 <!-- 6 · Step 3 — Guest Details (exports window.Step3App) ────────────────  -->
 <!-- Note: duplicate S2_CAB / S2_FC / FLOW4 consts removed from this file   -->
@@ -1005,8 +1032,11 @@ function S4GlobalPriceBreakdown({ q, totalGuests, addOnsTotal, govtTaxes, cruise
       <S4PriceGroup
         first
         label="Cruise fare"
-        amount={q.cabinFareTotal}
-        caption={totalGuests > 0 ? `${money(q.cabinFarePP)} per guest × ${totalGuests} guest${totalGuests === 1 ? '' : 's'}` : 'Guest count required'} />
+        amount={q.cruiseFareTotal}
+        caption={totalGuests > 0 ? `${money(q.cabinFarePP)} per guest × ${totalGuests} guest${totalGuests === 1 ? '' : 's'} plus room selection delta` : 'Guest count required'}>
+        <S4PriceDetail label="Guest fare" amount={q.cabinFareTotal} />
+        {q.roomDeltaTotal > 0 && <S4PriceDetail label="Room selection delta" amount={q.roomDeltaTotal} />}
+      </S4PriceGroup>
 
       <S4PriceGroup label="Add-ons" amount={addOnsTotal} caption="Optional items selected for this booking">
         <S4PriceDetail label="Supplements" amount={q.suppTotal} />

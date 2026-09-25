@@ -386,14 +386,14 @@ function WFSelect({
           transition: 'background-color var(--ds-motion-fast, 120ms) ease, border-color var(--ds-motion-fast, 120ms) ease, box-shadow var(--ds-motion-fast, 120ms) ease',
         }}>
         <span style={{ minWidth: 0, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'left' }}>
-          {selectedOption ? selectedOption.label : placeholder}
+          {selectedOption ? (selectedOption.triggerLabel || selectedOption.label) : placeholder}
         </span>
         {showSelectedMeta && selectedOption && selectedOption.meta != null && (
           <span style={{
             flexShrink: 0, padding: '4px 8px', borderRadius: 999,
             background: WF.fill, color: WF.inkSoft,
             fontSize: 12, fontWeight: 600, lineHeight: '16px',
-          }}>{selectedOption.meta}</span>
+          }}>{selectedOption.triggerMeta || selectedOption.meta}</span>
         )}
         <svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, color: WF.inkSoft, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform var(--ds-motion-fast, 120ms) ease' }}>
           <path d="m3 5 4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />

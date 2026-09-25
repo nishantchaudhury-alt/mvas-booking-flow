@@ -114,7 +114,6 @@ function SelectedSailingRailSummary({ sailing }) {
   const itineraryProduct = getGroupCruiseForSailing(sailing.code);
   const destination = (itineraryProduct && itineraryProduct.region) || sailing.region || route;
   const tripTitle = `${nights} ${nights === 1 ? 'Night' : 'Nights'} in ${destination}`;
-  const routeSummary = route || (itineraryProduct && itineraryProduct.portSummary) || destination;
   const bookingWindow = getWindowForSailing(sailing.code);
 
   return (
@@ -131,10 +130,6 @@ function SelectedSailingRailSummary({ sailing }) {
           marginTop: 4, fontSize: 16, lineHeight: '24px', fontWeight: 700, color: WF.ink,
           letterSpacing: '-0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
         }}>{tripTitle}</div>
-        <div style={{
-          marginTop: 4, fontSize: 12, lineHeight: '16px', color: WF.inkSoft,
-          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-        }}>{routeSummary}</div>
       </div>
 
       <div style={{ display: 'grid', gap: 8, padding: 12 }}>

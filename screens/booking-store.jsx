@@ -233,7 +233,16 @@ function normalizeBooking(raw) {
     .filter((d) => bandIds.includes(d));
   b.selectedHomePorts = (Array.isArray(r.selectedHomePorts) ? r.selectedHomePorts : [])
     .filter((p) => homePortIds.includes(p));
-  b.cabins = Array.isArray(r.cabins) ? r.cabins : [];
+  b.cabins = (Array.isArray(r.cabins) ? r.cabins : [])
+    .filter((cabin) => cabin && typeof cabin === 'object')
+    .map((cabin) => ({
+      ...cabin,
+      // Room deltas are flat per selected room. Sanitize persisted values so
+      // malformed or legacy drafts can never inject a negative/NaN charge.
+      roomDelta: Number.isFinite(Number(cabin.roomDelta))
+        ? Math.max(0, round2(Number(cabin.roomDelta)))
+        : 0,
+    }));
   // The router has three screens even though the progress indicator has four
   // user-facing stages. An out-of-range value would render a blank page, so
   // clamp rather than trust what was persisted.
@@ -307,6 +316,11 @@ function computeBookingPricing(booking) {
   const cabinDeltaPP = cabin ? cabin.deltaPP || 0 : 0;
   const cabinFarePP = basePP + cabinDeltaPP;
   const cabinFareTotal = cabinFarePP * guestCount;
+  const roomDeltaTotal = round2((b.cabins || []).reduce((sum, selectedCabin) => {
+    const delta = Number(selectedCabin && selectedCabin.roomDelta);
+    return sum + (Number.isFinite(delta) && delta > 0 ? delta : 0);
+  }, 0));
+  const cruiseFareTotal = round2(cabinFareTotal + roomDeltaTotal);
   const gratuities = status === 'empty' ? 0 : GRATUITIES;
 
   // Kept as zero-value compatibility fields for older readers. Packages are
@@ -342,12 +356,12 @@ function computeBookingPricing(booking) {
 
   // Coupons discount the fare + gratuities, which is what "off base fare" means
   // on the panel — not the supplements or the protection premium.
-  const baseFare = cabinFareTotal + gratuities;
+  const baseFare = cruiseFareTotal + gratuities;
   const couponPct = COUPONS[b.appliedCoupon] !== undefined ? COUPONS[b.appliedCoupon] : 0;
   const couponDisc = status === 'empty' ? 0 : round2(-baseFare * couponPct);
   const couponIsCustom = b.appliedCoupon !== 'None' && COUPONS[b.appliedCoupon] === undefined;
 
-  const total = round2(cabinFareTotal + gratuities + suppTotal + protectionTotal + couponDisc);
+  const total = round2(cruiseFareTotal + gratuities + suppTotal + protectionTotal + couponDisc);
   const depositRate = fcForMath ? fcForMath.deposit || 0.25 : 0.25;
   const payFull = b.paymentMode === 'Pay Full Balance';
   const deposit = round2(total * depositRate);
@@ -356,7 +370,7 @@ function computeBookingPricing(booking) {
 
   return {
     sailing, cabin, fc, guestCount, status,
-    basePP, cabinDeltaPP, cabinFarePP, cabinFareTotal,
+    basePP, cabinDeltaPP, cabinFarePP, cabinFareTotal, roomDeltaTotal, cruiseFareTotal,
     gratuities, suppTotal, suppLines, packageTotal, pkgs,
     protectionTotal, couponPct, couponDisc, couponIsCustom,
     total, depositRate, deposit, amountDue, remaining, payFull,

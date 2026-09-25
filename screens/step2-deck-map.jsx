@@ -32,14 +32,14 @@ const CAT_CABIN_COUNTS = { IS: 21, OV: 12, BAL: 14, STE: 7 };
 
 // ── Live Availability Matrix mock data ───────────────────────────────────
 const AVAIL_MATRIX_ROWS = [
-{ color: '#DC2626', name: 'Category I8–G', code: 'I8G', price: 499, total: 13, single: 0, double: 0, dbInf: 0, triple: 13, quad: 0, tax: 266 },
+{ color: '#DC2626', name: 'Category I8-G', code: 'I8G', price: 499, total: 13, single: 0, double: 0, dbInf: 0, triple: 13, quad: 0, tax: 266 },
 { color: '#F97316', name: 'Grand Terrace Suite – S1', code: 'S1', price: 1932, total: 0, single: 0, double: 0, dbInf: 0, triple: 0, quad: 0, tax: 266 },
-{ color: '#A855F7', name: 'Jr Suite – S3', code: 'S3', price: 1732, total: 0, single: 0, double: 0, dbInf: 0, triple: 0, quad: 0, tax: 266 },
-{ color: '#EAB308', name: 'Ocean View – O4', code: 'O4', price: 512, total: 0, single: 0, double: 0, dbInf: 0, triple: 0, quad: 0, tax: 266 },
-{ color: '#F59E0B', name: 'Ocean View – O5', code: 'O5', price: 512, total: 0, single: 0, double: 0, dbInf: 0, triple: 0, quad: 0, tax: 266 },
+{ color: '#A855F7', name: 'Junior Suite – S3', code: 'S3', price: 1732, total: 0, single: 0, double: 0, dbInf: 0, triple: 0, quad: 0, tax: 266 },
+{ color: '#EAB308', name: 'Picturesque Oceanview Pullman – O4', code: 'O4', price: 512, total: 0, single: 0, double: 0, dbInf: 0, triple: 0, quad: 0, tax: 266 },
+{ color: '#F59E0B', name: 'Picturesque Oceanview – O5', code: 'O5', price: 512, total: 0, single: 0, double: 0, dbInf: 0, triple: 0, quad: 0, tax: 266 },
 { color: '#86EFAC', name: 'Interior Stateroom – I6', code: 'I6', price: 472, total: 2, single: 0, double: 2, dbInf: 0, triple: 0, quad: 0, tax: 266 },
-{ color: '#22C55E', name: 'Interior Stateroom – I7', code: 'I7', price: 472, total: 6, single: 0, double: 5, dbInf: 1, triple: 0, quad: 0, tax: 266 },
-{ color: '#15803D', name: 'Interior Stateroom – I8', code: 'I8', price: 472, total: 1, single: 0, double: 1, dbInf: 0, triple: 0, quad: 0, tax: 266 }];
+{ color: '#22C55E', name: 'Cozy Interior Quad – I7', code: 'I7', price: 472, total: 6, single: 0, double: 5, dbInf: 1, triple: 0, quad: 0, tax: 266 },
+{ color: '#15803D', name: 'Cozy Interior – I8', code: 'I8', price: 472, total: 1, single: 0, double: 1, dbInf: 0, triple: 0, quad: 0, tax: 266 }];
 
 
 function LiveAvailMatrix({ onClose }) {

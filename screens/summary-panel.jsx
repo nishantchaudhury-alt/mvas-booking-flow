@@ -96,6 +96,126 @@ function SPRow({ label, value, dim, mono, accent, strong }) {
   );
 }
 
+// Compact multi-category disclosure for the narrow summary rail. The first
+// booked cabin type remains readable in the row; additional distinct types are
+// available from the +N trigger without widening or wrapping the rail.
+function SPCabinTypeSummary({ b, p }) {
+  const [open, setOpen] = React.useState(false);
+  const rootRef = React.useRef(null);
+  const cabinTypes = [];
+  const byType = new Map();
+
+  (b.cabins || []).forEach((cabin, index) => {
+    if (!cabin) return;
+    const key = cabin.categoryRowId || cabin.rowId || cabin.label || cabin.cat || `cabin-${index}`;
+    const label = cabin.label || (p.cabin && p.cabin.name) || 'Cabin';
+    if (!byType.has(key)) {
+      const item = { key, label, rooms: [] };
+      byType.set(key, item);
+      cabinTypes.push(item);
+    }
+    if (cabin.num) byType.get(key).rooms.push(cabin.num);
+  });
+
+  if (cabinTypes.length === 0 && p.cabin) {
+    cabinTypes.push({ key: p.cabin.id || p.cabin.name, label: p.cabin.name, rooms: [] });
+  }
+
+  React.useEffect(() => {
+    if (!open) return undefined;
+    const closeOnOutsidePress = (event) => {
+      if (rootRef.current && !rootRef.current.contains(event.target)) setOpen(false);
+    };
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', closeOnOutsidePress);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('mousedown', closeOnOutsidePress);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [open]);
+
+  const first = cabinTypes[0];
+  const additionalCount = Math.max(0, cabinTypes.length - 1);
+  const compactLabel = first ? first.label.split(' – ')[0] : SP_DASH;
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '4px 0' }}>
+      <div style={{ fontSize: 12, color: WF.inkSoft, flexShrink: 0 }}>Cabin types</div>
+      <div
+        ref={rootRef}
+        onMouseEnter={() => additionalCount > 0 && setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+        onBlur={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
+        }}
+        style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4, minWidth: 0 }}>
+        <span
+          title={first ? first.label : undefined}
+          style={{
+            minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            fontSize: 12, fontWeight: 500, color: first ? WF.ink : WF.inkFaint,
+          }}>
+          {compactLabel}
+        </span>
+        {additionalCount > 0 && (
+          <button
+            type="button"
+            aria-haspopup="dialog"
+            aria-expanded={open}
+            aria-controls="sp-cabin-types-popover"
+            aria-label={`Show all ${cabinTypes.length} cabin types`}
+            onFocus={() => setOpen(true)}
+            onClick={() => setOpen((value) => !value)}
+            style={{
+              minWidth: 28, height: 24, padding: '4px 8px', borderRadius: 999,
+              border: `1px solid ${WF.line}`, background: open ? WF.accentTint : WF.fill,
+              color: WF.accentInk, fontFamily: 'inherit', fontSize: 12, fontWeight: 700,
+              lineHeight: '16px', cursor: 'pointer', flexShrink: 0,
+            }}>
+            +{additionalCount}
+          </button>
+        )}
+        {open && additionalCount > 0 && (
+          <div
+            id="sp-cabin-types-popover"
+            role="dialog"
+            aria-label="Cabin types in this booking"
+            style={{
+              position: 'absolute', top: 'calc(100% + 8px)', right: 0, zIndex: 60,
+              width: 264, maxWidth: 'calc(100vw - 32px)', padding: 12,
+              border: `1px solid ${WF.line}`, borderRadius: 8, background: '#FFFFFF',
+              boxShadow: '0 8px 24px rgba(15,23,42,0.14)', textAlign: 'left',
+            }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: WF.ink, marginBottom: 8 }}>
+              Cabin types ({cabinTypes.length})
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {cabinTypes.map((type) => (
+                <div key={type.key} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: WF.ink }}>{type.label}</div>
+                    {type.rooms.length > 0 && (
+                      <div style={{ marginTop: 4, fontSize: 12, color: WF.inkSoft, fontFamily: 'ui-monospace, monospace' }}>
+                        {type.rooms.map((room) => `#${room}`).join(', ')}
+                      </div>
+                    )}
+                  </div>
+                  <span style={{ flexShrink: 0, fontSize: 12, fontWeight: 700, color: WF.inkSoft }}>
+                    {type.rooms.length || 1}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Price row, with an optional before → after comparison for package preview ──
 function SPPriceRow({ label, amount, preview, accent, strong, sub }) {
   const changed = preview !== undefined && preview !== null && preview !== amount;
@@ -230,13 +350,18 @@ function SPBookingSnapshot({
       </SPGroup>
 
       <SPGroup label="Stateroom">
-        <SPRow label="Cabin" value={p.cabin ? p.cabin.name : SP_DASH} dim={!p.cabin} />
+        <SPCabinTypeSummary b={b} p={p} />
         <SPRow
-          label="Cabin delta"
+          label="Cabin type delta"
           value={p.cabin ? (p.cabinDeltaPP > 0 ? `+$${p.cabinDeltaPP}pp` : 'Included') : SP_DASH}
           dim={!p.cabin}
           mono={!!p.cabin} />
         <SPRow label={roomLabel} value={roomStr || SP_DASH} dim={!roomStr} />
+        <SPRow
+          label="Room delta"
+          value={roomStr ? (p.roomDeltaTotal > 0 ? `+${money(p.roomDeltaTotal)}` : 'Included') : SP_DASH}
+          dim={!roomStr}
+          mono={!!roomStr} />
         <SPRow
           label="Assignment"
           value={b.cabinId ? (b.assignmentMethod === 'auto' ? 'Auto-assign' : 'Manual select') : SP_DASH}
@@ -299,6 +424,11 @@ function SPPriceSummary({ b, p }) {
       label: 'Cruise & fees',
       rows: [
         { label: 'Cabin fare', sub: p.guestCount > 0 ? `${money(p.cabinFarePP)} per guest × ${p.guestCount}` : null, amount: p.cabinFareTotal },
+        ...((b.cabins || []).length > 0 ? [{
+          label: 'Room selection delta',
+          sub: `${b.cabins.length} selected room${b.cabins.length === 1 ? '' : 's'}`,
+          amount: p.roomDeltaTotal,
+        }] : []),
         { label: 'Gratuities', amount: p.gratuities },
       ],
     },
@@ -595,6 +725,7 @@ function spCabinBreakdown(b, p) {
     Object.keys(guestToCabin).forEach((gk) => { if (guestToCabin[gk] === ck) keys.add(gk); });
     const { lines, total: suppTotal } = linesFor(keys);
     const fare = r2(p.cabinFarePP * occupants);
+    const roomDelta = Number.isFinite(Number(cab.roomDelta)) ? Math.max(0, r2(Number(cab.roomDelta))) : 0;
     const taxes = totalGuests > 0 ? r2(p.gratuities * occupants / totalGuests) : 0;
     taxAllocated += taxes;
     // Per-person split of THIS room's fare. Allocated, not independently
@@ -613,7 +744,7 @@ function spCabinBreakdown(b, p) {
       // The category name, not the raw code (`cab.cat` is "IS"/"OV"/"BAL"/"STE")
       // — an agent reading this back to a guest says "Interior Stateroom", not
       // "IS".
-      cat: cabinCategoryName(cab), occupants, fare, lines, suppTotal, taxes, people,
+      cat: cabinCategoryName(cab), occupants, fare, roomDelta, lines, suppTotal, taxes, people,
     };
   });
 
@@ -624,7 +755,7 @@ function spCabinBreakdown(b, p) {
     const last = rooms[rooms.length - 1];
     last.taxes = r2(last.taxes + p.gratuities - taxAllocated);
   }
-  rooms.forEach((rm) => { rm.subtotal = r2(rm.fare + rm.suppTotal + rm.taxes); });
+  rooms.forEach((rm) => { rm.subtotal = r2(rm.fare + rm.roomDelta + rm.suppTotal + rm.taxes); });
 
   // Guests not yet allocated to any room can still carry supplements; those
   // charges are real, so they get their own group rather than vanishing.
@@ -709,6 +840,16 @@ function SPCabinRoomCard({ rm, p }) {
               <div style={{ fontSize: 12, color: WF.inkSoft, marginTop: 4 }}>Allocated across {rm.occupants} guest{rm.occupants === 1 ? '' : 's'}</div>
             </div>
             <span style={amountStyle}>{money(rm.fare)}</span>
+          </div>
+          <div style={{
+            display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12,
+            marginTop: 8, paddingTop: 8, borderTop: `1px solid ${WF.lineSoft}`,
+          }}>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: WF.ink }}>Room selection delta</div>
+              <div style={{ fontSize: 12, color: WF.inkSoft, marginTop: 4 }}>Flat charge for room #{rm.label.replace('Room #', '')}</div>
+            </div>
+            <span style={amountStyle}>+{money(rm.roomDelta)}</span>
           </div>
           {rm.people.length > 0 && (
             <button
