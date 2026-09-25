@@ -1270,6 +1270,110 @@ function RoomCard({ room, state, ownerSlot, onClick, onShowDetails, disabled }) 
   );
 }
 
+function DeckPlanIcon({ size = 14 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M3 6 9 3l6 3 6-3v15l-6 3-6-3-6 3V6Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+      <path d="M9 3v15M15 6v15" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function DeckServiceIcon({ size = 14 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M7 3h10l3 5v8l-3 5H7l-3-5V8l3-5Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+      <path d="M9 7h6M8 11h8M8 15h8M10 19h4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function DeckPlanDialog({ dialogId, deck, rooms, activeSlot, getRoomState, onSelectRoom, onClose, returnFocusRef }) {
+  const closeRef = React.useRef(null);
+  const portRooms = rooms.filter((_, index) => index % 2 === 0);
+  const starboardRooms = rooms.filter((_, index) => index % 2 === 1);
+
+  React.useEffect(() => {
+    window.requestAnimationFrame(() => closeRef.current?.focus());
+    return () => window.requestAnimationFrame(() => returnFocusRef?.current?.focus());
+  }, []);
+
+  const renderMapRoom = (room) => {
+    const { active, ownerSlot, state } = getRoomState(room);
+    const selected = state === 'selected';
+    const assigned = ownerSlot != null;
+    const disabled = !active && !assigned;
+    const features = ROOM_FEATURES.filter((feature) => feature.test(room));
+    return (
+      <button
+        key={room.num}
+        type="button"
+        disabled={disabled}
+        aria-pressed={selected}
+        aria-label={`Room ${room.num}, ${LOC_LABELS[room.loc]}, adds $${room.roomDelta} to the booking${
+          assigned ? `, assigned to Cabin ${ownerSlot + 1}` : active ? ', available' : ', does not match current filters'
+        }`}
+        onClick={() => onSelectRoom(room)}
+        style={{
+          minHeight: 44, display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', alignItems: 'center', gap: 8,
+          width: '100%', padding: '8px', borderRadius: 6,
+          border: `1px solid ${selected ? WF.accent : assigned ? WF.line : active ? WF.accentLine : WF.lineSoft}`,
+          background: selected ? WF.accentTint : assigned ? WF.fill : '#FFFFFF',
+          color: WF.ink, fontFamily: 'inherit', textAlign: 'left',
+          cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.48 : 1,
+          boxShadow: selected ? `inset 3px 0 ${WF.accent}` : 'none',
+          transition: 'background-color 120ms ease, border-color 120ms ease'
+        }}>
+        <span style={{ minWidth: 0 }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <strong style={{ fontSize: 12, color: WF.ink, fontFamily: 'ui-monospace, monospace' }}>{room.num}</strong>
+            {features.slice(0, 2).map((feature) => <RoomFeatureEmoji key={feature.key} feature={feature.key} size={12} />)}
+          </span>
+          <span style={{ display: 'block', marginTop: 4, fontSize: 12, color: WF.inkSoft, whiteSpace: 'nowrap' }}>
+            {assigned ? `Cabin ${ownerSlot + 1}` : active ? 'Available' : 'Filtered'}
+          </span>
+        </span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: WF.ink, fontFamily: 'ui-monospace, monospace', whiteSpace: 'nowrap' }}>+${room.roomDelta}</span>
+      </button>
+    );
+  };
+
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 520, display: 'grid', placeItems: 'center', padding: 24, background: 'rgba(15,23,42,0.62)', backdropFilter: 'blur(2px)' }}>
+      <div id={dialogId} role="dialog" aria-modal="true" aria-labelledby="deck-plan-title" aria-describedby="deck-plan-description" onClick={(event) => event.stopPropagation()} style={{ width: 'min(880px, 100%)', maxHeight: '88vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRadius: 10, border: `1px solid ${WF.line}`, background: WF.panel, boxShadow: '0 24px 64px rgba(15,23,42,0.28)' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, padding: '12px 16px', borderBottom: `1px solid ${WF.line}` }}>
+          <div style={{ minWidth: 0 }}>
+            <div id="deck-plan-title" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 16, lineHeight: '24px', fontWeight: 700, color: WF.ink }}><DeckPlanIcon size={16} /> Deck {deck} ship map</div>
+            <div id="deck-plan-description" style={{ marginTop: 4, fontSize: 12, lineHeight: '16px', color: WF.inkSoft }}>Select a room for Cabin {activeSlot + 1}. Forward is shown at the top of the ship.</div>
+          </div>
+          <button ref={closeRef} type="button" onClick={onClose} aria-label="Close ship map" style={{ marginLeft: 'auto', width: 32, height: 32, display: 'grid', placeItems: 'center', flexShrink: 0, borderRadius: 6, border: `1px solid ${WF.line}`, background: '#FFFFFF', color: WF.inkSoft, fontFamily: 'inherit', fontSize: 16, cursor: 'pointer' }}>×</button>
+        </div>
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 16, background: WF.fill }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, flexWrap: 'wrap', marginBottom: 12 }}>
+            {[{ label: 'Available', swatch: '#FFFFFF', border: WF.accentLine }, { label: `Cabin ${activeSlot + 1}`, swatch: WF.accentTint, border: WF.accent }, { label: 'Assigned', swatch: WF.fillStrong, border: WF.line }].map((item) => (
+              <span key={item.label} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color: WF.inkSoft }}><span aria-hidden="true" style={{ width: 12, height: 12, borderRadius: 3, background: item.swatch, border: `1px solid ${item.border}` }} />{item.label}</span>
+            ))}
+          </div>
+          <div style={{ width: 'min(620px, 100%)', margin: '0 auto' }}>
+            <div style={{ textAlign: 'center', marginBottom: 8, fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', color: WF.inkLabel, textTransform: 'uppercase' }}>↑ Forward</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(148px, 1fr) minmax(180px, 1.2fr) minmax(148px, 1fr)', gap: 12, padding: 16, borderLeft: `3px solid ${WF.accent}`, borderRight: `3px solid ${WF.accent}`, borderRadius: '40px 40px 12px 12px', background: WF.accentTint }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>{portRooms.map(renderMapRoom)}</div>
+              <div style={{ display: 'grid', gridTemplateRows: 'repeat(3, minmax(180px, 1fr))', gap: 8 }}>
+                {[{ label: 'Forward', detail: 'Elevators & stairs' }, { label: 'Mid Ship', detail: 'Atrium · lobby · guest services' }, { label: 'Aft Ship', detail: 'Elevators & stairs' }].map((zone) => (
+                  <div key={zone.label} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 12, borderRadius: 8, border: `1px solid ${WF.line}`, background: 'rgba(255,255,255,0.64)', textAlign: 'center' }}><DeckServiceIcon size={20} /><strong style={{ marginTop: 8, fontSize: 12, color: WF.ink }}>{zone.label}</strong><span style={{ marginTop: 4, fontSize: 12, lineHeight: '16px', color: WF.inkSoft }}>{zone.detail}</span></div>
+                ))}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>{starboardRooms.map(renderMapRoom)}</div>
+            </div>
+            <div style={{ textAlign: 'center', marginTop: 8, fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', color: WF.inkLabel, textTransform: 'uppercase' }}>Aft</div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '12px 16px', borderTop: `1px solid ${WF.line}`, background: '#FFFFFF' }}><button type="button" onClick={onClose} style={{ minHeight: 32, padding: '8px 16px', borderRadius: 6, border: `1px solid ${WF.line}`, background: '#FFFFFF', color: WF.ink, fontFamily: 'inherit', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Close map</button></div>
+      </div>
+    </div>
+  );
+}
+
 // ── Select Room Panel — focused modal overlay ─────────────────────
 // One column, read top to bottom: how much of the party is placed → which
 // guests are in which cabin → which room the selected cabin gets.
@@ -1325,8 +1429,12 @@ function SelectRoomPanel({ row, qty, categoryBySlot, roomsBySlot, cabinGuests, a
   const [locFilter, setLocFilter] = React.useState(null);
   const [activeDeck, setActiveDeck] = React.useState(() => roomsByDeck[0]?.deck || STATEROOM_DECKS[0]);
   const [detailRoom, setDetailRoom] = React.useState(null);
+  const [deckPlanOpen, setDeckPlanOpen] = React.useState(false);
   const [roomAdvanceNotice, setRoomAdvanceNotice] = React.useState('');
   const roomAdvanceNoticeTimer = React.useRef(null);
+  const deckMapButtonRef = React.useRef(null);
+  const deckScrollRef = React.useRef(null);
+  const positionGroupRefs = React.useRef({});
 
   React.useEffect(() => () => {
     if (roomAdvanceNoticeTimer.current) window.clearTimeout(roomAdvanceNoticeTimer.current);
@@ -1348,11 +1456,13 @@ function SelectRoomPanel({ row, qty, categoryBySlot, roomsBySlot, cabinGuests, a
   React.useEffect(() => {
     const onKey = (e) => {
       if (e.key !== 'Escape') return;
-      if (detailRoom) setDetailRoom(null); else onClose();
+      if (deckPlanOpen) setDeckPlanOpen(false);
+      else if (detailRoom) setDetailRoom(null);
+      else onClose();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose, detailRoom]);
+  }, [onClose, detailRoom, deckPlanOpen]);
 
   // A fare-row switch is a new inventory context. Return to the first deck and
   // clear stale filters instead of carrying a hidden Deck 8 / room-number query
@@ -1363,12 +1473,30 @@ function SelectRoomPanel({ row, qty, categoryBySlot, roomsBySlot, cabinGuests, a
     setActiveFilters(new Set());
     setAssignmentMode('manual');
     setDetailRoom(null);
+    setDeckPlanOpen(false);
   }, [activeRow.id]);
 
   const handleAssignmentModeChange = (value) => {
     setAssignmentMode(value);
-    if (value === 'auto') onAutoAssign({ excludePremium: false });
-    if (value === 'exclude-premium') onAutoAssign({ excludePremium: true });
+    // Auto assignment is intentionally a two-step action. Selecting the mode
+    // first reveals its one supported preference (accessible rooms); the agent
+    // then explicitly confirms with "Assign rooms". This prevents a dropdown
+    // choice from immediately replacing room selections.
+    setLocFilter(null);
+    setActiveFilters(new Set());
+    setRoomAdvanceNotice('');
+  };
+
+  const autoAssignActive = assignmentMode !== 'manual';
+  const accessibleOnly = activeFilters.has('wheelchair');
+  const applyAutoAssignment = () => {
+    onAutoAssign({
+      excludePremium: assignmentMode === 'exclude-premium',
+      accessibleOnly,
+    });
+    announceRoomAdvance(
+      `${accessibleOnly ? 'Accessible rooms' : 'Rooms'} auto-assigned. Review the selections below or choose another room to override.`
+    );
   };
 
   // Filters AND together. Non-matches are hidden in the high-density deck
@@ -1437,9 +1565,28 @@ function SelectRoomPanel({ row, qty, categoryBySlot, roomsBySlot, cabinGuests, a
   const activeDeckRooms = activeDeckGroup.rooms;
   const activeDeckMatches = activeDeckRooms.filter(isRoomActive);
   const visibleActiveDeckRooms = activeDeckRooms.filter((room) => isRoomActive(room) || assignedRoomNums.has(room.num));
-  const activeDeckAssignedCount = activeDeckRooms.filter((room) => assignedRoomNums.has(room.num)).length;
+  const activeDeckPositionGroups = Object.entries(LOC_LABELS).map(([value, label]) => ({
+    value,
+    label,
+    rooms: visibleActiveDeckRooms.filter((room) => room.loc === value),
+  }));
+  const activeDeckPositionSummary = Object.entries(LOC_LABELS)
+    .map(([value, label]) => `${activeDeckRooms.filter((room) => room.loc === value).length} ${label}`)
+    .join(' · ');
 
-  const renderRoomOption = (room) => {
+  const scrollToPositionGroup = (value) => {
+    const scroller = deckScrollRef.current;
+    const target = positionGroupRefs.current[value];
+    if (!scroller || !target) return;
+    const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const targetTop = target.getBoundingClientRect().top
+      - scroller.getBoundingClientRect().top
+      + scroller.scrollTop
+      - 8;
+    scroller.scrollTo({ top: Math.max(0, targetTop), behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+  };
+
+  const getRoomState = (room) => {
     const active = isRoomActive(room);
     const ownerSlotEntry = Object.entries(roomsBySlot).find(([slot, num]) =>
       num === room.num && categoryIdForSlot(row.id, { categoryBySlot }, parseInt(slot, 10)) === activeRow.id);
@@ -1447,25 +1594,32 @@ function SelectRoomPanel({ row, qty, categoryBySlot, roomsBySlot, cabinGuests, a
     const selected = ownerSlot != null;
     const isCurrentSlot = ownerSlot === activeSlot;
     const state = isCurrentSlot ? 'selected' : selected ? 'taken' : active ? 'available' : 'filtered';
-    const handleRoomClick = () => {
-      if (!active && !selected) return;
-      if (ownerSlot === activeSlot) {
-        setRoomAdvanceNotice('');
-        onToggleRoom(room.num);
-        return;
-      }
+    return { active, ownerSlot, selected, isCurrentSlot, state };
+  };
 
-      const projectedRooms = { ...(roomsBySlot || {}) };
-      if (ownerSlot != null) delete projectedRooms[ownerSlot];
-      projectedRooms[activeSlot] = room.num;
-      const nextSlot = nextUnfilledCabinSlot(projectedRooms, activeSlot, qty);
-      const completedMessage = nextSlot === activeSlot
-        ? `Room ${room.num} assigned to Cabin ${activeSlot + 1}. All cabins now have rooms.`
-        : `Room ${room.num} assigned to Cabin ${activeSlot + 1}. Now selecting Cabin ${nextSlot + 1}.`;
-
+  const handleRoomSelection = (room) => {
+    const { active, ownerSlot, selected } = getRoomState(room);
+    if (!active && !selected) return;
+    if (ownerSlot === activeSlot) {
+      setRoomAdvanceNotice('');
       onToggleRoom(room.num);
-      announceRoomAdvance(completedMessage);
-    };
+      return;
+    }
+
+    const projectedRooms = { ...(roomsBySlot || {}) };
+    if (ownerSlot != null) delete projectedRooms[ownerSlot];
+    projectedRooms[activeSlot] = room.num;
+    const nextSlot = nextUnfilledCabinSlot(projectedRooms, activeSlot, qty);
+    const completedMessage = nextSlot === activeSlot
+      ? `Room ${room.num} assigned to Cabin ${activeSlot + 1}. All cabins now have rooms.`
+      : `Room ${room.num} assigned to Cabin ${activeSlot + 1}. Now selecting Cabin ${nextSlot + 1}.`;
+
+    onToggleRoom(room.num);
+    announceRoomAdvance(completedMessage);
+  };
+
+  const renderRoomOption = (room) => {
+    const { active, ownerSlot, selected, state } = getRoomState(room);
     return (
       <RoomCard
         key={room.num}
@@ -1474,7 +1628,7 @@ function SelectRoomPanel({ row, qty, categoryBySlot, roomsBySlot, cabinGuests, a
         ownerSlot={ownerSlot}
         disabled={!active && !selected}
         onShowDetails={() => setDetailRoom({ room, state, ownerSlot })}
-        onClick={handleRoomClick} />
+        onClick={() => handleRoomSelection(room)} />
     );
   };
 
@@ -1629,44 +1783,77 @@ function SelectRoomPanel({ row, qty, categoryBySlot, roomsBySlot, cabinGuests, a
                     showSelectedMeta={false}
                     options={ROOM_ASSIGNMENT_OPTIONS} />
                 </div>
-                <div style={{ width: 1, height: 20, background: WF.line }} />
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 12, color: WF.inkSoft, fontWeight: 600, whiteSpace: 'nowrap' }}>Ship position</span>
-                  <PortableSelect
-                    value={locFilter || ''}
-                    onValueChange={(value) => setLocFilter(value || null)}
-                    ariaLabel="Filter rooms by ship position"
-                    width={136}
-                    menuMinWidth={168}
-                    menuZIndex="var(--ds-layer-modal-nested, 520)"
-                    height={30}
-                    showSelectedMeta={false}
-                    options={SHIP_POSITION_OPTIONS} />
-                </div>
-                <div style={{ width: 1, height: 20, background: WF.line }} />
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
-                  <span style={{ marginRight: 4, fontSize: 12, fontWeight: 600, color: WF.inkSoft, whiteSpace: 'nowrap' }}>Filters</span>
-                  <FeatureChip
-                    label="All"
-                    active={activeFilters.size === 0}
-                    onClick={() => setActiveFilters(new Set())} />
-                  {ROOM_FEATURES.map((f) => (
-                    <FeatureChip
-                      key={f.key}
-                      icon={f.key}
-                      label={f.label}
-                      active={activeFilters.has(f.key)}
-                      onClick={() => toggleFilter(f.key)} />
-                  ))}
-                </div>
-                {filtersActive && (
-                  <button
-                    onClick={() => { setLocFilter(null); setActiveFilters(new Set()); }}
-                    style={{
-                      minHeight: 30, padding: '0 8px', border: 'none', background: 'transparent',
-                      color: WF.accent, fontSize: 12, fontWeight: 700,
-                      cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap'
-                    }}>Clear filters</button>
+                {autoAssignActive ? (
+                  <>
+                    <div style={{ width: 1, height: 20, background: WF.line }} />
+                    <div
+                      role="group"
+                      aria-label="Auto assign preferences"
+                      style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 12, color: WF.inkSoft, fontWeight: 600, whiteSpace: 'nowrap' }}>Accessibility</span>
+                      <FeatureChip
+                        icon="wheelchair"
+                        label="Accessible rooms"
+                        active={accessibleOnly}
+                        onClick={() => toggleFilter('wheelchair')} />
+                      <button
+                        type="button"
+                        onClick={applyAutoAssignment}
+                        style={{
+                          minHeight: 30, padding: '4px 12px', borderRadius: RD.sm,
+                          border: `1px solid ${WF.accent}`, background: WF.accent,
+                          color: WF.accentText, cursor: 'pointer', fontFamily: 'inherit',
+                          fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap'
+                        }}>
+                        Assign rooms
+                      </button>
+                    </div>
+                    <div style={{ flexBasis: '100%', fontSize: 12, color: WF.inkSoft }}>
+                      Choose whether accessible rooms are required, then assign. You can override any result by selecting another room below.
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ width: 1, height: 20, background: WF.line }} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 12, color: WF.inkSoft, fontWeight: 600, whiteSpace: 'nowrap' }}>Ship position</span>
+                      <PortableSelect
+                        value={locFilter || ''}
+                        onValueChange={(value) => setLocFilter(value || null)}
+                        ariaLabel="Filter rooms by ship position"
+                        width={136}
+                        menuMinWidth={168}
+                        menuZIndex="var(--ds-layer-modal-nested, 520)"
+                        height={30}
+                        showSelectedMeta={false}
+                        options={SHIP_POSITION_OPTIONS} />
+                    </div>
+                    <div style={{ width: 1, height: 20, background: WF.line }} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+                      <span style={{ marginRight: 4, fontSize: 12, fontWeight: 600, color: WF.inkSoft, whiteSpace: 'nowrap' }}>Filters</span>
+                      <FeatureChip
+                        label="All"
+                        active={activeFilters.size === 0}
+                        onClick={() => setActiveFilters(new Set())} />
+                      {ROOM_FEATURES.map((f) => (
+                        <FeatureChip
+                          key={f.key}
+                          icon={f.key}
+                          label={f.label}
+                          active={activeFilters.has(f.key)}
+                          onClick={() => toggleFilter(f.key)} />
+                      ))}
+                    </div>
+                    {filtersActive && (
+                      <button
+                        onClick={() => { setLocFilter(null); setActiveFilters(new Set()); }}
+                        style={{
+                          minHeight: 30, padding: '0 8px', border: 'none', background: 'transparent',
+                          color: WF.accent, fontSize: 12, fontWeight: 700,
+                          cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap'
+                        }}>Clear filters</button>
+                    )}
+                  </>
                 )}
                 {roomAdvanceNotice && (
                   <div
@@ -1745,25 +1932,101 @@ function SelectRoomPanel({ row, qty, categoryBySlot, roomsBySlot, cabinGuests, a
                         {filtersActive ? `${activeDeckMatches.length} matching · ${activeDeckRooms.length} total` : `${activeDeckRooms.length} eligible rooms`}
                       </span>
                     </div>
-                    <div style={{ fontSize: 12, color: WF.inkSoft }}>
-                      10 Forward · 9 Mid Ship · 9 Aft Ship
-                      {activeDeckAssignedCount > 0 ? ` · ${activeDeckAssignedCount} assigned` : ''}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8, flexWrap: 'wrap' }}>
+                      {!locFilter && (
+                        <div role="group" aria-label="Jump to rooms by ship position" style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+                          {activeDeckPositionGroups.map((group) => {
+                            const total = activeDeckRooms.filter((room) => room.loc === group.value).length;
+                            const disabled = group.rooms.length === 0;
+                            return (
+                              <button
+                                key={group.value}
+                                type="button"
+                                aria-controls={`position-group-${activeRow.id}-${activeDeck}-${group.value}`}
+                                disabled={disabled}
+                                onClick={() => scrollToPositionGroup(group.value)}
+                                title={disabled ? `No matching ${group.label} rooms` : `Show ${group.label} rooms`}
+                                style={{
+                                  minHeight: 28, padding: '4px 8px', borderRadius: 999,
+                                  border: `1px solid ${WF.line}`,
+                                  background: '#FFFFFF', color: WF.inkSoft,
+                                  fontFamily: 'inherit', fontSize: 12, fontWeight: 600,
+                                  cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.48 : 1,
+                                  transition: 'background-color 120ms ease, border-color 120ms ease, color 120ms ease'
+                                }}>
+                                <strong style={{ color: 'inherit' }}>{total}</strong> {group.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                      <button
+                        ref={deckMapButtonRef}
+                        type="button"
+                        aria-haspopup="dialog"
+                        aria-expanded={deckPlanOpen}
+                        aria-controls={`deck-plan-${activeRow.id}-${activeDeck}`}
+                        onClick={() => setDeckPlanOpen(true)}
+                        style={{
+                          minHeight: 28, display: 'inline-flex', alignItems: 'center', gap: 4,
+                          padding: '4px 8px', borderRadius: RD.sm, border: `1px solid ${WF.line}`,
+                          background: '#FFFFFF', color: WF.accent, fontFamily: 'inherit',
+                          fontSize: 12, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap'
+                        }}>
+                        <DeckPlanIcon />
+                        Ship map
+                      </button>
+                      {locFilter && <span style={{ fontSize: 12, color: WF.inkSoft }}>{activeDeckPositionSummary}</span>}
                     </div>
                   </div>
 
                   <div
+                    ref={deckScrollRef}
                     className="stateroom-deck-scroll"
                     style={{ maxHeight: 330, overflowY: 'auto', scrollbarGutter: 'auto', padding: 12, background: WF.fill }}>
                     {visibleActiveDeckRooms.length > 0 ? (
-                      <div
-                        role="group"
-                        aria-label={`Rooms on deck ${activeDeck}`}
-                        style={{
-                          display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
-                          gap: 8, alignItems: 'stretch'
-                        }}>
-                        {visibleActiveDeckRooms.map(renderRoomOption)}
-                      </div>
+                      !locFilter ? (
+                        <div
+                          role="group"
+                          aria-label={`Rooms on deck ${activeDeck}, grouped by ship position`}
+                          style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                          {activeDeckPositionGroups.filter((group) => group.rooms.length > 0).map((group, index) => (
+                            <section
+                              key={group.value}
+                              id={`position-group-${activeRow.id}-${activeDeck}-${group.value}`}
+                              ref={(node) => { positionGroupRefs.current[group.value] = node; }}
+                              aria-labelledby={`position-heading-${activeRow.id}-${activeDeck}-${group.value}`}
+                              style={{ paddingTop: index === 0 ? 0 : 12, borderTop: index === 0 ? 'none' : `1px solid ${WF.line}` }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                                <div
+                                  id={`position-heading-${activeRow.id}-${activeDeck}-${group.value}`}
+                                  style={{ fontSize: 12, fontWeight: 700, color: WF.ink }}>
+                                  {group.label}
+                                </div>
+                                <div style={{ fontSize: 12, color: WF.inkSoft }}>
+                                  {group.rooms.length} room{group.rooms.length === 1 ? '' : 's'}
+                                </div>
+                              </div>
+                              <div style={{
+                                display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
+                                gap: 8, alignItems: 'stretch'
+                              }}>
+                                {group.rooms.map(renderRoomOption)}
+                              </div>
+                            </section>
+                          ))}
+                        </div>
+                      ) : (
+                        <div
+                          role="group"
+                          aria-label={`${LOC_LABELS[locFilter]} rooms on deck ${activeDeck}`}
+                          style={{
+                            display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
+                            gap: 8, alignItems: 'stretch'
+                          }}>
+                          {visibleActiveDeckRooms.map(renderRoomOption)}
+                        </div>
+                      )
                     ) : (
                       <div role="status" style={{
                         minHeight: 116, display: 'flex', flexDirection: 'column',
@@ -1813,6 +2076,18 @@ function SelectRoomPanel({ row, qty, categoryBySlot, roomsBySlot, cabinGuests, a
               }}>Confirm Selection</button>
           </div>
         </div>
+
+        {deckPlanOpen && (
+          <DeckPlanDialog
+            dialogId={`deck-plan-${activeRow.id}-${activeDeck}`}
+            deck={activeDeck}
+            rooms={activeDeckRooms}
+            activeSlot={activeSlot}
+            getRoomState={getRoomState}
+            onSelectRoom={handleRoomSelection}
+            onClose={() => setDeckPlanOpen(false)}
+            returnFocusRef={deckMapButtonRef} />
+        )}
 
         {detailRoom && (
           <CabinDetailsDialog
@@ -1900,6 +2175,7 @@ function StateRoomMatrix({ update, s, onConfirmRooms }) {
     return totals;
   }, {});
   const assignedRoomCount = Object.values(confirmedRooms).reduce((sum, rooms) => sum + rooms.length, 0);
+  const editRoomCategory = STATEROOM_ROWS.find((row) => (confirmedRooms[row.id] || []).length > 0);
   const addRoomCategory = filteredRows.find((row) => row.total > (qtys[row.id] || 0));
 
   // Single write path for the cabin record. Always reconciles supplement
@@ -2000,7 +2276,7 @@ function StateRoomMatrix({ update, s, onConfirmRooms }) {
   // former, and was gated on the guests already being placed by hand — which
   // left the genuinely tedious half of a multi-cabin booking (balancing 10
   // guests across 3 rooms without overfilling any) entirely manual.
-  const handleAutoAssign = (rowId, row, qty, { excludePremium = false } = {}) => {
+  const handleAutoAssign = (rowId, row, qty, { excludePremium = false, accessibleOnly = false } = {}) => {
     setSelections(sel => {
       const cur = sel[rowId] || { categoryBySlot: {}, roomsBySlot: {}, cabinGuests: {}, activeSlot: 0 };
       const categoryBySlot = { ...(cur.categoryBySlot || {}) };
@@ -2016,7 +2292,9 @@ function StateRoomMatrix({ update, s, onConfirmRooms }) {
         const slotRow = categoryRowForSlot(row, categoryBySlot, slot);
         categoryBySlot[slot] = slotRow.id;
         const room = roomsForRow(slotRow).find((candidate) =>
-          !usedRooms.has(candidate.num) && (!excludePremium || candidate.premium !== true));
+          !usedRooms.has(candidate.num)
+          && (!excludePremium || candidate.premium !== true)
+          && (!accessibleOnly || candidate.a11y.includes('wheelchair')));
         if (!room) return;
         roomsBySlot[slot] = room.num;
         usedRooms.add(room.num);
@@ -2152,6 +2430,16 @@ function StateRoomMatrix({ update, s, onConfirmRooms }) {
           outline: 2px solid ${WF.accent};
           outline-offset: 2px;
         }
+        @media (prefers-reduced-motion: reduce) {
+          .assign-stateroom-portable *,
+          .assign-stateroom-portable *::before,
+          .assign-stateroom-portable *::after {
+            scroll-behavior: auto !important;
+            animation-duration: 1ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 1ms !important;
+          }
+        }
         .assign-stateroom-portable .stateroom-modal-scroll,
         .assign-stateroom-portable .stateroom-deck-scroll {
           scrollbar-width: thin;
@@ -2245,20 +2533,36 @@ function StateRoomMatrix({ update, s, onConfirmRooms }) {
             ]}
           />
         </div>
-        <button
-          type="button"
-          disabled={!addRoomCategory}
-          onClick={() => addRoomCategory && openCategoryAssignment(addRoomCategory)}
-          title={addRoomCategory ? `Add a room in ${addRoomCategory.label}` : 'No rooms available for this cabin type'}
-          style={{
-            minHeight: 32, padding: '8px 12px', borderRadius: 6,
-            border: `1px solid ${WF.accent}`, background: WF.accent, color: '#FFFFFF',
-            fontFamily: 'inherit', fontSize: 12, fontWeight: 600, lineHeight: '16px',
-            cursor: addRoomCategory ? 'pointer' : 'not-allowed',
-            opacity: addRoomCategory ? 1 : 0.48, whiteSpace: 'nowrap', flexShrink: 0
-          }}>
-          Add room
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          {editRoomCategory && (
+            <button
+              type="button"
+              aria-label="Edit assigned rooms"
+              onClick={() => openCategoryAssignment(editRoomCategory)}
+              style={{
+                minHeight: 32, padding: '8px 12px', borderRadius: 6,
+                border: `1px solid ${WF.line}`, background: '#FFFFFF', color: WF.accentInk,
+                fontFamily: 'inherit', fontSize: 12, fontWeight: 600, lineHeight: '16px',
+                cursor: 'pointer', whiteSpace: 'nowrap'
+              }}>
+              Edit rooms
+            </button>
+          )}
+          <button
+            type="button"
+            disabled={!addRoomCategory}
+            onClick={() => addRoomCategory && openCategoryAssignment(addRoomCategory)}
+            title={addRoomCategory ? `Add a room in ${addRoomCategory.label}` : 'No rooms available for this cabin type'}
+            style={{
+              minHeight: 32, padding: '8px 12px', borderRadius: 6,
+              border: `1px solid ${WF.accent}`, background: WF.accent, color: '#FFFFFF',
+              fontFamily: 'inherit', fontSize: 12, fontWeight: 600, lineHeight: '16px',
+              cursor: addRoomCategory ? 'pointer' : 'not-allowed',
+              opacity: addRoomCategory ? 1 : 0.48, whiteSpace: 'nowrap'
+            }}>
+            Add room
+          </button>
+        </div>
       </div>
 
       {/* ── Table — grows to its full height with the page. overflowX stays so the
@@ -2286,7 +2590,6 @@ function StateRoomMatrix({ update, s, onConfirmRooms }) {
               const confirmed = confirmedRooms[row.id];
               const soldOut = row.total === 0;
               const categoryName = row.label.includes(' – ') ? row.label.split(' – ')[0] : row.label;
-              const actionLabel = `Edit rooms for ${row.label}`;
               return (
                 <React.Fragment key={row.id}>
                   <tr
@@ -2311,20 +2614,6 @@ function StateRoomMatrix({ update, s, onConfirmRooms }) {
                               background: '#FFFFFF', fontSize: 12, fontWeight: 700,
                               color: WF.inkSoft, fontFamily: 'ui-monospace, monospace'
                             }}>{row.id}</span>
-                            {confirmed && (
-                              <button
-                                type="button"
-                                aria-label={actionLabel}
-                                onClick={() => openCategoryAssignment(row)}
-                                style={{
-                                  minHeight: 28, padding: '4px 8px', borderRadius: 4,
-                                  border: `1px solid ${WF.line}`, background: '#FFFFFF',
-                                  color: WF.accentInk, fontSize: 12, fontWeight: 600,
-                                  fontFamily: 'inherit', cursor: 'pointer', whiteSpace: 'nowrap'
-                                }}>
-                                Edit rooms
-                              </button>
-                            )}
                             {soldOut && (
                               <span style={{ fontSize: 12, fontWeight: 600, color: BAD }}>Unavailable</span>
                             )}

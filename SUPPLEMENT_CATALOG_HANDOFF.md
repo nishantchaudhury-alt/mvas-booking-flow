@@ -18,8 +18,15 @@ This package recreates the MVAS supplement catalog shown in the booking-flow pro
 - `Assign` and `Edit` states.
 - Cabin-grouped guest assignment dialog.
 - Per-guest quantity controls.
-- `Assign to all` and `Remove all` cabin actions.
-- Minimum-age eligibility rules.
+- `Assign to all` for unrestricted products and `Remove all` across all product types.
+- Conditional date-of-birth verification opens only after a restricted guest's increase action.
+- Canceling verification leaves that guest's quantity unchanged; successful verification returns to the compact assignment rows with age on departure.
+- Age-restricted products never expose the bulk **Assign to all** action. For 21+ products, guests in younger age bands are disabled before DOB verification.
+- For 13+ products, the 21+ cohort is eligible immediately; DOB verification is requested only from the 13–21 cohort.
+- **Remove all** remains available. For an age-restricted product it clears the cabin's restricted assignments and the DOB values that were collected for those guests, returning their counts to zero.
+- Reducing an individual age-restricted assignment to zero also removes the DOB collected by this workflow when no other restricted assignment still depends on it, so the age-on-departure state disappears with the quantity.
+- Eligibility calculated on the supplied sailing departure date.
+- Invalid restricted assignments are removed when a DOB changes.
 - Infants excluded by default unless a product sets `allowInfants: true`.
 - Escape-to-close, focus trapping, focus restoration, and accessible control labels.
 - MVAS colors, typography, borders, radii, and restrained scrollbar styling.
@@ -47,6 +54,7 @@ import SupplementCatalog, {
 
 export default function SupplementsPage() {
   const [assignments, setAssignments] = React.useState({});
+  const [birthDates, setBirthDates] = React.useState({});
 
   return (
     <SupplementCatalog
@@ -54,6 +62,9 @@ export default function SupplementsPage() {
       cabins={DEMO_CABINS}
       assignments={assignments}
       onAssignmentsChange={setAssignments}
+      birthDates={birthDates}
+      onBirthDatesChange={setBirthDates}
+      eligibilityDate="2026-09-19"
     />
   );
 }
@@ -68,6 +79,10 @@ export default function SupplementsPage() {
 | `assignments` | `AssignmentMap` | `undefined` | Controlled assignment state. |
 | `initialAssignments` | `AssignmentMap` | `{}` | Initial state when using the component uncontrolled. |
 | `onAssignmentsChange` | `(next) => void` | `undefined` | Persists assignment changes to the parent/store. |
+| `birthDates` | `Record<guestId, YYYY-MM-DD>` | `undefined` | Controlled guest-level DOB state used only by age-restricted products. |
+| `initialBirthDates` | `Record<guestId, YYYY-MM-DD>` | `{}` | Initial DOB state when using the component uncontrolled. |
+| `onBirthDatesChange` | `(next) => void` | `undefined` | Persists DOB changes to the parent/store. |
+| `eligibilityDate` | `string \| Date` | Current date | Date on which the guest must meet the product's minimum age; pass the sailing departure date. |
 | `currency` | `string` | `"$"` | Currency prefix used for display. |
 | `title` | `string` | `"Supplement catalog"` | Catalog heading. |
 | `description` | `string` | Assignment helper copy | Catalog description. |
@@ -133,8 +148,13 @@ const assignments = booking.supplementAssignments;
   products={supplementsFromApi}
   cabins={booking.cabins}
   assignments={assignments}
+  birthDates={booking.guestBirthDates}
+  eligibilityDate={booking.sailingDepartureDate}
   onAssignmentsChange={(nextAssignments) =>
     updateBooking({ supplementAssignments: nextAssignments })
+  }
+  onBirthDatesChange={(nextBirthDates) =>
+    updateBooking({ guestBirthDates: nextBirthDates })
   }
 />
 ```
@@ -177,7 +197,7 @@ function buildGuestsFromCounts(counts) {
 }
 ```
 
-Use actual date-of-birth or age data when it exists. Representative ages are only a prototype fallback.
+Representative ages are sufficient for unrestricted-product demos. Products with `minAge` require a date of birth in `birthDates`; the component does not treat a representative age as age verification.
 
 ## MVAS visual rules preserved
 
@@ -206,9 +226,14 @@ Use actual date-of-birth or age data when it exists. Representative ages are onl
 - [ ] Assigned counts update immediately.
 - [ ] Product cards change from `Assign` to `Edit` after assignment.
 - [ ] Product total equals `pricePerGuest × assigned units`.
-- [ ] Age-restricted guests cannot increment quantity.
+- [ ] An age-restricted increase opens DOB verification when that guest has no verified DOB.
+- [ ] Canceling DOB verification leaves the guest quantity at its prior value.
+- [ ] Age-restricted products omit **Assign to all**, and 21+ products disable guests outside the 21+ age band by default.
+- [ ] On 13+ products, 21+ guests can be assigned without DOB while 13–21 guests are routed through DOB verification.
+- [ ] **Remove all** on an age-restricted product clears its quantities and the collected DOB values for guests who had that product in the selected cabin.
+- [ ] Successful verification increments quantity and shows the guest's age on departure.
 - [ ] Infants remain in the roster but show `Not eligible`.
-- [ ] `Assign to all` affects only eligible guests in that cabin.
+- [ ] For unrestricted products, `Assign to all` affects only eligible guests in that cabin.
 - [ ] `Remove all` affects only the selected cabin.
 - [ ] Escape closes the dialog.
 - [ ] Tab focus remains inside the open dialog.

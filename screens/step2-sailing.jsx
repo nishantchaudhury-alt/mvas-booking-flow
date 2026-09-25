@@ -52,6 +52,9 @@ const S2_SUPP = [
 { id: 'photo', emoji: '📸', name: 'Digital Photo Package', pricePP: 18.75, priceTotal: 75, category: 'Experiences' },
 { id: 'fitness', emoji: '🏋️', name: 'Master Fitness Classes', pricePP: 30.00, priceTotal: 120, category: 'Wellness' },
 { id: 'wine', emoji: '🍷', name: 'Sommelier Reserve Tasting', pricePP: 52.50, priceTotal: 210, category: 'Food & Drink', minAge: 21 },
+{ id: 'teen-adventure', emoji: '🧭', name: 'Teen Adventure Bundle', pricePP: 29.75, priceTotal: 119, category: 'Activities', minAge: 13 },
+{ id: 'vr-tournament', emoji: '🥽', name: 'VR Arcade Tournament', pricePP: 24.50, priceTotal: 98, category: 'Activities', minAge: 13 },
+{ id: 'mixology', emoji: '🥂', name: 'Mixology Workshop', pricePP: 38.75, priceTotal: 155, category: 'Food & Drink', minAge: 21 },
 { id: 'laundry', emoji: '🧺', name: 'Express Laundry Service', pricePP: 16.25, priceTotal: 65, category: 'Services' },
 { id: 'golf', emoji: '⛳', name: 'Golf Simulator Rental', pricePP: 35.00, priceTotal: 140, category: 'Activities' },
 { id: 'theater', emoji: '🎭', name: 'Backstage VIP Theater Tour', pricePP: 21.25, priceTotal: 85, category: 'Experiences' },
@@ -349,6 +352,75 @@ function buildCabinGuestRoster(guests, cabins) {
   return groups;
 }
 
+function supplementDateParts(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const [year, month, day] = value.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return null;
+  return { year, month, day };
+}
+
+function supplementReferenceDate(value) {
+  const dateOnly = supplementDateParts(value);
+  if (dateOnly) {
+    const localDate = new Date(dateOnly.year, dateOnly.month - 1, dateOnly.day);
+    return {
+      ...dateOnly,
+      iso: value,
+      label: localDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    };
+  }
+  const parsed = value instanceof Date ? value : new Date(value || Date.now());
+  const valid = Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+  return {
+    year: valid.getFullYear(),
+    month: valid.getMonth() + 1,
+    day: valid.getDate(),
+    iso: `${valid.getFullYear()}-${String(valid.getMonth() + 1).padStart(2, '0')}-${String(valid.getDate()).padStart(2, '0')}`,
+    label: valid.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  };
+}
+
+function supplementAgeOnDate(birthDate, referenceDate) {
+  const birth = supplementDateParts(birthDate);
+  if (!birth) return null;
+  const reference = supplementReferenceDate(referenceDate);
+  let age = reference.year - birth.year;
+  if (reference.month < birth.month || (reference.month === birth.month && reference.day < birth.day)) age -= 1;
+  return age >= 0 && age < 130 ? age : null;
+}
+
+function supplementGuestMeetsAgeBand(sup, guest) {
+  if (sup.minAge == null) return true;
+  if (sup.minAge >= 21) return guest.categoryKey === 'adults';
+  if (sup.minAge >= 13) return guest.categoryKey === 'adults' || guest.categoryKey === 'youngAdults';
+  return guest.categoryKey !== 'infants';
+}
+
+function supplementGuestRequiresDob(sup, guest) {
+  if (sup.minAge == null) return false;
+  if (sup.minAge <= 13 && guest.categoryKey === 'adults') return false;
+  return true;
+}
+
+function supplementGuestEligibility(sup, guest, birthDates, referenceDate) {
+  if (guest.categoryKey === 'infants') return { eligible: false, state: 'ineligible', message: 'Not eligible' };
+  if (sup.minAge == null) return { eligible: true, state: 'eligible', message: 'Eligible' };
+  if (!supplementGuestMeetsAgeBand(sup, guest)) {
+    return { eligible: false, state: 'ineligible', message: `Requires age ${sup.minAge}+` };
+  }
+  const birthDate = (birthDates || {})[guest.guestKey] || '';
+  if (!supplementGuestRequiresDob(sup, guest)) {
+    const age = birthDate ? supplementAgeOnDate(birthDate, referenceDate) : null;
+    return { eligible: true, state: 'eligible', age, message: age == null ? 'Eligible by age band' : `Eligible · age ${age} on departure` };
+  }
+  if (!birthDate) return { eligible: false, state: 'required', message: 'DOB required to assign' };
+  const age = supplementAgeOnDate(birthDate, referenceDate);
+  if (age == null) return { eligible: false, state: 'invalid', message: 'Enter a valid date' };
+  if (age < sup.minAge) return { eligible: false, state: 'ineligible', age, message: `Not eligible · age ${age} on departure` };
+  return { eligible: true, state: 'eligible', age, message: `Eligible · age ${age} on departure` };
+}
+
 // ── Compact per-guest quantity stepper (flat, screenshot style) ──
 function GuestSupplyStepper({ value, onChange, disabled }) {
   return (
@@ -377,7 +449,8 @@ function GuestSupplyStepper({ value, onChange, disabled }) {
 }
 
 // ── Per-guest assignment panel, visually grouped by cabin ──
-function AssignGuestsPanel({ sup, roster, assignment, onGuestQty, onAddCabin, onClearCabin, onDone }) {
+function AssignGuestsPanel({ sup, roster, assignment, birthDates, referenceDate, onGuestQty, onAddCabin, onClearCabin, onDone }) {
+  const restrictedProduct = sup.minAge != null;
   return (
     <div style={{ padding: '4px 16px 16px', background: '#fff' }}>
       {/* Cabin cards use a two-column grid instead of one long vertical roster.
@@ -386,9 +459,7 @@ function AssignGuestsPanel({ sup, roster, assignment, onGuestQty, onAddCabin, on
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12, alignItems: 'start' }}>
         {roster.map((cabin) => {
           const cabinQty = cabin.list.reduce((sum, guest) => sum + (assignment[guest.guestKey] || 0), 0);
-          const eligibleGuests = cabin.list.filter((guest) =>
-            guest.categoryKey !== 'infants' && (sup.minAge == null || guest.minAge >= sup.minAge)
-          );
+          const eligibleGuests = cabin.list.filter((guest) => supplementGuestEligibility(sup, guest, birthDates, referenceDate).eligible);
           const allEligibleAssigned = eligibleGuests.length > 0 && eligibleGuests.every((guest) => (assignment[guest.guestKey] || 0) > 0);
           return (
           <div key={cabin.key} style={{ border: `1px solid ${WF.line}`, borderRadius: 8, overflow: 'hidden', minWidth: 0 }}>
@@ -403,29 +474,39 @@ function AssignGuestsPanel({ sup, roster, assignment, onGuestQty, onAddCabin, on
               </span>
             </div>
             {cabin.list.map((guest, gi) => {
-              const isInfant = guest.categoryKey === 'infants';
-              const restricted = isInfant || (sup.minAge != null && guest.minAge < sup.minAge);
-              const qty = isInfant ? 0 : (assignment[guest.guestKey] || 0);
+              const eligibility = supplementGuestEligibility(sup, guest, birthDates, referenceDate);
+              const infant = guest.categoryKey === 'infants';
+              const ageBandIneligible = restrictedProduct && !supplementGuestMeetsAgeBand(sup, guest);
+              const guestDisabled = infant || ageBandIneligible;
+              const qty = eligibility.eligible ? (assignment[guest.guestKey] || 0) : 0;
               return (
                 <div key={guest.guestKey} style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                  display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto',
+                  alignItems: 'center', gap: 12,
                   padding: '12px 16px', borderBottom: gi < cabin.list.length - 1 ? `1px solid ${WF.lineSoft}` : 'none'
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-                    <span style={{ fontSize: 14, fontWeight: 700, color: WF.ink }}>{guest.label}</span>
-                    <span style={{
-                      fontSize: 12, fontWeight: 600, color: WF.inkSoft, background: '#F1F5F9',
-                      borderRadius: 4, padding: '4px 8px', whiteSpace: 'nowrap'
-                    }}>Age {guest.ageLabel}</span>
-                    {restricted && (
-                      <span style={{ fontSize: 12, fontWeight: 700, color: isInfant ? WF.inkFaint : '#B45309', whiteSpace: 'nowrap' }}>
-                        {isInfant ? 'Not eligible' : `${sup.minAge}+ only`}
-                      </span>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: WF.ink }}>{guest.label}</span>
+                      <span style={{
+                        fontSize: 12, fontWeight: 600, color: WF.inkSoft, background: '#F1F5F9',
+                        borderRadius: 4, padding: '4px 8px', whiteSpace: 'nowrap'
+                      }}>Age {guest.ageLabel}</span>
+                      {guestDisabled && (
+                        <span style={{ fontSize: 12, fontWeight: 700, color: WF.inkFaint, whiteSpace: 'nowrap' }}>
+                          {ageBandIneligible ? `${sup.minAge}+ required` : 'Not eligible'}
+                        </span>
+                      )}
+                    </div>
+                    {restrictedProduct && !guestDisabled && qty > 0 && eligibility.age != null && (
+                      <div style={{ marginTop: 4, fontSize: 12, fontWeight: 700, color: eligibility.eligible ? '#047857' : '#B91C1C' }}>
+                        Age {eligibility.age} on departure{eligibility.eligible ? '' : ` · ${sup.minAge}+ required`}
+                      </div>
                     )}
                   </div>
                   <GuestSupplyStepper
                     value={qty}
-                    disabled={restricted}
+                    disabled={guestDisabled}
                     onChange={(v) => onGuestQty(guest.guestKey, v)} />
                 </div>
               );
@@ -437,7 +518,11 @@ function AssignGuestsPanel({ sup, roster, assignment, onGuestQty, onAddCabin, on
               <button
                 type="button"
                 disabled={cabinQty === 0}
-                onClick={() => onClearCabin(cabin.list.map((guest) => guest.guestKey))}
+                onClick={() => onClearCabin(
+                  cabin.list
+                    .filter((guest) => Number(assignment[guest.guestKey] || 0) > 0)
+                    .map((guest) => guest.guestKey)
+                )}
                 aria-label={`Remove ${sup.name} from all guests in ${cabin.heading}`}
                 title={cabinQty > 0 ? `Remove ${sup.name} from every guest in this cabin` : `No ${sup.name} assigned in this cabin`}
                 style={{
@@ -449,21 +534,23 @@ function AssignGuestsPanel({ sup, roster, assignment, onGuestQty, onAddCabin, on
                 }}>
                 Remove all
               </button>
-              <button
-                type="button"
-                disabled={allEligibleAssigned || eligibleGuests.length === 0}
-                onClick={() => onAddCabin(eligibleGuests.map((guest) => guest.guestKey))}
-                aria-label={`Assign ${sup.name} to all eligible guests in ${cabin.heading}`}
-                title={allEligibleAssigned ? `${sup.name} is already assigned to every eligible guest` : `Assign one ${sup.name} to every eligible guest in this cabin`}
-                style={{
-                  padding: '4px 8px', borderRadius: 5, fontFamily: 'inherit',
-                  border: `1px solid ${allEligibleAssigned || eligibleGuests.length === 0 ? WF.line : WF.accentLine}`,
-                  background: allEligibleAssigned || eligibleGuests.length === 0 ? '#fff' : WF.accentTint,
-                  fontSize: 12, fontWeight: 700, color: allEligibleAssigned || eligibleGuests.length === 0 ? WF.inkLabel : WF.accentInk,
-                  cursor: allEligibleAssigned || eligibleGuests.length === 0 ? 'default' : 'pointer', whiteSpace: 'nowrap'
-                }}>
-                  Assign to all
-              </button>
+              {!restrictedProduct && (
+                <button
+                  type="button"
+                  disabled={allEligibleAssigned || eligibleGuests.length === 0}
+                  onClick={() => onAddCabin(eligibleGuests.map((guest) => guest.guestKey))}
+                  aria-label={`Assign ${sup.name} to all eligible guests in ${cabin.heading}`}
+                  title={allEligibleAssigned ? `${sup.name} is already assigned to every eligible guest` : `Assign one ${sup.name} to every eligible guest in this cabin`}
+                  style={{
+                    padding: '4px 8px', borderRadius: 5, fontFamily: 'inherit',
+                    border: `1px solid ${allEligibleAssigned || eligibleGuests.length === 0 ? WF.line : WF.accentLine}`,
+                    background: allEligibleAssigned || eligibleGuests.length === 0 ? '#fff' : WF.accentTint,
+                    fontSize: 12, fontWeight: 700, color: allEligibleAssigned || eligibleGuests.length === 0 ? WF.inkLabel : WF.accentInk,
+                    cursor: allEligibleAssigned || eligibleGuests.length === 0 ? 'default' : 'pointer', whiteSpace: 'nowrap'
+                  }}>
+                    Assign to all
+                </button>
+              )}
             </div>
           </div>
           );
@@ -482,33 +569,127 @@ function AssignGuestsPanel({ sup, roster, assignment, onGuestQty, onAddCabin, on
   );
 }
 
+function SupplementDobDialog({ sup, guest, referenceDate, initialValue, error, onValueChange, onCancel, onConfirm }) {
+  const departure = supplementReferenceDate(referenceDate);
+  const inputId = `supplement-dob-verification-${sup.id}-${guest.guestKey}`;
+  return (
+    <div
+      role="presentation"
+      onMouseDown={(event) => event.target === event.currentTarget && onCancel()}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 520, padding: 24,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'rgba(15,23,42,0.42)', backdropFilter: 'blur(1px)'
+      }}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={`${inputId}-title`}
+        aria-describedby={`${inputId}-description`}
+        style={{
+          width: 'min(480px, 100%)', overflow: 'hidden', background: '#FFFFFF',
+          border: `1px solid ${WF.line}`, borderRadius: 10,
+          boxShadow: '0 24px 64px rgba(15,23,42,0.28)'
+        }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '16px 16px', background: WF.fill, borderBottom: `1px solid ${WF.line}` }}>
+          <span aria-hidden="true" style={{
+            width: 36, height: 36, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            borderRadius: 8, background: '#FFFBEB', border: '1px solid #FDE68A', color: '#92400E', flexShrink: 0
+          }}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="1.75" />
+              <path d="M7 3v4M17 3v4M3 9h18" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+            </svg>
+          </span>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div id={`${inputId}-title`} style={{ fontSize: 16, fontWeight: 700, color: WF.ink }}>Verify age to add</div>
+            <div id={`${inputId}-description`} style={{ marginTop: 4, fontSize: 12, lineHeight: '16px', color: WF.inkSoft }}>
+              {sup.name} is limited to guests age {sup.minAge}+ on departure. Add {guest.label}'s date of birth to continue.
+            </div>
+          </div>
+          <button type="button" onClick={onCancel} aria-label="Close date of birth verification" style={{
+            width: 30, height: 30, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            border: `1px solid ${WF.line}`, borderRadius: 6, background: '#FFFFFF', color: WF.inkSoft,
+            fontFamily: 'inherit', fontSize: 16, cursor: 'pointer', flexShrink: 0
+          }}>×</button>
+        </div>
+        <div style={{ padding: 16 }}>
+          <div style={{ padding: '8px 12px', marginBottom: 16, borderRadius: 8, background: '#FFFBEB', border: '1px solid #FDE68A', color: '#92400E', fontSize: 12 }}>
+            Eligibility is calculated for departure on <strong>{departure.label}</strong>.
+          </div>
+          <label htmlFor={inputId} style={{ display: 'block', marginBottom: 4, fontSize: 12, fontWeight: 700, color: WF.inkLabel }}>Date of birth</label>
+          <input
+            id={inputId}
+            autoFocus
+            type="date"
+            max={departure.iso}
+            value={initialValue}
+            aria-invalid={!!error}
+            aria-describedby={error ? `${inputId}-error` : undefined}
+            onChange={(event) => onValueChange(event.target.value)}
+            style={{
+              width: '100%', height: 40, padding: '8px 12px', boxSizing: 'border-box',
+              border: `1px solid ${error ? '#FCA5A5' : WF.controlBorder || WF.line}`, borderRadius: 8,
+              background: '#FFFFFF', color: WF.ink, fontFamily: 'inherit', fontSize: 14
+            }} />
+          {error && <div id={`${inputId}-error`} role="alert" style={{ marginTop: 8, color: '#B91C1C', fontSize: 12, fontWeight: 700 }}>{error}</div>}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 20 }}>
+            <button type="button" onClick={onCancel} style={{
+              minHeight: 36, padding: '8px 16px', borderRadius: 7, border: `1px solid ${WF.line}`,
+              background: '#FFFFFF', color: WF.inkSoft, fontFamily: 'inherit', fontSize: 12, fontWeight: 700, cursor: 'pointer'
+            }}>Cancel</button>
+            <button type="button" onClick={onConfirm} style={{
+              minHeight: 36, padding: '8px 16px', borderRadius: 7, border: 'none',
+              background: WF.accent, color: WF.accentText, fontFamily: 'inherit', fontSize: 12, fontWeight: 700, cursor: 'pointer'
+            }}>Verify and add</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ───────────────────────────────────────────────────────────────────────────
 // 4. Supplements catalog (single-column assignment list)
 // ───────────────────────────────────────────────────────────────────────────
-function SupplementsSection({ selectedSupps, guests, cabins, suppAssignments, onToggle }) {
+function SupplementsSection({ selectedSupps, guests, cabins, suppAssignments, guestBirthDates, referenceDate, onToggle }) {
   const suppQtys = selectedSupps || {}; // { suppId: totalQty, ... }
   const assignments = suppAssignments || {}; // { suppId: { guestKey → qty } }
+  const birthDates = guestBirthDates || {}; // { guestKey → YYYY-MM-DD }
   const [catFilter, setCatFilter] = React.useState(null);
   const [searchTerm, setSearchTerm] = React.useState('');
   const [expandedSuppId, setExpandedSuppId] = React.useState(null);
+  const [dobPrompt, setDobPrompt] = React.useState(null);
+  const [dobDraft, setDobDraft] = React.useState('');
+  const [dobError, setDobError] = React.useState('');
 
   const roster = buildCabinGuestRoster(guests, cabins);
   const hasGuests = roster.length > 0;
   const activeSup = expandedSuppId ? S2_SUPP.find((supp) => supp.id === expandedSuppId) : null;
+  const activePromptSup = dobPrompt ? S2_SUPP.find((supp) => supp.id === dobPrompt.suppId) : null;
+  const activePromptGuest = dobPrompt
+    ? roster.flatMap((cabin) => cabin.list).find((guest) => guest.guestKey === dobPrompt.guestKey)
+    : null;
 
   React.useEffect(() => {
     if (!expandedSuppId) return undefined;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const onKeyDown = (event) => {
-      if (event.key === 'Escape') setExpandedSuppId(null);
+      if (event.key !== 'Escape') return;
+      if (dobPrompt) {
+        setDobPrompt(null);
+        setDobError('');
+      } else {
+        setExpandedSuppId(null);
+      }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', onKeyDown);
     };
-  }, [expandedSuppId]);
+  }, [expandedSuppId, dobPrompt]);
 
   // Filter the individual supplement catalog by category and search.
   const filteredSupps = S2_SUPP.filter((s) => {
@@ -524,12 +705,97 @@ function SupplementsSection({ selectedSupps, guests, cabins, suppAssignments, on
   const activeAssignment = activeSup ? (assignments[activeSup.id] || {}) : {};
   const activeAssignedGuests = Object.values(activeAssignment).filter((qty) => qty > 0).length;
   const activeAssignedUnits = activeSup ? (suppQtys[activeSup.id] || 0) : 0;
+  const eligibilityStateSignature = JSON.stringify({
+    referenceDate: referenceDate || '',
+    birthDates,
+    assignments,
+    guests: roster.flatMap((cabin) => cabin.list.map((guest) => guest.guestKey))
+  });
+
+  // Older saved bookings could contain a restricted supplement assignment
+  // created before DOB verification existed. Remove those assignments as soon
+  // as this surface loads so an unverified item can never remain in pricing.
+  React.useEffect(() => {
+    const guestByKey = new Map(
+      roster.flatMap((cabin) => cabin.list).map((guest) => [guest.guestKey, guest])
+    );
+    let changed = false;
+    const nextAssignments = {};
+
+    Object.entries(assignments).forEach(([suppId, byGuest]) => {
+      const sup = S2_SUPP.find((item) => item.id === suppId);
+      if (!sup || sup.minAge == null) {
+        nextAssignments[suppId] = byGuest;
+        return;
+      }
+      const verifiedAssignment = {};
+      Object.entries(byGuest || {}).forEach(([guestKey, qty]) => {
+        const guest = guestByKey.get(guestKey);
+        if (Number(qty) > 0 && guest && supplementGuestEligibility(sup, guest, birthDates, referenceDate).eligible) {
+          verifiedAssignment[guestKey] = qty;
+        } else {
+          changed = true;
+        }
+      });
+      if (Object.keys(verifiedAssignment).length > 0) nextAssignments[suppId] = verifiedAssignment;
+      else if (Object.keys(byGuest || {}).length > 0) changed = true;
+    });
+
+    if (!changed) return;
+    const nextQtys = {};
+    Object.entries(nextAssignments).forEach(([suppId, byGuest]) => {
+      const totalQty = Object.values(byGuest || {}).reduce((sum, qty) => sum + Number(qty || 0), 0);
+      if (totalQty > 0) nextQtys[suppId] = totalQty;
+    });
+    onToggle(nextQtys, nextAssignments, birthDates);
+  }, [eligibilityStateSignature]);
+
+  const commitSuppAssignment = (suppId, suppAssign, nextBirthDates = birthDates) => {
+    const validAssignment = Object.fromEntries(
+      Object.entries(suppAssign).filter(([guestKey, qty]) => !guestKey.startsWith('infants-') && qty > 0)
+    );
+    const nextAssignments = { ...assignments };
+    if (Object.keys(validAssignment).length === 0) delete nextAssignments[suppId]; else nextAssignments[suppId] = validAssignment;
+    const totalQty = Object.values(validAssignment).reduce((a, b) => a + b, 0);
+    const nextQtys = { ...suppQtys };
+    if (totalQty <= 0) delete nextQtys[suppId]; else nextQtys[suppId] = totalQty;
+    onToggle(nextQtys, nextAssignments, nextBirthDates);
+  };
 
   const setGuestQty = (suppId, guestKey, qty) => {
     const suppAssign = { ...(assignments[suppId] || {}) };
-    if (guestKey.startsWith('infants-')) {
-      delete suppAssign[guestKey];
-      commitSuppAssignment(suppId, suppAssign);
+    const sup = S2_SUPP.find((item) => item.id === suppId);
+    const guest = roster.flatMap((cabin) => cabin.list).find((item) => item.guestKey === guestKey);
+    if (!sup || !guest || guest.categoryKey === 'infants' || !supplementGuestMeetsAgeBand(sup, guest)) return;
+    const currentQty = Number(suppAssign[guestKey] || 0);
+    if (qty <= currentQty) {
+      const nextBirthDates = { ...birthDates };
+      if (qty <= 0) {
+        delete suppAssign[guestKey];
+
+        // A DOB collected by this workflow belongs to an active restricted
+        // assignment. When the last such assignment is removed, remove the
+        // verification too so a zero quantity cannot continue to show an age.
+        if (sup.minAge != null && supplementGuestRequiresDob(sup, guest)) {
+          const dobStillRequired = S2_SUPP.some((restrictedSup) => {
+            if (restrictedSup.minAge == null || !supplementGuestRequiresDob(restrictedSup, guest)) return false;
+            const productAssignment = restrictedSup.id === suppId
+              ? suppAssign
+              : (assignments[restrictedSup.id] || {});
+            return Number(productAssignment[guestKey] || 0) > 0;
+          });
+          if (!dobStillRequired) delete nextBirthDates[guestKey];
+        }
+      } else {
+        suppAssign[guestKey] = qty;
+      }
+      commitSuppAssignment(suppId, suppAssign, nextBirthDates);
+      return;
+    }
+    if (sup.minAge != null && !supplementGuestEligibility(sup, guest, birthDates, referenceDate).eligible) {
+      setDobPrompt({ suppId, guestKey, requestedQty: qty });
+      setDobDraft(birthDates[guestKey] || '');
+      setDobError('');
       return;
     }
     if (qty <= 0) delete suppAssign[guestKey]; else suppAssign[guestKey] = qty;
@@ -545,21 +811,61 @@ function SupplementsSection({ selectedSupps, guests, cabins, suppAssignments, on
   };
 
   const clearCabinQty = (suppId, guestKeys) => {
-    const suppAssign = { ...(assignments[suppId] || {}) };
-    guestKeys.forEach((guestKey) => delete suppAssign[guestKey]);
-    commitSuppAssignment(suppId, suppAssign);
+    const sup = S2_SUPP.find((item) => item.id === suppId);
+    const nextBirthDates = { ...birthDates };
+    const nextAssignments = { ...assignments };
+    const guestByKey = new Map(roster.flatMap((cabin) => cabin.list).map((guest) => [guest.guestKey, guest]));
+
+    const nextProductAssignment = { ...(nextAssignments[suppId] || {}) };
+    guestKeys.forEach((guestKey) => delete nextProductAssignment[guestKey]);
+    if (Object.keys(nextProductAssignment).length > 0) nextAssignments[suppId] = nextProductAssignment;
+    else delete nextAssignments[suppId];
+
+    if (sup && sup.minAge != null) {
+      const dobGuestKeys = guestKeys.filter((guestKey) => {
+        const guest = guestByKey.get(guestKey);
+        return guest && supplementGuestRequiresDob(sup, guest);
+      });
+      dobGuestKeys.forEach((guestKey) => delete nextBirthDates[guestKey]);
+      S2_SUPP.filter((item) => item.minAge != null).forEach((restrictedSup) => {
+        if (!nextAssignments[restrictedSup.id]) return;
+        const nextRestrictedAssignment = { ...nextAssignments[restrictedSup.id] };
+        dobGuestKeys.forEach((guestKey) => delete nextRestrictedAssignment[guestKey]);
+        if (Object.keys(nextRestrictedAssignment).length > 0) nextAssignments[restrictedSup.id] = nextRestrictedAssignment;
+        else delete nextAssignments[restrictedSup.id];
+      });
+    }
+
+    const nextQtys = {};
+    Object.entries(nextAssignments).forEach(([productId, productAssignment]) => {
+      const totalQty = Object.values(productAssignment || {}).reduce((sum, qty) => sum + Number(qty || 0), 0);
+      if (totalQty > 0) nextQtys[productId] = totalQty;
+    });
+    onToggle(nextQtys, nextAssignments, nextBirthDates);
   };
 
-  const commitSuppAssignment = (suppId, suppAssign) => {
-    const validAssignment = Object.fromEntries(
-      Object.entries(suppAssign).filter(([guestKey, qty]) => !guestKey.startsWith('infants-') && qty > 0)
-    );
-    const nextAssignments = { ...assignments };
-    if (Object.keys(validAssignment).length === 0) delete nextAssignments[suppId]; else nextAssignments[suppId] = validAssignment;
-    const totalQty = Object.values(validAssignment).reduce((a, b) => a + b, 0);
-    const nextQtys = { ...suppQtys };
-    if (totalQty <= 0) delete nextQtys[suppId]; else nextQtys[suppId] = totalQty;
-    onToggle(nextQtys, nextAssignments);
+  const cancelDobPrompt = () => {
+    setDobPrompt(null);
+    setDobDraft('');
+    setDobError('');
+  };
+
+  const confirmDobAndAdd = () => {
+    if (!dobPrompt || !activePromptSup || !activePromptGuest) return;
+    const nextBirthDates = { ...birthDates, [activePromptGuest.guestKey]: dobDraft };
+    const eligibility = supplementGuestEligibility(activePromptSup, activePromptGuest, nextBirthDates, referenceDate);
+    if (eligibility.state === 'required' || eligibility.state === 'invalid') {
+      setDobError('Enter a valid date of birth.');
+      return;
+    }
+    if (!eligibility.eligible) {
+      setDobError(`${activePromptGuest.label} will be age ${eligibility.age} on departure and is not eligible for this ${activePromptSup.minAge}+ product.`);
+      return;
+    }
+    const suppAssign = { ...(assignments[activePromptSup.id] || {}) };
+    suppAssign[activePromptGuest.guestKey] = Math.max(1, Number(dobPrompt.requestedQty || 1));
+    commitSuppAssignment(activePromptSup.id, suppAssign, nextBirthDates);
+    cancelDobPrompt();
   };
 
   return (
@@ -598,7 +904,6 @@ function SupplementsSection({ selectedSupps, guests, cabins, suppAssignments, on
         }}>
           <div>
             <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', color: WF.inkLabel, textTransform: 'uppercase' }}>Supplement catalog</div>
-            <div style={{ marginTop: 4, fontSize: 12, color: WF.inkSoft }}>Assign optional products to eligible guests</div>
           </div>
           {selectedProductCount > 0 && (
             <span style={{ padding: '4px 8px', borderRadius: 6, border: `1px solid ${WF.accentLine}`, background: WF.accentTint, fontSize: 12, fontWeight: 700, color: WF.accent }}>
@@ -661,7 +966,7 @@ function SupplementsSection({ selectedSupps, guests, cabins, suppAssignments, on
         }}>
           <div className="mvas-supplement-list-header" aria-hidden="true" style={{
             display: 'grid',
-            gridTemplateColumns: 'minmax(0, 1fr) minmax(130px, 0.42fr) 92px 72px',
+            gridTemplateColumns: 'minmax(0, 1fr) minmax(130px, 0.42fr) 92px 40px',
             alignItems: 'center', gap: 12, padding: '8px 12px',
             borderBottom: `1px solid ${WF.line}`, background: WF.fill,
             color: WF.inkSoft, fontSize: 12, fontWeight: 600,
@@ -697,10 +1002,11 @@ function SupplementsSection({ selectedSupps, guests, cabins, suppAssignments, on
                   aria-expanded={expanded}
                   aria-haspopup="dialog"
                   aria-label={`${qty > 0 ? 'Review assignment for' : 'Assign guests to'} ${sup.name}`}
+                  title={`${qty > 0 ? 'Review assignment for' : 'Assign guests to'} ${sup.name}`}
                   style={{
                     width: '100%', border: 'none', background: 'transparent', fontFamily: 'inherit', textAlign: 'left',
                     display: 'grid',
-                    gridTemplateColumns: 'minmax(0, 1fr) minmax(130px, 0.42fr) 92px 72px',
+                    gridTemplateColumns: 'minmax(0, 1fr) minmax(130px, 0.42fr) 92px 40px',
                     alignItems: 'center', padding: '8px 12px', gap: 12,
                     cursor: hasGuests ? 'pointer' : 'not-allowed',
                     opacity: hasGuests ? 1 : 0.55, transition: 'background 0.12s'
@@ -755,16 +1061,17 @@ function SupplementsSection({ selectedSupps, guests, cabins, suppAssignments, on
                         {qty > 0 ? `+$${lineTotal.toFixed(2)}` : `$${sup.pricePP.toFixed(2)}`}
                       </div>
                   </div>
-                    <span className="mvas-supplement-action-cell" style={{
-                      width: 72, height: 30, padding: '0 8px 0 12px', borderRadius: 6,
-                      display: 'inline-flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+                    <span className="mvas-supplement-action-cell" aria-hidden="true" style={{
+                      width: 32, height: 32, padding: 0, borderRadius: 6,
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                       border: `1px solid ${qty > 0 ? WF.accentLine : WF.line}`,
                       background: qty > 0 ? WF.accentTint : '#FFFFFF', color: WF.accent,
-                      fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap'
+                      whiteSpace: 'nowrap'
                     }}>
-                      {qty > 0 ? 'Edit' : 'Assign'}
-                      <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden="true" style={{ flexShrink: 0 }}>
-                        <path d="M4 2L8 6L4 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M15 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+                        <circle cx="8.5" cy="7" r="4" stroke="currentColor" strokeWidth="1.75" />
+                        <path d="M19 8v6M22 11h-6" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
                       </svg>
                     </span>
                 </button>
@@ -784,7 +1091,7 @@ function SupplementsSection({ selectedSupps, guests, cabins, suppAssignments, on
 
       {activeSup && hasGuests && (
         <div
-          onClick={() => setExpandedSuppId(null)}
+          onClick={() => { setExpandedSuppId(null); cancelDobPrompt(); }}
           style={{
             position: 'fixed', inset: 0, zIndex: 500, padding: 24,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -816,7 +1123,6 @@ function SupplementsSection({ selectedSupps, guests, cabins, suppAssignments, on
                     <span style={{ fontSize: 12, fontWeight: 700, color: '#B45309', background: '#FEF3C7', borderRadius: 4, padding: '4px 4px' }}>{activeSup.minAge}+</span>
                   )}
                 </div>
-                <div style={{ marginTop: 4, fontSize: 12, color: WF.inkSoft }}>Assign quantities by cabin and eligible guest.</div>
               </div>
               <div style={{ textAlign: 'right', flexShrink: 0 }}>
                 <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', color: WF.inkLabel, textTransform: 'uppercase' }}>Per guest</div>
@@ -829,7 +1135,7 @@ function SupplementsSection({ selectedSupps, guests, cabins, suppAssignments, on
               </div>
               <button
                 type="button"
-                onClick={() => setExpandedSuppId(null)}
+                onClick={() => { setExpandedSuppId(null); cancelDobPrompt(); }}
                 aria-label="Close supplement assignment"
                 style={{
                   width: 30, height: 30, marginLeft: 4, borderRadius: 6, flexShrink: 0,
@@ -843,13 +1149,27 @@ function SupplementsSection({ selectedSupps, guests, cabins, suppAssignments, on
                 sup={activeSup}
                 roster={roster}
                 assignment={activeAssignment}
+                birthDates={birthDates}
+                referenceDate={referenceDate}
                 onGuestQty={(guestKey, value) => setGuestQty(activeSup.id, guestKey, value)}
                 onAddCabin={(guestKeys) => addCabinQty(activeSup.id, guestKeys)}
                 onClearCabin={(guestKeys) => clearCabinQty(activeSup.id, guestKeys)}
-                onDone={() => setExpandedSuppId(null)} />
+                onDone={() => { setExpandedSuppId(null); cancelDobPrompt(); }} />
             </div>
           </div>
         </div>
+      )}
+
+      {activePromptSup && activePromptGuest && (
+        <SupplementDobDialog
+          sup={activePromptSup}
+          guest={activePromptGuest}
+          referenceDate={referenceDate}
+          initialValue={dobDraft}
+          error={dobError}
+          onValueChange={(value) => { setDobDraft(value); setDobError(''); }}
+          onCancel={cancelDobPrompt}
+          onConfirm={confirmDobAndAdd} />
       )}
       
       {Object.keys(suppQtys).length === 0 &&
@@ -977,8 +1297,12 @@ function SailingCard({ s, update, sailing, expanded, onToggle, resultRow = false
     onToggle();
   };
 
-  const toggleSupp = (qtyObj, assignments) => {
-    update({ selectedSupps: qtyObj, suppAssignments: assignments !== undefined ? assignments : s.suppAssignments });
+  const toggleSupp = (qtyObj, assignments, birthDates) => {
+    update({
+      selectedSupps: qtyObj,
+      suppAssignments: assignments !== undefined ? assignments : s.suppAssignments,
+      guestBirthDates: birthDates !== undefined ? birthDates : s.guestBirthDates
+    });
   };
 
   return (
@@ -1133,6 +1457,8 @@ function SailingCard({ s, update, sailing, expanded, onToggle, resultRow = false
             guests={s.guests}
             cabins={s.cabins}
             suppAssignments={s.suppAssignments}
+            guestBirthDates={s.guestBirthDates}
+            referenceDate={sailing.depart}
             onToggle={toggleSupp} />
           </DisclosureSection>
         

@@ -243,7 +243,15 @@ function GuestCountAgesSection({ s, update }) {
   const g = s.guests || { adults: 0, youngAdults: 0, children: 0, infants: 0 };
 
   const setCount = (key, val) => {
-    update({ guests: { ...g, [key]: val } });
+    // Read the newest booking snapshot inside the router update. Using the
+    // render-time `g` object here can lose a fast consecutive change when React
+    // batches events, leaving the summary rail one interaction behind.
+    update((current) => ({
+      guests: {
+        ...(current.guests || { adults: 0, youngAdults: 0, children: 0, infants: 0 }),
+        [key]: Math.max(0, Math.floor(Number(val) || 0)),
+      },
+    }));
   };
 
   const totalGuests = (g.adults || 0) + (g.youngAdults || 0) + (g.children || 0) + (g.infants || 0);
@@ -339,12 +347,13 @@ function SailingDetailView({ sailing, s, update, previewPkgId, onPkgPreview, onC
   const g = s.guests;
   const canContinue = !!(s.selectedSailingCode && s.cabinId && s.farecodeId);
 
-  const toggleSupp = (qtyObj, assignments) => {
+  const toggleSupp = (qtyObj, assignments, birthDates) => {
     // qtyObj is { suppId: qty, ... }; assignments remains guest-level even
     // though the panel visually groups those guests by cabin.
     update({
       selectedSupps: qtyObj,
-      suppAssignments: assignments !== undefined ? assignments : s.suppAssignments
+      suppAssignments: assignments !== undefined ? assignments : s.suppAssignments,
+      guestBirthDates: birthDates !== undefined ? birthDates : s.guestBirthDates
     });
   };
 
@@ -450,6 +459,8 @@ function SailingDetailView({ sailing, s, update, previewPkgId, onPkgPreview, onC
               guests={s.guests}
               cabins={s.cabins}
               suppAssignments={s.suppAssignments}
+              guestBirthDates={s.guestBirthDates}
+              referenceDate={sailing.depart}
               onToggle={toggleSupp} />
           </div>
         )}

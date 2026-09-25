@@ -948,7 +948,12 @@ function BookingSummaryPanel({
   const [selectionView, setSelectionView] = React.useState('Global Details');
 
   const p = computeBookingPricing(b);
-  const g = b.guests || {};
+  // Use the same normalized guest selector as pricing. This keeps the visible
+  // party mix and the fare multiplier on one source of truth, including while
+  // the agent is changing counts on the Farecode & Guest Count tab.
+  const g = typeof bookingGuestCounts === 'function'
+    ? bookingGuestCounts(b)
+    : { adults: 0, youngAdults: 0, children: 0, infants: 0, ...(b.guests || {}) };
   const guestStr = p.guestCount > 0
     ? `${g.adults || 0}A · ${g.youngAdults || 0}YA · ${g.children || 0}C · ${g.infants || 0}I`
     : SP_DASH;

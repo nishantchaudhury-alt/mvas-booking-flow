@@ -106,6 +106,10 @@ const BOOKING_DEFAULTS = {
   selectedPackages: [],
   selectedSupps: {},
   suppAssignments: {},
+  // Collected only when an age-restricted supplement needs verification.
+  // Guest keys match suppAssignments, allowing one DOB verification to be
+  // reused across every 13+/21+ product without storing it per product.
+  guestBirthDates: {},
 
   // Step 3 — guest records, keyed A1 / YA1 / C1 / I1
   guestData: {},
@@ -129,7 +133,9 @@ const BOOKING_DEFAULTS = {
 function normalizeBooking(raw) {
   const r = raw && typeof raw === 'object' ? raw : {};
   const b = { ...BOOKING_DEFAULTS, ...r };
-  b.guests = { ...BOOKING_DEFAULTS.guests, ...(r.guests || {}) };
+  b.guests = bookingGuestCounts({
+    guests: { ...BOOKING_DEFAULTS.guests, ...(r.guests || {}) },
+  });
   b.guestAges = { ...BOOKING_DEFAULTS.guestAges, ...(r.guestAges || {}) };
   // Lift the former single `month` value into the multi-select collection so
   // bookings saved before the picker changed keep their departure date.
@@ -192,6 +198,13 @@ function normalizeBooking(raw) {
   b.groupBookingCount = Math.max(b.groupBookings.length, parseInt(r.groupBookingCount, 10) || 0);
   b.inventorySearch = typeof r.inventorySearch === 'string' ? r.inventorySearch : '';
   b.guestData = r.guestData && typeof r.guestData === 'object' ? r.guestData : {};
+  b.guestBirthDates = r.guestBirthDates && typeof r.guestBirthDates === 'object'
+    ? Object.fromEntries(Object.entries(r.guestBirthDates).filter(([guestKey, birthDate]) => {
+      const match = guestKey.match(/^(adults|youngAdults|children)-(\d+)$/);
+      if (!match || typeof birthDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) return false;
+      return Number(match[2]) < Math.max(0, Number(b.guests[match[1]]) || 0);
+    }))
+    : {};
   b.primaryGuestConfigured = r.primaryGuestConfigured === true;
   b.primaryGuestCode = typeof r.primaryGuestCode === 'string' && r.primaryGuestCode.trim()
     ? r.primaryGuestCode.trim() : null;
@@ -281,9 +294,23 @@ function saveBooking(booking) {
   try { localStorage.setItem(BOOKING_KEY, JSON.stringify(booking)); } catch (e) {}
 }
 
+function bookingGuestCounts(b) {
+  const raw = (b && b.guests) || {};
+  const count = (value) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? Math.max(0, Math.floor(parsed)) : 0;
+  };
+  return {
+    adults: count(raw.adults),
+    youngAdults: count(raw.youngAdults),
+    children: count(raw.children),
+    infants: count(raw.infants),
+  };
+}
+
 function bookingGuestCount(b) {
-  const g = (b && b.guests) || {};
-  return (g.adults || 0) + (g.youngAdults || 0) + (g.children || 0) + (g.infants || 0);
+  const g = bookingGuestCounts(b);
+  return g.adults + g.youngAdults + g.children + g.infants;
 }
 
 const round2 = (n) => Math.round(n * 100) / 100;
@@ -379,5 +406,5 @@ function computeBookingPricing(booking) {
 
 Object.assign(window, {
   BOOKING_KEY, BOOKING_DEFAULTS, GRATUITIES, PROTECTION_PP, COUPONS, GUEST_BANDS,
-  normalizeBooking, loadBooking, saveBooking, bookingGuestCount, computeBookingPricing,
+  normalizeBooking, loadBooking, saveBooking, bookingGuestCounts, bookingGuestCount, computeBookingPricing,
 });

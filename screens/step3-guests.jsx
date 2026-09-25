@@ -11,6 +11,7 @@
 // Allows manual entry or customer lookup for each guest.
 function GuestDetailsSection({
   guests, guestAges, guestData, setGuestData, cabinAssignments,
+  guestBirthDates, referenceDate, onGuestBirthDateChange,
   protection, protectionGuestCount, onToggleProtection,
 }) {
   const [expandedGuestId, setExpandedGuestId] = React.useState(null);
@@ -83,13 +84,24 @@ function GuestDetailsSection({
   const completedCount = guestList.length - unconfirmedCount;
 
   const handleConfirm = (guestId, name, extra) => {
-    setGuestData((prev) => ({ ...prev, [guestId]: { confirmed: true, name, ...extra } }));
+    const guest = guestList.find((item) => item.id === guestId);
+    const confirmedDob = (extra && extra.dob) || (guest && guestBirthDates && guestBirthDates[guest.guestKey]) || '';
+    const nextExtra = { ...(extra || {}) };
+    if (confirmedDob) nextExtra.dob = confirmedDob;
+    setGuestData((prev) => ({ ...prev, [guestId]: { confirmed: true, name, ...nextExtra } }));
+    if (guest && confirmedDob) onGuestBirthDateChange(guest.guestKey, confirmedDob);
     setManualMode((prev) => ({ ...prev, [guestId]: false }));
     setExpandedGuestId(null);
   };
 
   const handleSaveManual = (guestId) => {
-    const form = manualForm[guestId] || {};
+    const guest = guestList.find((item) => item.id === guestId);
+    const existing = guestData[guestId] || {};
+    const form = {
+      firstName: '', lastName: '', email: '', phone: '',
+      dob: (guest && guestBirthDates && guestBirthDates[guest.guestKey]) || existing.dob || '',
+      ...(manualForm[guestId] || {})
+    };
     const name = [form.firstName, form.lastName].filter(Boolean).join(' ').trim();
     handleConfirm(guestId, name || undefined, { dob: form.dob, email: form.email, phone: form.phone });
   };
@@ -119,12 +131,17 @@ function GuestDetailsSection({
   const activeAgeRange = activeGuest
     ? { Adult: '21+', 'Young Adult': '13–21', Child: '3–12', Infant: '0–3' }[activeGuest.type]
     : '';
+  const activeBirthDate = activeGuest
+    ? ((guestBirthDates || {})[activeGuest.guestKey] || activeRecord.dob || '')
+    : '';
+  const activeDepartureAge = activeBirthDate ? supplementAgeOnDate(activeBirthDate, referenceDate) : null;
   const activeAgeLabel = activeGuest
-    ? (activeGuest.age != null ? `Age ${activeGuest.age}` : `Age ${activeAgeRange}`)
+    ? (activeDepartureAge != null ? `Age ${activeDepartureAge} on departure` : activeGuest.age != null ? `Age ${activeGuest.age}` : `Age ${activeAgeRange}`)
     : '';
   const activeForm = activeGuest
-    ? (manualForm[activeGuest.id] || { firstName: '', lastName: '', dob: '', email: '', phone: '' })
+    ? (manualForm[activeGuest.id] || { firstName: '', lastName: '', dob: activeBirthDate, email: '', phone: '' })
     : { firstName: '', lastName: '', dob: '', email: '', phone: '' };
+  const activeFormDepartureAge = activeForm.dob ? supplementAgeOnDate(activeForm.dob, referenceDate) : null;
 
   return (
     <div style={{ marginBottom: 20 }}>
@@ -216,7 +233,9 @@ function GuestDetailsSection({
           const isTemp = isDone && /^Temp\s/i.test(record.name || '');
           const isPrimary = guest.label.toLowerCase().includes('primary');
           const ageRange = { Adult: '21+', 'Young Adult': '13–21', Child: '3–12', Infant: '0–3' }[guest.type];
-          const ageLabel = guest.age != null ? `Age ${guest.age}` : `Age ${ageRange}`;
+          const birthDate = (guestBirthDates || {})[guest.guestKey] || record.dob || '';
+          const departureAge = birthDate ? supplementAgeOnDate(birthDate, referenceDate) : null;
+          const ageLabel = departureAge != null ? `Age ${departureAge} on departure` : guest.age != null ? `Age ${guest.age}` : `Age ${ageRange}`;
 
           return (
             <div key={guest.id} style={{
@@ -467,6 +486,11 @@ function GuestDetailsSection({
                         value={activeForm.dob}
                         onChange={(event) => setManualForm((prev) => ({ ...prev, [activeGuest.id]: { ...activeForm, dob: event.target.value } }))}
                         style={{ width: '100%', padding: '8px 12px', fontSize: 14, border: `1px solid ${WF.line}`, borderRadius: 7, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', background: '#fff', color: activeForm.dob ? WF.ink : WF.inkFaint }} />
+                      {activeFormDepartureAge != null && (
+                        <div style={{ marginTop: 4, color: '#047857', fontSize: 12, fontWeight: 700 }}>
+                          Age {activeFormDepartureAge} on departure
+                        </div>
+                      )}
                     </div>
                     <div>
                       <label htmlFor={`guest-phone-${activeGuest.id}`} style={{ display: 'block', fontSize: 12, fontWeight: 600, color: WF.inkSoft, marginBottom: 4 }}>Phone number</label>
@@ -657,6 +681,37 @@ function Step3App({ booking, update, navigate }) {
   const guestCount = bookingGuestCount(state);
   const allGuestsAssigned = guestCount > 0 && Object.keys(guestData).length >= guestCount;
 
+  const setGuestBirthDate = (guestKey, birthDate) => {
+    update((prev) => {
+      const nextBirthDates = { ...(prev.guestBirthDates || {}) };
+      if (birthDate) nextBirthDates[guestKey] = birthDate;
+      else delete nextBirthDates[guestKey];
+
+      const categoryKey = String(guestKey || '').split('-')[0];
+      const guest = { guestKey, categoryKey };
+      const nextAssignments = { ...(prev.suppAssignments || {}) };
+      S2_SUPP.filter((supplement) => supplement.minAge != null).forEach((supplement) => {
+        const currentProduct = nextAssignments[supplement.id];
+        if (!currentProduct || supplementGuestEligibility(supplement, guest, nextBirthDates, sailing && sailing.depart).eligible) return;
+        const nextProduct = { ...currentProduct };
+        delete nextProduct[guestKey];
+        if (Object.keys(nextProduct).length > 0) nextAssignments[supplement.id] = nextProduct;
+        else delete nextAssignments[supplement.id];
+      });
+
+      const nextSelectedSupps = {};
+      Object.entries(nextAssignments).forEach(([supplementId, byGuest]) => {
+        const quantity = Object.values(byGuest || {}).reduce((sum, value) => sum + Number(value || 0), 0);
+        if (quantity > 0) nextSelectedSupps[supplementId] = quantity;
+      });
+      return {
+        guestBirthDates: nextBirthDates,
+        suppAssignments: nextAssignments,
+        selectedSupps: nextSelectedSupps,
+      };
+    });
+  };
+
   // Supplements bought but not yet attached to a specific guest or cabin.
   const unassignedSupps = Object.keys(state.selectedSupps || {}).filter((id) => {
     if (!(state.selectedSupps[id] > 0)) return false;
@@ -741,6 +796,9 @@ function Step3App({ booking, update, navigate }) {
             guestData={guestData}
             setGuestData={setGuestData}
             cabinAssignments={state.cabins}
+            guestBirthDates={state.guestBirthDates}
+            referenceDate={sailing && sailing.depart}
+            onGuestBirthDateChange={setGuestBirthDate}
             protection={!!state.protection}
             protectionGuestCount={guestCount}
             onToggleProtection={() => update({ protection: !state.protection })} />
