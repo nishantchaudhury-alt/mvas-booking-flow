@@ -167,8 +167,7 @@ function SPCabinTypeSummary({ b, p }) {
             aria-expanded={open}
             aria-controls="sp-cabin-types-popover"
             aria-label={`Show all ${cabinTypes.length} cabin types`}
-            onFocus={() => setOpen(true)}
-            onClick={() => setOpen((value) => !value)}
+            onClick={() => setOpen(true)}
             style={{
               minWidth: 28, height: 24, padding: '4px 8px', borderRadius: 999,
               border: `1px solid ${WF.line}`, background: open ? WF.accentTint : WF.fill,
@@ -205,6 +204,132 @@ function SPCabinTypeSummary({ b, p }) {
                   </div>
                   <span style={{ flexShrink: 0, fontSize: 12, fontWeight: 700, color: WF.inkSoft }}>
                     {type.rooms.length || 1}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Keep the room row as scannable as the cabin-type row. The first assigned
+// room is the anchor; a compact +N trigger discloses the complete room list so
+// multi-room bookings do not turn the narrow rail into a comma-separated line.
+function SPAssignedRoomSummary({ b }) {
+  const [open, setOpen] = React.useState(false);
+  const rootRef = React.useRef(null);
+  const rooms = [];
+  const seen = new Set();
+
+  (b.cabins || []).forEach((cabin, index) => {
+    if (!cabin || !cabin.num) return;
+    const roomNumber = String(cabin.num);
+    if (seen.has(roomNumber)) return;
+    seen.add(roomNumber);
+    rooms.push({
+      key: `${roomNumber}-${index}`,
+      number: roomNumber,
+      label: cabin.label || cabin.cat || 'Stateroom',
+    });
+  });
+
+  if (rooms.length === 0 && b.selectedCabinNum) {
+    rooms.push({
+      key: String(b.selectedCabinNum),
+      number: String(b.selectedCabinNum),
+      label: b.selectedCabinLabel || 'Stateroom',
+    });
+  }
+
+  React.useEffect(() => {
+    if (!open) return undefined;
+    const closeOnOutsidePress = (event) => {
+      if (rootRef.current && !rootRef.current.contains(event.target)) setOpen(false);
+    };
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('mousedown', closeOnOutsidePress);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('mousedown', closeOnOutsidePress);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [open]);
+
+  if (rooms.length === 0) {
+    const autoAssign = b.assignmentMethod === 'auto';
+    return <SPRow label="Room" value={autoAssign ? 'Auto-assign' : SP_DASH} dim={!autoAssign} />;
+  }
+
+  const first = rooms[0];
+  const additionalCount = rooms.length - 1;
+  const rowLabel = rooms.length > 1 ? 'Rooms' : 'Room';
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '4px 0' }}>
+      <div style={{ fontSize: 12, color: WF.inkSoft, flexShrink: 0 }}>{rowLabel}</div>
+      <div
+        ref={rootRef}
+        onMouseEnter={() => additionalCount > 0 && setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+        onBlur={(event) => {
+          if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
+        }}
+        style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4, minWidth: 0 }}>
+        <span style={{
+          minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          fontSize: 12, fontWeight: 500, color: WF.ink, fontFamily: 'ui-monospace, monospace',
+        }}>
+          #{first.number}
+        </span>
+        {additionalCount > 0 && (
+          <button
+            type="button"
+            aria-haspopup="dialog"
+            aria-expanded={open}
+            aria-controls="sp-rooms-popover"
+            aria-label={`Show all ${rooms.length} rooms`}
+            onClick={() => setOpen(true)}
+            style={{
+              minWidth: 28, height: 24, padding: '4px 8px', borderRadius: 999,
+              border: `1px solid ${WF.line}`, background: open ? WF.accentTint : WF.fill,
+              color: WF.accentInk, fontFamily: 'inherit', fontSize: 12, fontWeight: 700,
+              lineHeight: '16px', cursor: 'pointer', flexShrink: 0,
+            }}>
+            +{additionalCount}
+          </button>
+        )}
+        {open && additionalCount > 0 && (
+          <div
+            id="sp-rooms-popover"
+            role="dialog"
+            aria-label="Rooms in this booking"
+            style={{
+              position: 'absolute', top: 'calc(100% + 8px)', right: 0, zIndex: 60,
+              width: 264, maxWidth: 'calc(100vw - 32px)', padding: 12,
+              border: `1px solid ${WF.line}`, borderRadius: 8, background: '#FFFFFF',
+              boxShadow: '0 8px 24px rgba(15,23,42,0.14)', textAlign: 'left',
+            }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: WF.ink, marginBottom: 8 }}>
+              Rooms ({rooms.length})
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {rooms.map((room, index) => (
+                <div key={room.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: WF.ink, fontFamily: 'ui-monospace, monospace' }}>
+                      #{room.number}
+                    </div>
+                    <div style={{ marginTop: 4, fontSize: 12, color: WF.inkSoft, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {room.label}
+                    </div>
+                  </div>
+                  <span style={{ flexShrink: 0, fontSize: 12, color: WF.inkFaint }}>
+                    Cabin {index + 1}
                   </span>
                 </div>
               ))}
@@ -337,7 +462,7 @@ function SPDatum({ label, value, dim, mono, align = 'left' }) {
 
 function SPBookingSnapshot({
   b, p, guestStr,
-  roomLabel, roomStr, showSupps, setShowSupps,
+  roomStr, showSupps, setShowSupps,
 }) {
   const bookingType = b.bookingType || 'Normal';
 
@@ -356,7 +481,7 @@ function SPBookingSnapshot({
           value={p.cabin ? (p.cabinDeltaPP > 0 ? `+$${p.cabinDeltaPP}pp` : 'Included') : SP_DASH}
           dim={!p.cabin}
           mono={!!p.cabin} />
-        <SPRow label={roomLabel} value={roomStr || SP_DASH} dim={!roomStr} />
+        <SPAssignedRoomSummary b={b} />
         <SPRow
           label="Room delta"
           value={roomStr ? (p.roomDeltaTotal > 0 ? `+${money(p.roomDeltaTotal)}` : 'Included') : SP_DASH}
@@ -967,7 +1092,6 @@ function BookingSummaryPanel({
     : b.selectedCabinNum
       ? `#${b.selectedCabinNum}${b.selectedCabinDeck ? ` · Deck ${b.selectedCabinDeck}` : ''}`
       : b.assignmentMethod === 'auto' ? 'Auto-assign' : '';
-  const roomLabel = selectedRoomNums.length > 1 ? 'Rooms' : 'Room';
   const SelectedSailingRailSummary = window.SelectedSailingRailSummary;
 
   // Shown on the collapsed heading so the section still says something useful.
@@ -1022,7 +1146,6 @@ function BookingSummaryPanel({
               b={b}
               p={p}
               guestStr={guestStr}
-              roomLabel={roomLabel}
               roomStr={roomStr}
               showSupps={showSupps}
               setShowSupps={setShowSupps} />

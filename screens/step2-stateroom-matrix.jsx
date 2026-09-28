@@ -730,15 +730,31 @@ function CabinAssignmentTable({ row, qty, categoryBySlot, roomsBySlot, cabinGues
                           color: WF.ink, cursor: 'pointer', fontFamily: 'inherit'
                         }}>
                         <span style={{ fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap' }}>Cabin {i + 1}</span>
-                        <span style={{
-                          fontSize: 12,
-                          fontWeight: isActive && !roomNum ? 700 : roomNum ? 700 : 500,
-                          color: isActive && !roomNum ? WF.accent : roomNum ? WF.ink : WF.inkFaint,
-                          fontFamily: roomNum ? 'ui-monospace, monospace' : 'inherit',
-                          whiteSpace: 'nowrap'
-                        }}>
-                          {isActive && !roomNum ? 'Selecting room' : roomNum ? `Room ${roomNum}` : 'Room pending'}
-                        </span>
+                        {roomNum ? (
+                          <span
+                            title={`Room ${roomNum} assigned`}
+                            style={{
+                              display: 'inline-flex', alignItems: 'center', gap: 4,
+                              padding: '4px 8px', borderRadius: 999,
+                              border: '1px solid var(--ds-badge-success-border, #A7F3D0)',
+                              background: 'var(--ds-badge-success-bg, #D1FAE5)',
+                              color: 'var(--ds-badge-success-text, #047857)',
+                              fontSize: 12, lineHeight: '16px', fontWeight: 700,
+                              fontFamily: 'ui-monospace, monospace', whiteSpace: 'nowrap'
+                            }}>
+                            <span aria-hidden="true">✓</span>
+                            #{roomNum}
+                          </span>
+                        ) : (
+                          <span style={{
+                            fontSize: 12,
+                            fontWeight: isActive ? 700 : 500,
+                            color: isActive ? WF.accent : WF.inkFaint,
+                            whiteSpace: 'nowrap'
+                          }}>
+                            {isActive ? 'Selecting room' : 'Room pending'}
+                          </span>
+                        )}
                       </button>
                       <div style={{ width: '100%', maxWidth: 260, margin: '4px auto 0', textAlign: 'left' }}>
                         <WFSelect
@@ -2222,7 +2238,9 @@ function StateRoomMatrix({ update, s, onConfirmRooms }) {
           <div style={{ fontSize: 14, fontWeight: 700, letterSpacing: '-0.01em', color: WF.ink }}>
             Choose a stateroom category
           </div>
-          <div style={{ marginTop: 4, fontSize: 12, color: WF.inkSoft }}>Live fare inventory by occupancy · use Add room to choose cabins and rooms</div>
+          <div style={{ marginTop: 4, fontSize: 12, color: WF.inkSoft }}>
+            Live fare inventory by occupancy · use {assignedRoomCount > 0 ? 'Edit rooms' : 'Add room'} to choose cabins and rooms
+          </div>
         </div>
         {assignedRoomCount > 0 && (
           <div
@@ -2265,34 +2283,35 @@ function StateRoomMatrix({ update, s, onConfirmRooms }) {
           />
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-          {editRoomCategory && (
+          {editRoomCategory ? (
             <button
               type="button"
               aria-label="Edit assigned rooms"
               onClick={() => openCategoryAssignment(editRoomCategory)}
               style={{
                 minHeight: 32, padding: '8px 12px', borderRadius: 6,
-                border: `1px solid ${WF.line}`, background: '#FFFFFF', color: WF.accentInk,
+                border: `1px solid ${WF.accent}`, background: WF.accent, color: WF.accentText,
                 fontFamily: 'inherit', fontSize: 12, fontWeight: 600, lineHeight: '16px',
                 cursor: 'pointer', whiteSpace: 'nowrap'
               }}>
               Edit rooms
             </button>
+          ) : (
+            <button
+              type="button"
+              disabled={!addRoomCategory}
+              onClick={() => addRoomCategory && openCategoryAssignment(addRoomCategory)}
+              title={addRoomCategory ? `Add a room in ${addRoomCategory.label}` : 'No rooms available for this cabin type'}
+              style={{
+                minHeight: 32, padding: '8px 12px', borderRadius: 6,
+                border: `1px solid ${WF.accent}`, background: WF.accent, color: WF.accentText,
+                fontFamily: 'inherit', fontSize: 12, fontWeight: 600, lineHeight: '16px',
+                cursor: addRoomCategory ? 'pointer' : 'not-allowed',
+                opacity: addRoomCategory ? 1 : 0.48, whiteSpace: 'nowrap'
+              }}>
+              Add room
+            </button>
           )}
-          <button
-            type="button"
-            disabled={!addRoomCategory}
-            onClick={() => addRoomCategory && openCategoryAssignment(addRoomCategory)}
-            title={addRoomCategory ? `Add a room in ${addRoomCategory.label}` : 'No rooms available for this cabin type'}
-            style={{
-              minHeight: 32, padding: '8px 12px', borderRadius: 6,
-              border: `1px solid ${WF.accent}`, background: WF.accent, color: WF.accentText,
-              fontFamily: 'inherit', fontSize: 12, fontWeight: 600, lineHeight: '16px',
-              cursor: addRoomCategory ? 'pointer' : 'not-allowed',
-              opacity: addRoomCategory ? 1 : 0.48, whiteSpace: 'nowrap'
-            }}>
-            Add room
-          </button>
         </div>
       </div>
 
