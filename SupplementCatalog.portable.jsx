@@ -266,18 +266,36 @@ function QuantityStepper({ productName, guestName, value, disabled, onChange }) 
   );
 }
 
-function AssignmentDialog({ product, cabins, assignment, birthDates, eligibilityDate, currency, onChange, onBirthDateChange, onRemoveGuest, onClearGuests, onClose, openerRef }) {
+function AssignmentDialog({ product, cabins, assignment, birthDates, eligibilityDate, currency, onChange, onBirthDatesChange, onRemoveGuest, onClearGuests, onClose, openerRef }) {
   const dialogRef = React.useRef(null);
   const dobDialogRef = React.useRef(null);
   const closeButtonRef = React.useRef(null);
   const [dobPrompt, setDobPrompt] = React.useState(null);
-  const [dobDraft, setDobDraft] = React.useState("");
-  const [dobError, setDobError] = React.useState("");
+  const [dobDrafts, setDobDrafts] = React.useState({});
+  const [dobErrors, setDobErrors] = React.useState({});
   const dobPromptRef = React.useRef(null);
   const assignedUnits = quantityFor(assignment);
   const assignedGuests = assignedGuestCount(assignment);
   const titleId = `supplement-dialog-${product.id}`;
   const departure = referenceDateParts(eligibilityDate);
+  const dobGuests = cabins
+    .flatMap((cabin, cabinIndex) => (cabin.guests || []).map((guest) => ({
+      ...guest,
+      cabinLabel: cabin.label || `Cabin ${cabinIndex + 1}`,
+    })))
+    .filter((guest) => (
+      guest.type !== "infant"
+      && guestMeetsAgeBand(product, guest)
+      && guestRequiresDob(product, guest)
+      && Number(assignment[guest.id] || 0) <= 0
+    ));
+  const promptDobGuests = product.id === "mixology"
+    ? dobGuests
+    : dobGuests.filter((guest) => guest.id === dobPrompt?.requestedGuestId);
+  const activeDobGuest = dobPrompt
+    ? promptDobGuests.find((guest) => guest.id === dobPrompt.activeGuestId)
+      || promptDobGuests.find((guest) => guest.id === dobPrompt.requestedGuestId)
+    : null;
 
   React.useEffect(() => {
     dobPromptRef.current = dobPrompt;
@@ -293,8 +311,8 @@ function AssignmentDialog({ product, cabins, assignment, birthDates, eligibility
         event.preventDefault();
         if (dobPromptRef.current) {
           setDobPrompt(null);
-          setDobDraft("");
-          setDobError("");
+          setDobDrafts({});
+          setDobErrors({});
         } else {
           onClose();
         }
@@ -344,9 +362,14 @@ function AssignmentDialog({ product, cabins, assignment, birthDates, eligibility
       return;
     }
     if (product.minAge != null && !guestEligibility(product, guest, birthDates, eligibilityDate).eligible) {
-      setDobPrompt({ guest, requestedQuantity: quantity });
-      setDobDraft((birthDates || {})[guestId] || "");
-      setDobError("");
+      setDobPrompt({
+        requestedGuestId: guestId,
+        activeGuestId: guestId,
+        requestedQuantity: quantity,
+        includedGuestIds: [guestId],
+      });
+      setDobDrafts(Object.fromEntries(dobGuests.map((item) => [item.id, (birthDates || {})[item.id] || ""])));
+      setDobErrors({});
       return;
     }
     next[guestId] = quantity;
@@ -355,24 +378,53 @@ function AssignmentDialog({ product, cabins, assignment, birthDates, eligibility
 
   const cancelDobPrompt = () => {
     setDobPrompt(null);
-    setDobDraft("");
-    setDobError("");
+    setDobDrafts({});
+    setDobErrors({});
+  };
+
+  const selectDobGuest = (guestId) => {
+    setDobPrompt((current) => current ? {
+      ...current,
+      activeGuestId: guestId,
+      includedGuestIds: [...new Set([...(current.includedGuestIds || []), guestId])],
+    } : current);
+  };
+
+  const updateDobDraft = (guestId, value) => {
+    setDobDrafts((current) => ({ ...current, [guestId]: value }));
+    setDobErrors((current) => ({ ...current, [guestId]: "" }));
   };
 
   const confirmDobAndAdd = () => {
-    if (!dobPrompt) return;
-    const nextBirthDates = { ...(birthDates || {}), [dobPrompt.guest.id]: dobDraft };
-    const eligibility = guestEligibility(product, dobPrompt.guest, nextBirthDates, eligibilityDate);
-    if (eligibility.state === "required" || eligibility.state === "invalid") {
-      setDobError("Enter a valid date of birth.");
-      return;
+    if (!dobPrompt || !activeDobGuest) return;
+    const includedGuests = promptDobGuests.filter((guest) => (dobPrompt.includedGuestIds || []).includes(guest.id));
+    const nextBirthDates = { ...(birthDates || {}) };
+    const nextAssignment = { ...assignment };
+
+    for (const guest of includedGuests) {
+      const draft = dobDrafts[guest.id] || "";
+      const candidateBirthDates = { ...nextBirthDates, [guest.id]: draft };
+      const eligibility = guestEligibility(product, guest, candidateBirthDates, eligibilityDate);
+      if (eligibility.state === "required" || eligibility.state === "invalid") {
+        setDobPrompt((current) => current ? { ...current, activeGuestId: guest.id } : current);
+        setDobErrors((current) => ({ ...current, [guest.id]: "Enter a valid date of birth." }));
+        return;
+      }
+      if (!eligibility.eligible) {
+        setDobPrompt((current) => current ? { ...current, activeGuestId: guest.id } : current);
+        setDobErrors((current) => ({
+          ...current,
+          [guest.id]: `${guest.name} will be age ${eligibility.age} on departure and is not eligible for this ${product.minAge}+ product.`,
+        }));
+        return;
+      }
+      nextBirthDates[guest.id] = draft;
+      const requestedQuantity = guest.id === dobPrompt.requestedGuestId ? dobPrompt.requestedQuantity : 1;
+      nextAssignment[guest.id] = Math.max(1, Number(requestedQuantity || 1));
     }
-    if (!eligibility.eligible) {
-      setDobError(`${dobPrompt.guest.name} will be age ${eligibility.age} on departure and is not eligible for this ${product.minAge}+ product.`);
-      return;
-    }
-    onBirthDateChange(dobPrompt.guest.id, dobDraft);
-    onChange({ ...assignment, [dobPrompt.guest.id]: Math.max(1, Number(dobPrompt.requestedQuantity || 1)) });
+
+    onBirthDatesChange(nextBirthDates);
+    onChange(nextAssignment);
     cancelDobPrompt();
   };
 
@@ -702,7 +754,7 @@ function AssignmentDialog({ product, cabins, assignment, birthDates, eligibility
           </div>
         </div>
       </div>
-      {dobPrompt && (
+      {dobPrompt && activeDobGuest && (
         <div
           onMouseDown={(event) => event.target === event.currentTarget && cancelDobPrompt()}
           style={{
@@ -714,7 +766,7 @@ function AssignmentDialog({ product, cabins, assignment, birthDates, eligibility
             ref={dobDialogRef}
             role="dialog"
             aria-modal="true"
-            aria-labelledby={`portable-dob-title-${product.id}-${dobPrompt.guest.id}`}
+            aria-labelledby={`portable-dob-title-${product.id}-${activeDobGuest.id}`}
             style={{
               width: "min(480px, 100%)", overflow: "hidden", border: `1px solid ${TOKENS.line}`,
               borderRadius: 10, background: TOKENS.panel, boxShadow: "0 24px 64px rgba(15,23,42,0.28)",
@@ -723,9 +775,11 @@ function AssignmentDialog({ product, cabins, assignment, birthDates, eligibility
             <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "16px 16px", background: TOKENS.fill, borderBottom: `1px solid ${TOKENS.line}` }}>
               <span aria-hidden="true" style={{ width: 36, height: 36, display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: 8, background: "#FFFBEB", border: "1px solid #FDE68A", color: TOKENS.warning, flexShrink: 0 }}>◫</span>
               <div style={{ minWidth: 0, flex: 1 }}>
-                <div id={`portable-dob-title-${product.id}-${dobPrompt.guest.id}`} style={{ color: TOKENS.ink, fontSize: 16, fontWeight: 700 }}>Verify age to add</div>
+                <div id={`portable-dob-title-${product.id}-${activeDobGuest.id}`} style={{ color: TOKENS.ink, fontSize: 16, fontWeight: 700 }}>Verify age to add</div>
                 <div style={{ marginTop: 4, color: TOKENS.inkSoft, fontSize: 12, lineHeight: "16px" }}>
-                  {product.name} is limited to guests age {product.minAge}+ on departure. Add {dobPrompt.guest.name}'s date of birth to continue.
+                  {product.name} is limited to guests age {product.minAge}+ on departure. {product.id === "mixology"
+                    ? "Add a date of birth for each guest you want to assign."
+                    : `Add ${activeDobGuest.name}'s date of birth to continue.`}
                 </div>
               </div>
               <button type="button" onClick={cancelDobPrompt} aria-label="Close date of birth verification" style={{ width: 30, height: 30, border: `1px solid ${TOKENS.line}`, borderRadius: 6, background: TOKENS.panel, color: TOKENS.inkSoft, cursor: "pointer" }}>×</button>
@@ -734,18 +788,51 @@ function AssignmentDialog({ product, cabins, assignment, birthDates, eligibility
               <div style={{ marginBottom: 16, padding: "8px 12px", border: "1px solid #FDE68A", borderRadius: 8, background: "#FFFBEB", color: TOKENS.warning, fontSize: 12 }}>
                 Eligibility is calculated for departure on <strong>{departure.label}</strong>.
               </div>
-              <label htmlFor={`portable-dob-${product.id}-${dobPrompt.guest.id}`} style={{ display: "block", marginBottom: 4, color: TOKENS.inkLabel, fontSize: 12, fontWeight: 700 }}>Date of birth</label>
+              {product.id === "mixology" && promptDobGuests.length > 1 && (
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ marginBottom: 8, color: TOKENS.inkLabel, fontSize: 12, fontWeight: 700 }}>Guests to verify</div>
+                  <div role="group" aria-label="Choose guest for date of birth verification" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {promptDobGuests.map((guest) => {
+                      const selected = guest.id === activeDobGuest.id;
+                      const hasDate = !!dobDrafts[guest.id];
+                      return (
+                        <button
+                          key={guest.id}
+                          type="button"
+                          aria-pressed={selected}
+                          onClick={() => selectDobGuest(guest.id)}
+                          style={{
+                            minHeight: 32,
+                            padding: "4px 12px",
+                            border: `1px solid ${selected ? TOKENS.accent : hasDate ? TOKENS.accentLine : TOKENS.line}`,
+                            borderRadius: 999,
+                            background: selected ? TOKENS.accent : hasDate ? TOKENS.accentTint : TOKENS.panel,
+                            color: selected ? TOKENS.panel : TOKENS.ink,
+                            cursor: "pointer",
+                            fontSize: 12,
+                            fontWeight: selected || hasDate ? 700 : 600,
+                          }}
+                        >
+                          {hasDate && !selected ? "✓ " : ""}{guest.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              <label htmlFor={`portable-dob-${product.id}-${activeDobGuest.id}`} style={{ display: "block", marginBottom: 4, color: TOKENS.inkLabel, fontSize: 12, fontWeight: 700 }}>Date of birth</label>
               <input
-                id={`portable-dob-${product.id}-${dobPrompt.guest.id}`}
+                id={`portable-dob-${product.id}-${activeDobGuest.id}`}
                 autoFocus
                 type="date"
                 max={departure.iso}
-                value={dobDraft}
-                aria-invalid={!!dobError}
-                onChange={(event) => { setDobDraft(event.target.value); setDobError(""); }}
-                style={{ width: "100%", height: 40, padding: "8px 12px", border: `1px solid ${dobError ? "#FCA5A5" : TOKENS.controlLine}`, borderRadius: 8, color: TOKENS.ink, background: TOKENS.panel }}
+                value={dobDrafts[activeDobGuest.id] || ""}
+                aria-invalid={!!dobErrors[activeDobGuest.id]}
+                aria-describedby={dobErrors[activeDobGuest.id] ? `portable-dob-error-${product.id}-${activeDobGuest.id}` : undefined}
+                onChange={(event) => updateDobDraft(activeDobGuest.id, event.target.value)}
+                style={{ width: "100%", height: 40, padding: "8px 12px", border: `1px solid ${dobErrors[activeDobGuest.id] ? "#FCA5A5" : TOKENS.controlLine}`, borderRadius: 8, color: TOKENS.ink, background: TOKENS.panel }}
               />
-              {dobError && <div role="alert" style={{ marginTop: 8, color: TOKENS.danger, fontSize: 12, fontWeight: 700 }}>{dobError}</div>}
+              {dobErrors[activeDobGuest.id] && <div id={`portable-dob-error-${product.id}-${activeDobGuest.id}`} role="alert" style={{ marginTop: 8, color: TOKENS.danger, fontSize: 12, fontWeight: 700 }}>{dobErrors[activeDobGuest.id]}</div>}
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 20 }}>
                 <button type="button" onClick={cancelDobPrompt} style={{ minHeight: 36, padding: "8px 16px", border: `1px solid ${TOKENS.line}`, borderRadius: 7, background: TOKENS.panel, color: TOKENS.inkSoft, fontWeight: 700, cursor: "pointer" }}>Cancel</button>
                 <button type="button" onClick={confirmDobAndAdd} style={{ minHeight: 36, padding: "8px 16px", border: "none", borderRadius: 7, background: TOKENS.accent, color: TOKENS.panel, fontWeight: 700, cursor: "pointer" }}>Verify and add</button>
@@ -869,24 +956,8 @@ export function SupplementCatalog({
     commitAssignments(next);
   };
 
-  const updateGuestBirthDate = (guestId, birthDate) => {
-    const nextBirthDates = { ...currentBirthDates };
-    if (birthDate) nextBirthDates[guestId] = birthDate;
-    else delete nextBirthDates[guestId];
-
-    const guest = allGuests.find((item) => item.id === guestId);
-    const nextAssignments = { ...currentAssignments };
-    if (guest) {
-      products.filter((product) => product.minAge != null).forEach((product) => {
-        if (!nextAssignments[product.id] || guestEligibility(product, guest, nextBirthDates, eligibilityDate).eligible) return;
-        const nextProductAssignment = { ...nextAssignments[product.id] };
-        delete nextProductAssignment[guestId];
-        if (Object.keys(nextProductAssignment).length > 0) nextAssignments[product.id] = nextProductAssignment;
-        else delete nextAssignments[product.id];
-      });
-    }
+  const updateGuestBirthDates = (nextBirthDates) => {
     commitBirthDates(nextBirthDates);
-    commitAssignments(nextAssignments);
   };
 
   const clearProductGuests = (productId, guestIds) => {
@@ -972,8 +1043,7 @@ export function SupplementCatalog({
         .mvas-supplement-product-grid {
           display: block;
           overflow: hidden;
-          border: 1px solid ${TOKENS.line};
-          border-radius: 8px;
+          border-top: 1px solid ${TOKENS.line};
           background: ${TOKENS.panel};
         }
         .mvas-supplement-list-header,
@@ -1132,7 +1202,7 @@ export function SupplementCatalog({
         </div>
       </div>
 
-      <div style={{ padding: "0 12px 12px" }}>
+      <div>
         {filteredProducts.length > 0 ? (
           <div className="mvas-supplement-product-grid">
             <div
@@ -1328,20 +1398,6 @@ export function SupplementCatalog({
         )}
       </div>
 
-      {selectedProductCount === 0 && (
-        <div
-          style={{
-            padding: "12px 12px",
-            borderTop: `1px solid ${TOKENS.lineSoft}`,
-            color: TOKENS.inkFaint,
-            fontSize: 12,
-            textAlign: "center",
-          }}
-        >
-          No supplements added — base fare only.
-        </div>
-      )}
-
       {activeProduct && hasGuests && (
         <AssignmentDialog
           product={activeProduct}
@@ -1352,7 +1408,7 @@ export function SupplementCatalog({
           currency={currency}
           openerRef={openerRef}
           onChange={(nextProductAssignment) => updateProductAssignment(activeProduct.id, nextProductAssignment)}
-          onBirthDateChange={updateGuestBirthDate}
+          onBirthDatesChange={updateGuestBirthDates}
           onRemoveGuest={(guestId) => removeProductGuest(activeProduct.id, guestId)}
           onClearGuests={(guestIds) => clearProductGuests(activeProduct.id, guestIds)}
           onClose={closeDialog}

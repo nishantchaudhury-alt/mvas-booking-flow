@@ -191,7 +191,7 @@ function GuestDetailsSection({
             avoids a sticky layer revealing or covering cards behind it. */}
         <div style={{
           display: 'flex', flexDirection: 'column', gap: 12,
-          padding: 12, background: WF.fill,
+          padding: 12, background: '#FFFFFF',
         }}>
         <GuestTripProtection
           selected={protection}
@@ -725,6 +725,8 @@ function Step3App({ booking, update, navigate }) {
         activeGroup="bookings"
         active="create-booking"
         breadcrumb={['CRM', 'Bookings', 'Create', 'Guest Details']}
+        contentPaddingTop={0}
+        rightRailPaddingTop={68}
         rightRail={
         <BookingSummaryPanel
           booking={state}
@@ -733,7 +735,7 @@ function Step3App({ booking, update, navigate }) {
           continueEnabled={allGuestsAssigned}
           ctaLabel={allGuestsAssigned ? 'Continue to review' : 'Assign all guests to continue'}
           onContinue={handleContinue}
-          showFlowNavigation={false}
+          showFlowNavigation
           notice={unassignedSupps.length > 0 && (
             <div style={{ padding: '12px 16px', borderBottom: `1px solid ${WF.line}` }}>
               <div style={{
@@ -745,38 +747,20 @@ function Step3App({ booking, update, navigate }) {
             </div>
           )} />
         }
-        bottomBar={
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        progressBar={
+          <div className="booking-progress-stack booking-progress-stack--expanded">
             <button
               type="button"
               onClick={handleBack}
               aria-label="Back to Cabin & Supplements"
-              style={{
-                minHeight: 40, padding: '8px 16px', border: `1px solid ${WF.line}`,
-                borderRadius: 8, background: WF.panel, color: WF.inkSoft,
-                fontFamily: 'inherit', fontSize: 14, fontWeight: 600,
-                cursor: 'pointer', whiteSpace: 'nowrap',
-              }}>
+              className="booking-back-link">
+              <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m15 18-6-6 6-6" />
+              </svg>
               Back to Cabin &amp; Supplements
             </button>
-            <button
-              type="button"
-              onClick={() => (allGuestsAssigned ? handleContinue() : undefined)}
-              disabled={!allGuestsAssigned}
-              title={allGuestsAssigned ? undefined : 'Assign all guests to continue'}
-              style={{
-                minWidth: 210, minHeight: 40, padding: '8px 20px', border: 'none',
-                borderRadius: 8,
-                background: allGuestsAssigned ? WF.accent : WF.fillStrong,
-                color: allGuestsAssigned ? WF.accentText : WF.inkFaint,
-                fontFamily: 'inherit', fontSize: 14, fontWeight: 700,
-                cursor: allGuestsAssigned ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap',
-              }}>
-              {allGuestsAssigned ? 'Continue to review' : 'Assign all guests to continue'}
-            </button>
-          </div>
-        }
-        progressBar={<StepProgress3 current={3} onBack={handleBack} />}>
+            <StepProgress3 current={3} onBack={handleBack} />
+          </div>}>
 
         <div data-screen-label="Step 3 · Guest Details">
           {state.groupId && GroupContext && <GroupContext booking={state} update={update} />}

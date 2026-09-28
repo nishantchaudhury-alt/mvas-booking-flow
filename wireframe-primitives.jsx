@@ -624,7 +624,7 @@ function MVIcon({ id, size = 18 }) {
 // from the booking canvas at the app's minimum desktop size.
 const RAIL_TRACK = 'clamp(320px, 22vw, 344px)';
 
-function WFAppShell({ active = 'fares', activeGroup = 'fares', breadcrumb, title, actions, children, rightRail, progressBar, bottomBar, contentPaddingTop }) {
+function WFAppShell({ active = 'fares', activeGroup = 'fares', breadcrumb, title, actions, children, rightRail, progressBar, bottomBar, contentPaddingTop, rightRailPaddingTop }) {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard' },
     { id: 'bookings', label: 'Bookings', children: [
@@ -654,6 +654,7 @@ function WFAppShell({ active = 'fares', activeGroup = 'fares', breadcrumb, title
   const resolvedContentPaddingTop = contentPaddingTop == null
     ? (progressBar ? 16 : 20)
     : contentPaddingTop;
+  const resolvedRightRailPaddingTop = rightRailPaddingTop == null ? 16 : rightRailPaddingTop;
   return (
     <div style={{
       width: '100%', height: '100%',
@@ -781,7 +782,7 @@ function WFAppShell({ active = 'fares', activeGroup = 'fares', breadcrumb, title
       {rightRail && (
         <div style={{
           gridColumn: 3, gridRow: 2,
-          padding: '16px 12px 16px 8px', background: 'var(--ds-color-workspace, #F9FAFC)',
+          padding: `${resolvedRightRailPaddingTop}px 12px 16px 8px`, background: 'var(--ds-color-workspace, #F9FAFC)',
           minHeight: 0, overflow: 'hidden', boxSizing: 'border-box',
         }}>
           <div style={{

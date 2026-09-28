@@ -569,9 +569,13 @@ function AssignGuestsPanel({ sup, roster, assignment, birthDates, referenceDate,
   );
 }
 
-function SupplementDobDialog({ sup, guest, referenceDate, initialValue, error, onValueChange, onCancel, onConfirm }) {
+function SupplementDobDialog({ sup, guests, activeGuestKey, referenceDate, values, errors, onGuestChange, onValueChange, onCancel, onConfirm }) {
   const departure = supplementReferenceDate(referenceDate);
+  const guest = guests.find((item) => item.guestKey === activeGuestKey) || guests[0];
+  if (!guest) return null;
+  const supportsMultiGuestVerification = sup.id === 'mixology' && guests.length > 1;
   const inputId = `supplement-dob-verification-${sup.id}-${guest.guestKey}`;
+  const error = errors[guest.guestKey] || '';
   return (
     <div
       role="presentation"
@@ -604,7 +608,9 @@ function SupplementDobDialog({ sup, guest, referenceDate, initialValue, error, o
           <div style={{ minWidth: 0, flex: 1 }}>
             <div id={`${inputId}-title`} style={{ fontSize: 16, fontWeight: 700, color: WF.ink }}>Verify age to add</div>
             <div id={`${inputId}-description`} style={{ marginTop: 4, fontSize: 12, lineHeight: '16px', color: WF.inkSoft }}>
-              {sup.name} is limited to guests age {sup.minAge}+ on departure. Add {guest.label}'s date of birth to continue.
+              {sup.name} is limited to guests age {sup.minAge}+ on departure. {supportsMultiGuestVerification
+                ? 'Add a date of birth for each guest you want to assign.'
+                : `Add ${guest.label}'s date of birth to continue.`}
             </div>
           </div>
           <button type="button" onClick={onCancel} aria-label="Close date of birth verification" style={{
@@ -617,16 +623,43 @@ function SupplementDobDialog({ sup, guest, referenceDate, initialValue, error, o
           <div style={{ padding: '8px 12px', marginBottom: 16, borderRadius: 8, background: '#FFFBEB', border: '1px solid #FDE68A', color: '#92400E', fontSize: 12 }}>
             Eligibility is calculated for departure on <strong>{departure.label}</strong>.
           </div>
+          {supportsMultiGuestVerification && (
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ marginBottom: 8, fontSize: 12, fontWeight: 700, color: WF.inkLabel }}>Guests to verify</div>
+              <div role="group" aria-label="Choose guest for date of birth verification" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {guests.map((item) => {
+                  const selected = item.guestKey === guest.guestKey;
+                  const hasDate = !!values[item.guestKey];
+                  return (
+                    <button
+                      key={item.guestKey}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => onGuestChange(item.guestKey)}
+                      style={{
+                        minHeight: 32, padding: '4px 12px', borderRadius: 999,
+                        border: `1px solid ${selected ? WF.accent : hasDate ? WF.accentLine : WF.line}`,
+                        background: selected ? WF.accent : hasDate ? WF.accentTint : '#FFFFFF',
+                        color: selected ? WF.accentText : WF.ink, fontFamily: 'inherit', fontSize: 12,
+                        fontWeight: selected || hasDate ? 700 : 600, cursor: 'pointer'
+                      }}>
+                      {hasDate && !selected ? '✓ ' : ''}{item.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           <label htmlFor={inputId} style={{ display: 'block', marginBottom: 4, fontSize: 12, fontWeight: 700, color: WF.inkLabel }}>Date of birth</label>
           <input
             id={inputId}
             autoFocus
             type="date"
             max={departure.iso}
-            value={initialValue}
+            value={values[guest.guestKey] || ''}
             aria-invalid={!!error}
             aria-describedby={error ? `${inputId}-error` : undefined}
-            onChange={(event) => onValueChange(event.target.value)}
+            onChange={(event) => onValueChange(guest.guestKey, event.target.value)}
             style={{
               width: '100%', height: 40, padding: '8px 12px', boxSizing: 'border-box',
               border: `1px solid ${error ? '#FCA5A5' : WF.controlBorder || WF.line}`, borderRadius: 8,
@@ -660,15 +693,26 @@ function SupplementsSection({ selectedSupps, guests, cabins, suppAssignments, gu
   const [searchTerm, setSearchTerm] = React.useState('');
   const [expandedSuppId, setExpandedSuppId] = React.useState(null);
   const [dobPrompt, setDobPrompt] = React.useState(null);
-  const [dobDraft, setDobDraft] = React.useState('');
-  const [dobError, setDobError] = React.useState('');
+  const [dobDrafts, setDobDrafts] = React.useState({});
+  const [dobErrors, setDobErrors] = React.useState({});
 
   const roster = buildCabinGuestRoster(guests, cabins);
   const hasGuests = roster.length > 0;
   const activeSup = expandedSuppId ? S2_SUPP.find((supp) => supp.id === expandedSuppId) : null;
   const activePromptSup = dobPrompt ? S2_SUPP.find((supp) => supp.id === dobPrompt.suppId) : null;
+  const activePromptGuests = activePromptSup
+    ? roster.flatMap((cabin) => cabin.list.map((guest) => ({ ...guest, cabinHeading: cabin.heading })))
+      .filter((guest) => (
+        guest.categoryKey !== 'infants'
+        && supplementGuestMeetsAgeBand(activePromptSup, guest)
+        && supplementGuestRequiresDob(activePromptSup, guest)
+        && Number((assignments[activePromptSup.id] || {})[guest.guestKey] || 0) <= 0
+        && (activePromptSup.id === 'mixology' || guest.guestKey === dobPrompt.requestedGuestKey)
+      ))
+    : [];
   const activePromptGuest = dobPrompt
-    ? roster.flatMap((cabin) => cabin.list).find((guest) => guest.guestKey === dobPrompt.guestKey)
+    ? activePromptGuests.find((guest) => guest.guestKey === dobPrompt.activeGuestKey)
+      || activePromptGuests.find((guest) => guest.guestKey === dobPrompt.requestedGuestKey)
     : null;
 
   React.useEffect(() => {
@@ -679,7 +723,7 @@ function SupplementsSection({ selectedSupps, guests, cabins, suppAssignments, gu
       if (event.key !== 'Escape') return;
       if (dobPrompt) {
         setDobPrompt(null);
-        setDobError('');
+        setDobErrors({});
       } else {
         setExpandedSuppId(null);
       }
@@ -793,9 +837,24 @@ function SupplementsSection({ selectedSupps, guests, cabins, suppAssignments, gu
       return;
     }
     if (sup.minAge != null && !supplementGuestEligibility(sup, guest, birthDates, referenceDate).eligible) {
-      setDobPrompt({ suppId, guestKey, requestedQty: qty });
-      setDobDraft(birthDates[guestKey] || '');
-      setDobError('');
+      const promptGuests = roster
+        .flatMap((cabin) => cabin.list.map((item) => ({ ...item, cabinHeading: cabin.heading })))
+        .filter((item) => (
+          item.categoryKey !== 'infants'
+          && supplementGuestMeetsAgeBand(sup, item)
+          && supplementGuestRequiresDob(sup, item)
+          && Number(suppAssign[item.guestKey] || 0) <= 0
+          && (sup.id === 'mixology' || item.guestKey === guestKey)
+        ));
+      setDobPrompt({
+        suppId,
+        requestedGuestKey: guestKey,
+        activeGuestKey: guestKey,
+        requestedQty: qty,
+        includedGuestKeys: [guestKey]
+      });
+      setDobDrafts(Object.fromEntries(promptGuests.map((item) => [item.guestKey, birthDates[item.guestKey] || ''])));
+      setDobErrors({});
       return;
     }
     if (qty <= 0) delete suppAssign[guestKey]; else suppAssign[guestKey] = qty;
@@ -846,24 +905,51 @@ function SupplementsSection({ selectedSupps, guests, cabins, suppAssignments, gu
 
   const cancelDobPrompt = () => {
     setDobPrompt(null);
-    setDobDraft('');
-    setDobError('');
+    setDobDrafts({});
+    setDobErrors({});
+  };
+
+  const selectDobGuest = (guestKey) => {
+    setDobPrompt((current) => current ? {
+      ...current,
+      activeGuestKey: guestKey,
+      includedGuestKeys: [...new Set([...(current.includedGuestKeys || []), guestKey])]
+    } : current);
+  };
+
+  const updateDobDraft = (guestKey, value) => {
+    setDobDrafts((current) => ({ ...current, [guestKey]: value }));
+    setDobErrors((current) => ({ ...current, [guestKey]: '' }));
   };
 
   const confirmDobAndAdd = () => {
     if (!dobPrompt || !activePromptSup || !activePromptGuest) return;
-    const nextBirthDates = { ...birthDates, [activePromptGuest.guestKey]: dobDraft };
-    const eligibility = supplementGuestEligibility(activePromptSup, activePromptGuest, nextBirthDates, referenceDate);
-    if (eligibility.state === 'required' || eligibility.state === 'invalid') {
-      setDobError('Enter a valid date of birth.');
-      return;
-    }
-    if (!eligibility.eligible) {
-      setDobError(`${activePromptGuest.label} will be age ${eligibility.age} on departure and is not eligible for this ${activePromptSup.minAge}+ product.`);
-      return;
-    }
+    const includedGuests = activePromptGuests.filter((guest) => (dobPrompt.includedGuestKeys || []).includes(guest.guestKey));
+    const nextBirthDates = { ...birthDates };
     const suppAssign = { ...(assignments[activePromptSup.id] || {}) };
-    suppAssign[activePromptGuest.guestKey] = Math.max(1, Number(dobPrompt.requestedQty || 1));
+
+    for (const guest of includedGuests) {
+      const draft = dobDrafts[guest.guestKey] || '';
+      const candidateBirthDates = { ...nextBirthDates, [guest.guestKey]: draft };
+      const eligibility = supplementGuestEligibility(activePromptSup, guest, candidateBirthDates, referenceDate);
+      if (eligibility.state === 'required' || eligibility.state === 'invalid') {
+        setDobPrompt((current) => current ? { ...current, activeGuestKey: guest.guestKey } : current);
+        setDobErrors((current) => ({ ...current, [guest.guestKey]: 'Enter a valid date of birth.' }));
+        return;
+      }
+      if (!eligibility.eligible) {
+        setDobPrompt((current) => current ? { ...current, activeGuestKey: guest.guestKey } : current);
+        setDobErrors((current) => ({
+          ...current,
+          [guest.guestKey]: `${guest.label} will be age ${eligibility.age} on departure and is not eligible for this ${activePromptSup.minAge}+ product.`
+        }));
+        return;
+      }
+      nextBirthDates[guest.guestKey] = draft;
+      const requestedQty = guest.guestKey === dobPrompt.requestedGuestKey ? dobPrompt.requestedQty : 1;
+      suppAssign[guest.guestKey] = Math.max(1, Number(requestedQty || 1));
+    }
+
     commitSuppAssignment(activePromptSup.id, suppAssign, nextBirthDates);
     cancelDobPrompt();
   };
@@ -959,9 +1045,9 @@ function SupplementsSection({ selectedSupps, guests, cabins, suppAssignments, gu
         </div>
 
       {/* Supplements list with assign-guests controls */}
-      <div style={{ padding: '0 12px 12px' }}>
+      <div>
         <div style={{
-          border: `1px solid ${WF.line}`, borderRadius: 8,
+          borderTop: `1px solid ${WF.line}`,
           overflow: 'hidden', background: WF.panel,
         }}>
           <div className="mvas-supplement-list-header" aria-hidden="true" style={{
@@ -1163,23 +1249,16 @@ function SupplementsSection({ selectedSupps, guests, cabins, suppAssignments, gu
       {activePromptSup && activePromptGuest && (
         <SupplementDobDialog
           sup={activePromptSup}
-          guest={activePromptGuest}
+          guests={activePromptGuests}
+          activeGuestKey={activePromptGuest.guestKey}
           referenceDate={referenceDate}
-          initialValue={dobDraft}
-          error={dobError}
-          onValueChange={(value) => { setDobDraft(value); setDobError(''); }}
+          values={dobDrafts}
+          errors={dobErrors}
+          onGuestChange={selectDobGuest}
+          onValueChange={updateDobDraft}
           onCancel={cancelDobPrompt}
           onConfirm={confirmDobAndAdd} />
       )}
-      
-      {Object.keys(suppQtys).length === 0 &&
-      <div style={{
-        fontSize: 12, color: WF.inkFaint, textAlign: 'center',
-        padding: '12px 0', borderTop: `1px solid ${WF.lineSoft}`
-      }}>
-          No supplements added — base fare only.
-        </div>
-      }
     </div>);
 
 }
@@ -1807,6 +1886,7 @@ function Step2App({ booking, update, navigate }) {
         active="create-booking"
         breadcrumb={['CRM', 'Bookings', 'Create', expandedCard ? 'Cabin & Supplements' : 'Sailing']}
         contentPaddingTop={!groupSetupActive && expandedCard ? 0 : undefined}
+        rightRailPaddingTop={!groupSetupActive && !state.groupId && expandedCard ? 68 : undefined}
         rightRail={groupSetupActive && GroupSummaryRail
           ? <GroupSummaryRail
               booking={state}
@@ -1823,49 +1903,27 @@ function Step2App({ booking, update, navigate }) {
               ctaLabel="Continue to guests"
               onContinue={handleContinue}
               onBlocked={handleBlocked}
-              showFlowNavigation={false} />
+              showFlowNavigation />
         }
-        bottomBar={!groupSetupActive && expandedCard ? (
-          <div style={{
-            display: 'flex', alignItems: 'center',
-            justifyContent: !state.groupId && expandedCard ? 'space-between' : 'flex-end', gap: 12
-          }}>
-            {!state.groupId && expandedCard && (
-              <button
-                type="button"
-                onClick={() => setExpandedCard(null)}
-                aria-label="Back to all sailings"
-                style={{
-                  minHeight: 40, padding: '8px 16px', border: `1px solid ${WF.line}`,
-                  borderRadius: 8, background: WF.panel, color: WF.inkSoft,
-                  fontFamily: 'inherit', fontSize: 14, fontWeight: 600,
-                  cursor: 'pointer', whiteSpace: 'nowrap',
-                }}>
-                Back to all sailings
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => (continueEnabled ? handleContinue() : handleBlocked())}
-              aria-disabled={!continueEnabled}
-              title={continueEnabled ? undefined : 'Complete the sailing, cabin and fare selection to continue'}
-              style={{
-                minWidth: 210, minHeight: 40, padding: '8px 20px', border: 'none',
-                borderRadius: 8,
-                background: continueEnabled ? WF.accent : WF.fillStrong,
-                color: continueEnabled ? WF.accentText : WF.inkFaint,
-                fontFamily: 'inherit', fontSize: 14, fontWeight: 700,
-                cursor: continueEnabled ? 'pointer' : 'not-allowed', whiteSpace: 'nowrap',
-              }}>
-              Continue to guests
-            </button>
-          </div>
-        ) : null}
         progressBar={groupSetupActive && GroupProgress
           ? <GroupProgress />
-          : <StepProgress2
-              current={expandedCard ? 2 : 1}
-              onBack={expandedCard ? () => setExpandedCard(null) : undefined} />}>
+          : <div className={expandedCard ? 'booking-progress-stack booking-progress-stack--expanded' : 'booking-progress-stack'}>
+              {!state.groupId && expandedCard && (
+                <button
+                  type="button"
+                  className="booking-back-link"
+                  onClick={() => setExpandedCard(null)}
+                  aria-label="Back to all sailings">
+                  <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m15 18-6-6 6-6" />
+                  </svg>
+                  Back to all sailings
+                </button>
+              )}
+              <StepProgress2
+                current={expandedCard ? 2 : 1}
+                onBack={expandedCard ? () => setExpandedCard(null) : undefined} />
+            </div>}>
 
         <div data-screen-label={expandedCard ? 'Step 2 · Cabin & Supplements' : 'Step 1 · Sailing'}>
           {state.groupId && !editingGroupSetup && GroupContext && <GroupContext booking={state} update={handleUpdate} />}
@@ -1897,7 +1955,7 @@ function Step2App({ booking, update, navigate }) {
           expandedCard ? (
           /* ── DETAIL VIEW: the persistent right rail owns trip context; the
                 main canvas starts directly with the transactional workspace. ── */
-          <div style={{ marginTop: 16 }}>
+          <div style={{ marginTop: 0 }}>
             <div style={{
               border: `1px solid ${WF.line}`, borderRadius: 10, background: WF.panel,
               padding: 0, marginTop: 0, marginBottom: 0

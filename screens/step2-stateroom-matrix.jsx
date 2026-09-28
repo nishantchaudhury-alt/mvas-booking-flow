@@ -301,27 +301,78 @@ function SailboatIcon({ size = 15 }) {
   );
 }
 
-const cabinBooleanLabel = (value) => value === true ? 'Yes' : value === false ? 'No' : 'Not provided';
-
-function CabinFact({ label, value, detail, mono = false }) {
+function CabinDetailIcon({ name, size = 22 }) {
+  const content = {
+    bed: <><path d="M3 12.5V7.25A1.25 1.25 0 0 1 4.25 6h4.5A1.25 1.25 0 0 1 10 7.25v5.25" /><path d="M10 9h5.75A1.25 1.25 0 0 1 17 10.25v2.25M2 12.5h16v4M4 16.5v1.5M16 16.5v1.5" /></>,
+    guests: <><path d="M7.25 9.25a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM2.5 17v-1.5a4.75 4.75 0 0 1 9.5 0V17M14 9a2.5 2.5 0 1 0 0-5M13.5 11.25A4 4 0 0 1 18 15v2" /></>,
+    deck: <><path d="m3 6 7-3 7 3-7 3-7-3Z" /><path d="m3 10 7 3 7-3M3 14l7 3 7-3" /></>,
+    location: <><path d="M10 18s5-4.4 5-9a5 5 0 1 0-10 0c0 4.6 5 9 5 9Z" /><circle cx="10" cy="9" r="1.75" /></>,
+    crib: <><path d="M3 6v10M17 6v10M3 8h14v6H3V8ZM7 8v6M11 8v6M15 8v6M2 16h16" /></>,
+    rollaway: <><path d="M3 7v7h14v-3.5A1.5 1.5 0 0 0 15.5 9H9V7H3ZM3 14h14" /><circle cx="5" cy="16.5" r="1" /><circle cx="15" cy="16.5" r="1" /></>,
+    sofa: <><path d="M4 10V7.5A1.5 1.5 0 0 1 5.5 6h9A1.5 1.5 0 0 1 16 7.5V10M3 10h14a1 1 0 0 1 1 1v4H2v-4a1 1 0 0 1 1-1ZM4 15v2M16 15v2" /></>,
+    pullman: <><path d="M3 5h14v7H3V5ZM5.5 8.5h9M5 12v5M15 12v5M5 15h10" /></>,
+    single: <><path d="M5 18V3h10v15M5 18h10M12 10h.01" /></>,
+    connected: <><path d="M8.25 12.25 6.5 14a3.18 3.18 0 0 1-4.5-4.5l2.5-2.5A3.18 3.18 0 0 1 9 7M11.75 7.75 13.5 6A3.18 3.18 0 0 1 18 10.5L15.5 13a3.18 3.18 0 0 1-4.5 0M7 10h6" /></>,
+    accessibility: <><circle cx="10" cy="3.5" r="1.5" /><path d="M8 7h4l1 4h3M10 7l-1 5-3 5M9 12h4l2 5" /></>,
+  }[name] || <circle cx="10" cy="10" r="7" />;
   return (
-    <div style={{ minWidth: 0, padding: '12px 12px', border: `1px solid ${WF.line}`, borderRadius: RD.sm, background: WF.fill }}>
-      <dt style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', color: WF.inkLabel, textTransform: 'uppercase' }}>{label}</dt>
-      <dd style={{ margin: '4px 0 0', fontSize: 14, lineHeight: '20px', fontWeight: 700, color: WF.ink, fontFamily: mono ? 'ui-monospace, monospace' : 'inherit' }}>
-        {value || 'Not provided'}
-      </dd>
-      {detail && <div style={{ marginTop: 4, fontSize: 12, lineHeight: '16px', color: WF.inkSoft }}>{detail}</div>}
+    <svg width={size} height={size} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+      {content}
+    </svg>
+  );
+}
+
+function CabinOverviewFact({ icon, label, value }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+      <span style={{ width: 34, height: 34, display: 'grid', placeItems: 'center', flexShrink: 0, borderRadius: RD.sm, background: WF.fill, color: WF.inkSoft }}>
+        <CabinDetailIcon name={icon} size={18} />
+      </span>
+      <div style={{ minWidth: 0 }}>
+        <dt style={{ fontSize: 11, lineHeight: '16px', color: WF.inkSoft }}>{label}</dt>
+        <dd style={{ margin: 0, fontSize: 13, lineHeight: '18px', fontWeight: 700, color: WF.ink }}>{value || 'Not provided'}</dd>
+      </div>
+    </div>
+  );
+}
+
+function CabinAmenity({ icon, label, status, available = true }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, padding: '7px 0', color: available ? WF.accentInk : WF.inkSoft }}>
+      <span style={{
+        position: 'relative', width: 38, height: 38, display: 'grid', placeItems: 'center', flexShrink: 0,
+        borderRadius: RD.md, border: `1px solid ${available ? WF.accentLine : WF.line}`,
+        background: available ? WF.accentTint : WF.fill
+      }}>
+        <CabinDetailIcon name={icon} size={21} />
+        <span aria-hidden="true" style={{
+          position: 'absolute', right: -3, bottom: -3, width: 15, height: 15, display: 'grid', placeItems: 'center',
+          borderRadius: 999, border: `2px solid ${WF.panel}`,
+          background: available ? WF.accent : WF.fillStrong, color: available ? WF.accentText : WF.inkSoft,
+          fontSize: 10, lineHeight: 1, fontWeight: 700
+        }}>{available ? '✓' : '–'}</span>
+      </span>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 13, lineHeight: '18px', fontWeight: 600, color: WF.ink }}>{label}</div>
+        <div style={{ marginTop: 1, fontSize: 11, lineHeight: '16px', color: available ? WF.inkSoft : WF.inkFaint }}>{status}</div>
+      </div>
     </div>
   );
 }
 
 function CabinSectionLabel({ id, children }) {
   return (
-    <div id={id} style={{ fontSize: 12, lineHeight: '16px', fontWeight: 700, letterSpacing: '0.04em', color: WF.inkLabel, textTransform: 'uppercase' }}>
+    <div id={id} style={{ fontSize: 17, lineHeight: '24px', fontWeight: 700, letterSpacing: '-0.01em', color: WF.ink }}>
       {children}
     </div>
   );
 }
+
+const DEFAULT_CABIN_GALLERY = [
+  { src: 'assets/cabin-gallery/interior-stateroom-beds.png', alt: 'Interior stateroom with twin beds' },
+  { src: 'assets/cabin-gallery/interior-stateroom-desk.png', alt: 'Interior stateroom desk, wardrobe, and seating area' },
+  { src: 'assets/cabin-gallery/stateroom-bathroom.png', alt: 'Stateroom bathroom with vanity and shower' },
+];
 
 function CabinDetailsDialog({ room, row, onClose }) {
   const cap = cabinCapacity(row);
@@ -333,6 +384,7 @@ function CabinDetailsDialog({ room, row, onClose }) {
   const deckName = room.deckName || STATEROOM_DECK_NAMES[room.deck];
   const deckLabel = deckName ? `Deck ${room.deck} · ${deckName}` : `Deck ${room.deck}`;
   const bedConfiguration = room.baseBedConfiguration || 'Twin beds / queen conversion';
+  const hasConvertibleBeds = /twin/i.test(bedConfiguration) && /queen/i.test(bedConfiguration);
   const connectedCabins = Array.isArray(room.connectedCabins)
     ? (room.connectedCabins.length ? room.connectedCabins.join(', ') : 'None')
     : room.connectedRoom === true
@@ -343,9 +395,8 @@ function CabinDetailsDialog({ room, row, onClose }) {
     hearing: 'Hearing assistance',
     visual: 'Visual alert system',
   })[feature]).filter(Boolean);
-  const gallery = Array.isArray(room.gallery) ? room.gallery.filter(Boolean) : [];
-  const roomDelta = Number.isFinite(Number(room.roomDelta)) ? Number(room.roomDelta) : roomDeltaForNumber(room.num);
-
+  const providedGallery = Array.isArray(room.gallery) ? room.gallery.filter(Boolean) : [];
+  const gallery = providedGallery.length > 0 ? providedGallery : DEFAULT_CABIN_GALLERY;
   return (
     <div
       onClick={onClose}
@@ -360,7 +411,7 @@ function CabinDetailsDialog({ room, row, onClose }) {
         aria-labelledby={`cabin-details-title-${room.num}`}
         aria-describedby={`cabin-details-summary-${room.num}`}
         style={{
-          width: 'min(760px, 100%)', maxHeight: '82vh', overflowY: 'auto',
+          width: 'min(820px, 100%)', maxHeight: '86vh', overflowY: 'auto',
           background: WF.panel, border: `1px solid ${WF.line}`, borderRadius: RD.lg,
           boxShadow: '0 24px 64px rgba(15,23,42,0.30)'
         }}>
@@ -388,49 +439,74 @@ function CabinDetailsDialog({ room, row, onClose }) {
             }}>×</button>
         </div>
 
-        <div style={{ padding: SP.xl }}>
+        <div style={{ padding: `${SP.xl}px ${SP.xl}px ${SP.lg}px` }}>
           <section aria-labelledby={`cabin-core-details-${room.num}`}>
-            <CabinSectionLabel id={`cabin-core-details-${room.num}`}>Cabin details</CabinSectionLabel>
-            <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: SP.sm, margin: `${SP.sm}px 0 0` }}>
-              <CabinFact label="Cabin number" value={room.num} mono />
-              <CabinFact label="Room delta" value={`+$${roomDelta.toLocaleString()}`} detail="Flat charge for this room selection" mono />
-              <CabinFact label="Total occupancy" value={`${totalOccupancy}`} />
-              <CabinFact label="Deck" value={deckLabel} />
-              <CabinFact label="Cabin location" value={LOC_LABELS[room.loc]} />
-              <CabinFact label="Base bed configuration" value={bedConfiguration} />
-              <CabinFact label="Base occupancy" value={`${baseOccupancy}`} />
+            <CabinSectionLabel id={`cabin-core-details-${room.num}`}>Cabin at a glance</CabinSectionLabel>
+            <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: SP.lg, margin: `${SP.lg}px 0 0` }}>
+              <CabinOverviewFact icon="deck" label="Deck" value={deckLabel} />
+              <CabinOverviewFact icon="location" label="Location" value={LOC_LABELS[room.loc]} />
+              <CabinOverviewFact icon="guests" label="Minimum occupancy" value={`${baseOccupancy} ${baseOccupancy === 1 ? 'guest' : 'guests'}`} />
             </dl>
           </section>
 
-          <section aria-labelledby={`cabin-suitability-${room.num}`} style={{ marginTop: SP.lg }}>
-            <CabinSectionLabel id={`cabin-suitability-${room.num}`}>Sleeping &amp; suitability</CabinSectionLabel>
-            <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: SP.sm, margin: `${SP.sm}px 0 0` }}>
-              <CabinFact label="Infant friendly" value={cabinBooleanLabel(room.infantFriendly)} />
-              <CabinFact label="Rollaway" value={cabinBooleanLabel(room.rollawayBed)} />
-              <CabinFact label="Sofa bed" value={cabinBooleanLabel(room.sofaBed)} />
-              <CabinFact label="Pullman" value={cabinBooleanLabel(room.pullmanBed)} />
-              <CabinFact label="Single cabin" value={cabinBooleanLabel(room.singleCabin)} />
-              <CabinFact label="Connected cabins" value={connectedCabins} />
-            </dl>
+          <section aria-labelledby={`cabin-sleeping-${room.num}`} style={{ marginTop: SP.xl, paddingTop: SP.xl, borderTop: `1px solid ${WF.line}` }}>
+            <CabinSectionLabel id={`cabin-sleeping-${room.num}`}>Where guests will sleep</CabinSectionLabel>
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap',
+              width: '100%', marginTop: SP.lg, padding: 16,
+              border: `1px solid ${WF.line}`, borderRadius: RD.lg, background: WF.fill
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
+                <span style={{
+                  width: 48, height: 48, display: 'grid', placeItems: 'center', flexShrink: 0,
+                  borderRadius: RD.md, border: `1px solid ${WF.line}`, background: WF.panel, color: WF.ink
+                }}>
+                  <CabinDetailIcon name="bed" size={30} />
+                </span>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 11, lineHeight: '16px', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: WF.inkLabel }}>Flexible bed setup</div>
+                  <div style={{ marginTop: 2, fontSize: 15, lineHeight: '20px', fontWeight: 700, color: WF.ink }}>
+                    {hasConvertibleBeds ? 'Twin or queen configuration' : bedConfiguration}
+                  </div>
+                  <div style={{ marginTop: 3, fontSize: 12, lineHeight: '17px', color: WF.inkSoft }}>
+                    {hasConvertibleBeds ? 'Two twin beds convert to one queen bed.' : `Configured for ${baseOccupancy} ${baseOccupancy === 1 ? 'guest' : 'guests'}.`}
+                  </div>
+                </div>
+              </div>
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0,
+                padding: '6px 10px', borderRadius: 999, border: `1px solid ${WF.accentLine}`,
+                background: WF.accentTint, color: WF.accentInk, fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap'
+              }}>
+                <CabinDetailIcon name="guests" size={15} />
+                Sleeps {totalOccupancy}
+              </span>
+            </div>
           </section>
 
-          {accessibility.length > 0 && (
-            <section aria-labelledby={`cabin-accessibility-${room.num}`} style={{ marginTop: SP.lg }}>
-              <CabinSectionLabel id={`cabin-accessibility-${room.num}`}>Accessibility</CabinSectionLabel>
-              <ul style={{ margin: `${SP.sm}px 0 0`, padding: `0 0 0 ${SP.lg}px`, color: WF.inkSoft, fontSize: 14, lineHeight: '20px' }}>
-                {accessibility.map((feature) => <li key={feature}>{feature}</li>)}
-              </ul>
-            </section>
-          )}
+          <section aria-labelledby={`cabin-suitability-${room.num}`} style={{ marginTop: SP.xl, paddingTop: SP.xl, borderTop: `1px solid ${WF.line}` }}>
+            <CabinSectionLabel id={`cabin-suitability-${room.num}`}>Cabin features</CabinSectionLabel>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', columnGap: 32, rowGap: 2, marginTop: SP.sm }}>
+              <CabinAmenity icon="crib" label="Infant friendly" status={room.infantFriendly === true ? 'Available' : room.infantFriendly === false ? 'Not available' : 'Not specified'} available={room.infantFriendly === true} />
+              <CabinAmenity icon="rollaway" label="Rollaway bed" status={room.rollawayBed === true ? 'Available' : room.rollawayBed === false ? 'Not available' : 'Not specified'} available={room.rollawayBed === true} />
+              <CabinAmenity icon="sofa" label="Sofa bed" status={room.sofaBed === true ? 'Available' : room.sofaBed === false ? 'Not available' : 'Not specified'} available={room.sofaBed === true} />
+              <CabinAmenity icon="pullman" label="Pullman bed" status={room.pullmanBed === true ? 'Available' : room.pullmanBed === false ? 'Not available' : 'Not specified'} available={room.pullmanBed === true} />
+              <CabinAmenity icon="single" label="Single cabin" status={room.singleCabin === true ? 'Yes' : room.singleCabin === false ? 'No' : 'Not specified'} available={room.singleCabin === true} />
+              <CabinAmenity icon="connected" label="Connected cabins" status={connectedCabins} available={connectedCabins !== 'None' && connectedCabins !== 'Not provided'} />
+              {accessibility.map((feature) => (
+                <CabinAmenity key={feature} icon="accessibility" label={feature} status="Available" />
+              ))}
+            </div>
+          </section>
 
-          <section aria-labelledby={`cabin-gallery-${room.num}`} style={{ marginTop: SP.lg }}>
-            <CabinSectionLabel id={`cabin-gallery-${room.num}`}>Gallery</CabinSectionLabel>
+          <section aria-labelledby={`cabin-gallery-${room.num}`} style={{ marginTop: SP.xl, paddingTop: SP.xl, borderTop: `1px solid ${WF.line}` }}>
+            <CabinSectionLabel id={`cabin-gallery-${room.num}`}>Cabin gallery</CabinSectionLabel>
             {gallery.length > 0 ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: SP.sm, marginTop: SP.sm }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: SP.sm, marginTop: SP.lg }}>
                 {gallery.map((image, index) => {
                   const source = typeof image === 'string' ? image : image.src;
                   const alt = typeof image === 'string' ? `${CAT_LABELS[row.cat]} cabin ${room.num}` : (image.alt || `${CAT_LABELS[row.cat]} cabin ${room.num}`);
-                  return <img key={`${source}-${index}`} src={source} alt={alt} style={{ width: '100%', height: 140, objectFit: 'cover', border: `1px solid ${WF.line}`, borderRadius: RD.sm }} />;
+                  return <img key={`${source}-${index}`} src={source} alt={alt} style={{ width: '100%', height: 150, objectFit: 'cover', border: `1px solid ${WF.line}`, borderRadius: RD.md }} />;
                 })}
               </div>
             ) : (

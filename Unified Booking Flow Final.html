@@ -63,6 +63,29 @@
   .booking-progress__label--short {
     display: none;
   }
+  .booking-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 32px;
+    margin: 0 0 16px;
+    padding: 4px 8px 4px 4px;
+    border: 1px solid var(--ds-color-border, #E2E8F0);
+    border-radius: 6px;
+    background: var(--ds-color-surface, #FFFFFF);
+    color: var(--ds-color-action, #1B2434);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .booking-back-link:hover {
+    background: var(--ds-color-surface-subtle, #F8FAFC);
+    border-color: var(--ds-color-border, #E2E8F0);
+  }
+  .booking-progress-stack--expanded .booking-progress {
+    margin-bottom: 16px !important;
+  }
 
   @media (max-width: 900px) {
     .booking-progress-shell {
@@ -282,7 +305,7 @@
 <div id="root"></div>
 
 <!-- 1 · WF design tokens, primitives, WFAppShell ──────────────────────── -->
-<script type="text/babel" src="wireframe-primitives.jsx?v=139"></script>
+<script type="text/babel" src="wireframe-primitives.jsx?v=140"></script>
 
 <!-- 2 · Data model: SAILINGS, INTENTS, priceQuote, getSailing, money… ─── -->
 <script type="text/babel" src="screens/intent-data.jsx?v=128"></script>
@@ -337,7 +360,7 @@ window.MiniStep = MiniStep;
   <script type="text/babel" src="screens/where-when-step1.jsx?v=152"></script>
 
 <!-- 5 · Steps 1–2 — Sailing, then Cabin & Supplements ──────────────────  -->
-<script type="text/babel" src="screens/step2-sailing.jsx?v=172"></script>
+<script type="text/babel" src="screens/step2-sailing.jsx?v=177"></script>
 
 <!-- 5b · Step 2 Deck Map — ship orientation + structural deck picker ─────  -->
 <script type="text/babel" src="screens/step2-deck-map.jsx?v=127"></script>
@@ -346,11 +369,11 @@ window.MiniStep = MiniStep;
 <script type="text/babel" src="screens/step2-sailing-detail.jsx?v=140"></script>
 
 <!-- 5d · Step 2 Stateroom Matrix — availability table + room panel ──────  -->
-  <script type="text/babel" src="screens/step2-stateroom-matrix.jsx?v=206"></script>
+  <script type="text/babel" src="screens/step2-stateroom-matrix.jsx?v=209"></script>
 
 <!-- 6 · Step 3 — Guest Details (exports window.Step3App) ────────────────  -->
 <!-- Note: duplicate S2_CAB / S2_FC / FLOW4 consts removed from this file   -->
-<script type="text/babel" src="screens/step3-guests.jsx?v=141"></script>
+<script type="text/babel" src="screens/step3-guests.jsx?v=143"></script>
 
 <!-- 7 · Step 4 — Review & Confirm ───────────────────────────────────────  -->
 <!-- Extracted from Review & Confirm - Step 4.html; self-contained below.    -->
@@ -404,6 +427,88 @@ window.MiniStep = MiniStep;
   .s4-supp-count[aria-expanded="true"] { background: var(--ds-color-selection) !important; border-color: var(--ds-color-action) !important; box-shadow: var(--ds-elevation-surface); }
 
   .s4-promo-code:focus { outline: none; border-color: var(--ds-color-action) !important; box-shadow: 0 0 0 2px var(--ds-color-selection-border); }
+
+  .s4-confirmation-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(200px, auto);
+    gap: 12px 20px;
+    align-items: start;
+  }
+  .s4-confirmation-meta {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    border-top: 1px solid var(--ds-color-divider);
+    padding-top: 12px;
+  }
+  .s4-confirmation-meta > div {
+    padding: 0 12px;
+    border-left: 1px solid var(--ds-color-divider);
+  }
+  .s4-confirmation-meta > div:first-child {
+    padding-left: 0;
+    border-left: 0;
+  }
+  .s4-confirmation-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(320px, .72fr);
+    gap: 16px;
+    align-items: start;
+  }
+  .s4-confirmation-journey {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(88px, .6fr) minmax(0, 1fr);
+    gap: 12px;
+    align-items: center;
+  }
+  .s4-confirmation-return { text-align: right; }
+  .s4-confirmation-room-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .s4-handoff-disclosure > summary::-webkit-details-marker { display: none; }
+  .s4-handoff-disclosure[open] .s4-handoff-chevron { transform: rotate(180deg); }
+  .s4-confirmation-room {
+    min-width: 0;
+    padding: 0 20px;
+  }
+  .s4-confirmation-room:first-child {
+    padding-left: 0;
+  }
+  .s4-confirmation-room + .s4-confirmation-room {
+    border-left: 1px solid var(--ds-color-divider);
+  }
+  .s4-confirmation-guest + .s4-confirmation-guest {
+    border-top: 1px solid var(--ds-color-divider);
+  }
+  .s4-confirmation-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  @media (max-width: 1040px) {
+    .s4-confirmation-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .s4-confirmation-hero { grid-template-columns: 1fr; }
+    .s4-confirmation-meta { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 0; }
+    .s4-confirmation-meta > div:nth-child(3) { padding-left: 0; border-left: 0; }
+    .s4-confirmation-journey { grid-template-columns: 1fr; }
+    .s4-confirmation-journey-track { min-height: 1px; }
+    .s4-confirmation-return { text-align: left; }
+    .s4-confirmation-room-grid { grid-template-columns: 1fr; }
+    .s4-confirmation-room { padding: 20px 0; }
+    .s4-confirmation-room:first-child { padding-top: 0; }
+    .s4-confirmation-room + .s4-confirmation-room { border-left: 0; border-top: 1px solid var(--ds-color-divider); }
+    .s4-confirmation-actions { width: 100%; }
+    .s4-confirmation-actions .s4-btn { flex: 1; justify-content: center; }
+  }
+
+  @media print {
+    .s4-confirmation-actions { display: none; }
+  }
 </style>
 
 <script type="text/babel">
@@ -1278,7 +1383,7 @@ function S4TotalsStats({ q }) {
 // ── Compact supplement disclosure. A count has a stable footprint even when a
 // guest has many assignments; the full list stays available on hover and focus.
 // The tooltip is portalled to <body> so cabin cards cannot clip it. ──
-function S4SupplementCount({ guest, suppIds }) {
+function S4SupplementCount({ guest, suppIds, readOnly = false }) {
   const [tip, setTip] = React.useState(null);
   const triggerRef = React.useRef(null);
   const items = suppIds.map((id) => {
@@ -1336,10 +1441,11 @@ function S4SupplementCount({ guest, suppIds }) {
         }}>
         <span aria-hidden="true" style={{
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          minWidth: 16, height: 16, padding: '0 4px', boxSizing: 'border-box',
-          borderRadius: 999, background: WF.accentInk, color: '#fff',
-          fontSize: 12, fontWeight: 700, fontFamily: 'ui-monospace, monospace',
-          fontVariantNumeric: 'tabular-nums'
+          minWidth: 20, height: 20, padding: '0 4px', boxSizing: 'border-box', flexShrink: 0,
+          borderRadius: 999, border: '1px solid rgba(255,255,255,.28)',
+          background: WF.accentInk, color: '#fff', boxShadow: '0 1px 2px rgba(15,23,42,.18)',
+          fontSize: 12, lineHeight: '16px', fontWeight: 700, letterSpacing: '-0.01em',
+          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', fontVariantNumeric: 'tabular-nums'
         }}>{items.length}</span>
         <span aria-hidden="true">assigned</span>
         <svg
@@ -1383,7 +1489,7 @@ function S4SupplementCount({ guest, suppIds }) {
             ))}
           </div>
           <div style={{ fontSize: 12, color: WF.inkFaint, marginTop: 8, paddingTop: 8, borderTop: `1px solid ${WF.lineSoft}` }}>
-            Use Edit to manage assignments.
+            {readOnly ? 'Included with this guest.' : 'Use Edit to manage assignments.'}
           </div>
         </div>,
         document.body
@@ -1473,6 +1579,350 @@ function S4GuestRow({ guest, onOpenManage, last }) {
   );
 }
 
+function s4ConfirmationCode(booking) {
+  const seed = String((booking && booking.bookingId) || '9087').replace(/\D/g, '').slice(-6);
+  return `MAS-${seed.padStart(6, '0')}`;
+}
+
+function s4BalanceDueLabel(departure) {
+  const date = new Date(departure || '');
+  if (Number.isNaN(date.getTime())) return '45 days before departure';
+  date.setDate(date.getDate() - 45);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function s4ReturnDateLabel(sailing) {
+  if (!sailing) return '—';
+  if (sailing.ret) return sailing.ret;
+  const date = new Date(sailing.depart || '');
+  if (Number.isNaN(date.getTime()) || !sailing.nights) return '—';
+  date.setDate(date.getDate() + Number(sailing.nights));
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function S4ConfirmationFact({ label, value, detail, positive }) {
+  return (
+    <div style={{ minWidth: 0 }}>
+      <div style={{
+        color: WF.inkLabel, fontSize: 11, fontWeight: 700,
+        letterSpacing: '0.04em', textTransform: 'uppercase'
+      }}>{label}</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+        {positive && <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: 4, background: '#047857', flexShrink: 0 }} />}
+        <strong style={{ color: WF.ink, fontSize: 13, fontWeight: 700 }}>{value}</strong>
+      </div>
+      {detail && <div style={{ color: WF.inkSoft, fontSize: 11, marginTop: 2 }}>{detail}</div>}
+    </div>
+  );
+}
+
+function S4BookingConfirmation({ booking, confirmation, onCreateAnother }) {
+  const q = computeBookingPricing(booking);
+  const sailing = q.sailing;
+  const passengers = s4BuildPassengers(
+    booking.guests, booking.guestAges, booking.guestData, booking.suppAssignments, booking.cabins,
+    booking.primaryGuestCode, booking.primaryGuestConfigured
+  );
+  const primary = passengers.find((guest) => guest.note === 'Primary') || passengers[0];
+  const rooms = (booking.cabins || []).map((cabin, index) => {
+    const key = cabinSuppKey(cabin.id);
+    return {
+      key,
+      label: cabin.num ? `Room ${cabin.num}` : `Room ${index + 1}`,
+      category: cabinCategoryName(cabin),
+      people: passengers.filter((guest) => guest.cabinKey === key),
+    };
+  });
+  const unassigned = passengers.filter((guest) => !guest.cabinKey);
+  if (!rooms.length && passengers.length) {
+    rooms.push({ key: 'unassigned-room', label: 'Stateroom', category: q.cabin ? q.cabin.name : 'Selected category', people: passengers });
+  }
+  const paymentPlan = q.payFull ? 'Paid in full' : `${Math.round(q.depositRate * 100)}% deposit`;
+  const confirmationNumber = confirmation.code;
+  const duePercent = q.total > 0 ? Math.min(100, Math.max(0, (q.amountDue / q.total) * 100)) : 0;
+
+  const card = {
+    background: WF.panel, border: `1px solid ${WF.line}`, borderRadius: 10,
+    boxShadow: '0 1px 2px rgba(15, 23, 42, 0.03)'
+  };
+  const sectionTitle = {
+    color: WF.ink, fontSize: 16, fontWeight: 700, lineHeight: 1.3, margin: 0
+  };
+  const label = {
+    color: WF.inkLabel, fontSize: 11, fontWeight: 700,
+    letterSpacing: '0.04em', textTransform: 'uppercase'
+  };
+
+  return (
+    <WFAppShell
+      activeGroup="bookings"
+      active="create-booking"
+      breadcrumb={['CRM', 'Bookings', 'Confirmation']}
+      bottomBar={
+        <div className="s4-confirmation-actions">
+          <button
+            type="button"
+            className="s4-btn s4-secondary"
+            onClick={() => window.print()}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 8, minHeight: 36, padding: '8px 16px', borderRadius: 6, fontSize: 14, fontWeight: 700 }}>
+            Print confirmation
+          </button>
+          <button
+            type="button"
+            className="s4-btn s4-primary"
+            onClick={onCreateAnother}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 8, minHeight: 36, padding: '8px 16px', borderRadius: 6, fontSize: 14, fontWeight: 700 }}>
+            Create another booking
+          </button>
+        </div>
+      }>
+      <main data-screen-label="Booking confirmation" style={{ maxWidth: 1120, margin: '0 auto', paddingBottom: 96 }}>
+        <section
+          aria-labelledby="booking-confirmed-title"
+          className="s4-confirmation-hero"
+          style={{
+            background: WF.panel, border: `1px solid ${WF.line}`, borderLeft: '4px solid #047857',
+            borderRadius: 10, padding: 16, marginBottom: 16,
+            boxShadow: '0 1px 2px rgba(15, 23, 42, 0.04)'
+          }}>
+          <div role="status" aria-live="polite" style={{ display: 'flex', alignItems: 'flex-start', gap: 12, minWidth: 0 }}>
+            <div aria-hidden="true" style={{
+              width: 36, height: 36, borderRadius: 18, background: '#ECFDF5', color: '#047857',
+              border: '1px solid #A7F3D0', display: 'grid', placeItems: 'center',
+              flexShrink: 0, fontSize: 16, fontWeight: 700
+            }}>✓</div>
+            <div style={{ minWidth: 0 }}>
+              <h1 id="booking-confirmed-title" style={{ color: WF.ink, fontSize: 20, lineHeight: 1.25, margin: 0, fontWeight: 700 }}>
+                Booking confirmed
+              </h1>
+              <p style={{ color: WF.inkSoft, fontSize: 12, lineHeight: 1.4, margin: '4px 0 0' }}>
+                {primary ? `${primary.name}'s reservation is secured` : 'The reservation is secured'} for {sailing ? `${sailing.nights} nights in ${sailing.region}` : 'the selected sailing'}.
+              </p>
+            </div>
+          </div>
+          <div style={{
+            background: WF.accentTint, border: `1px solid ${WF.accentLine}`, borderRadius: 8,
+            minWidth: 200, padding: '8px 12px'
+          }}>
+            <div style={label}>Booking reference</div>
+            <div style={{ color: WF.ink, fontSize: 17, fontWeight: 700, letterSpacing: '0.03em', marginTop: 2, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>
+              {confirmationNumber}
+            </div>
+          </div>
+          <div className="s4-confirmation-meta" aria-label="Booking summary">
+            <S4ConfirmationFact label="Status" value="Confirmed" positive />
+            <S4ConfirmationFact label="Lead guest" value={primary ? primary.name : '—'} />
+            <S4ConfirmationFact label="Farecode" value={q.fc ? q.fc.code : '—'} />
+            <S4ConfirmationFact label="Payment plan" value={paymentPlan} />
+          </div>
+        </section>
+
+        <div className="s4-confirmation-grid">
+          <div style={{ display: 'grid', gap: 16 }}>
+            <section aria-labelledby="confirmation-trip-title" style={{ ...card, padding: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 10 }}>
+                <div>
+                  <div style={label}>Sailing</div>
+                  <h2 id="confirmation-trip-title" style={{ ...sectionTitle, fontSize: 18, lineHeight: '24px', marginTop: 2 }}>
+                    {sailing ? `${sailing.nights}-night ${sailing.region}` : 'Trip overview'}
+                  </h2>
+                  <div style={{ color: WF.inkSoft, fontSize: 12, marginTop: 2 }}>{sailing ? sailing.ship : 'Selected ship'}</div>
+                </div>
+                <span style={{
+                  background: WF.panel, border: `1px solid ${WF.line}`, borderRadius: 14,
+                  color: WF.inkSoft, fontSize: 11, fontWeight: 700, padding: '3px 8px'
+                }}>{q.guestCount} {q.guestCount === 1 ? 'guest' : 'guests'}</span>
+              </div>
+              <div className="s4-confirmation-journey" style={{ padding: '12px 0', borderTop: `1px solid ${WF.lineSoft}` }}>
+                <div>
+                  <div style={label}>Departs</div>
+                  <div style={{ color: WF.ink, fontSize: 14, fontWeight: 700, marginTop: 2 }}>{sailing ? sailing.depart : '—'}</div>
+                  <div style={{ color: WF.inkSoft, fontSize: 11, marginTop: 2 }}>Port Tampa Bay</div>
+                </div>
+                <div className="s4-confirmation-journey-track" aria-hidden="true" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ width: 7, height: 7, borderRadius: 4, border: `2px solid ${WF.accent}`, background: WF.panel, flexShrink: 0 }} />
+                  <span style={{ height: 1, background: WF.controlLine, flex: 1 }} />
+                  <span style={{
+                    width: 24, height: 24, borderRadius: 12, display: 'grid', placeItems: 'center',
+                    background: WF.accent, color: WF.accentText, fontSize: 12, fontWeight: 700, flexShrink: 0
+                  }}>{sailing ? sailing.nights : '—'}N</span>
+                  <span style={{ height: 1, background: WF.controlLine, flex: 1 }} />
+                  <span style={{ width: 7, height: 7, borderRadius: 4, background: WF.accent, flexShrink: 0 }} />
+                </div>
+                <div className="s4-confirmation-return">
+                  <div style={label}>Returns</div>
+                  <div style={{ color: WF.ink, fontSize: 14, fontWeight: 700, marginTop: 2 }}>{s4ReturnDateLabel(sailing)}</div>
+                  <div style={{ color: WF.inkSoft, fontSize: 11, marginTop: 2 }}>Port Tampa Bay</div>
+                </div>
+              </div>
+            </section>
+
+            <section aria-labelledby="confirmation-rooms-title" style={{ ...card, padding: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, marginBottom: 20 }}>
+                <div>
+                  <div style={label}>Accommodation</div>
+                  <h2 id="confirmation-rooms-title" style={{ ...sectionTitle, marginTop: 4 }}>Rooms & travelers</h2>
+                </div>
+                <div style={{ color: WF.inkSoft, fontSize: 12 }}>{rooms.length} {rooms.length === 1 ? 'stateroom' : 'staterooms'}</div>
+              </div>
+              <div className="s4-confirmation-room-grid">
+                {rooms.map((room) => (
+                  <article key={room.key} className="s4-confirmation-room">
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span aria-hidden="true" style={{
+                          width: 40, height: 32, borderRadius: 7, background: WF.fill,
+                          border: `1px solid ${WF.line}`, color: WF.ink, display: 'grid',
+                          placeItems: 'center', fontSize: 13, fontWeight: 700
+                        }}>{room.label.replace('Room ', '')}</span>
+                        <div>
+                          <strong style={{ color: WF.ink, fontSize: 14 }}>{room.label}</strong>
+                          <div style={{ color: WF.inkSoft, fontSize: 11, marginTop: 2 }}>{room.category}</div>
+                        </div>
+                      </div>
+                      <span style={{ color: WF.inkSoft, fontSize: 11, whiteSpace: 'nowrap' }}>{room.people.length} {room.people.length === 1 ? 'guest' : 'guests'}</span>
+                    </div>
+                    <div style={{ borderTop: `1px solid ${WF.line}` }}>
+                      {room.people.map((guest) => {
+                        const guestSuppIds = Object.keys(guest.supps || {}).filter((id) => guest.supps[id] > 0);
+                        return (
+                          <div key={guest.guestKey} className="s4-confirmation-guest" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, minHeight: 44, padding: '8px 0' }}>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                                <span style={{ color: WF.ink, fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{guest.name}</span>
+                                {guest.note === 'Primary' && (
+                                  <span style={{
+                                    color: WF.accentInk, background: WF.accentTint, border: `1px solid ${WF.accentLine}`,
+                                    borderRadius: 10, padding: '2px 6px', fontSize: 10, fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0
+                                  }}>Primary</span>
+                                )}
+                              </div>
+                              <div style={{ color: WF.inkSoft, fontSize: 11, marginTop: 2 }}>{guest.type} · {guest.age != null ? `Age ${guest.age}` : guest.ageBand}</div>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6, flexShrink: 0 }}>
+                              {guestSuppIds.length > 0 && <S4SupplementCount guest={guest} suppIds={guestSuppIds} readOnly />}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </article>
+                ))}
+              </div>
+              {unassigned.length > 0 && rooms.some((room) => room.key !== 'unassigned-room') && (
+                <div style={{ color: WF.inkSoft, fontSize: 12, marginTop: 12 }}>
+                  {unassigned.length} {unassigned.length === 1 ? 'guest is' : 'guests are'} not assigned to a room.
+                </div>
+              )}
+            </section>
+          </div>
+
+          <aside style={{ display: 'grid', gap: 16 }}>
+            <section aria-labelledby="confirmation-payment-title" style={{ ...card, padding: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                <div>
+                  <div style={label}>Payment</div>
+                  <h2 id="confirmation-payment-title" style={{ ...sectionTitle, marginTop: 4 }}>Booking total</h2>
+                </div>
+                <span style={{
+                  background: WF.accentTint, border: `1px solid ${WF.accentLine}`, color: WF.accentInk,
+                  borderRadius: 12, padding: '3px 8px', fontSize: 10, fontWeight: 700, whiteSpace: 'nowrap'
+                }}>{paymentPlan}</span>
+              </div>
+              <div style={{ marginTop: 12 }}>
+                <div style={{ color: WF.ink, fontSize: 28, lineHeight: 1.2, fontWeight: 700, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace' }}>{money(q.total)}</div>
+                <div style={{ color: WF.inkSoft, fontSize: 11, marginTop: 4 }}>Total reservation value</div>
+              </div>
+              <div style={{ marginTop: 20 }} aria-label={`${Math.round(duePercent)} percent due now`}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 8 }}>
+                  <span style={{ color: WF.inkSoft, fontSize: 11 }}>Due now</span>
+                  <strong style={{ color: WF.ink, fontSize: 12 }}>{Math.round(duePercent)}%</strong>
+                </div>
+                <div style={{ height: 8, borderRadius: 4, background: WF.fillStrong, overflow: 'hidden' }}>
+                  <div style={{ width: `${duePercent}%`, height: '100%', background: WF.accent, borderRadius: 4 }} />
+                </div>
+              </div>
+              <dl style={{ margin: '20px 0 0', borderTop: `1px solid ${WF.line}`, borderBottom: `1px solid ${WF.line}` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, padding: '12px 0' }}>
+                  <dt style={{ color: WF.inkSoft, fontSize: 12 }}>Amount due now</dt>
+                  <dd style={{ color: WF.ink, fontSize: 16, fontWeight: 700, margin: 0 }}>{money(q.amountDue)}</dd>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, padding: '12px 0', borderTop: `1px solid ${WF.lineSoft}` }}>
+                  <dt style={{ color: WF.inkSoft, fontSize: 12 }}>Remaining balance</dt>
+                  <dd style={{ color: WF.ink, fontSize: 14, fontWeight: 700, margin: 0 }}>{money(q.remaining)}</dd>
+                </div>
+              </dl>
+              {!q.payFull && q.remaining > 0 && (
+                <div
+                  role="note"
+                  aria-label={`Remaining balance due ${s4BalanceDueLabel(sailing && sailing.depart)}, 45 days before departure`}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10, marginTop: 16, padding: 12,
+                    background: WF.accentTint, border: `1px solid ${WF.accentLine}`, borderRadius: 8
+                  }}>
+                  <span aria-hidden="true" style={{
+                    width: 32, height: 32, display: 'grid', placeItems: 'center', flexShrink: 0,
+                    borderRadius: 8, background: WF.panel, border: `1px solid ${WF.accentLine}`,
+                    color: WF.accentInk
+                  }}>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <rect x="2.25" y="3.25" width="11.5" height="10.5" rx="2" stroke="currentColor" strokeWidth="1.5" />
+                      <path d="M5 1.75v3M11 1.75v3M2.75 6.25h10.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                  </span>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ color: WF.accentInk, fontSize: 10, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>Payment deadline</div>
+                    <div style={{ color: WF.ink, fontSize: 13, fontWeight: 700, lineHeight: '18px', marginTop: 1 }}>{s4BalanceDueLabel(sailing && sailing.depart)}</div>
+                    <div style={{ color: WF.inkSoft, fontSize: 11, lineHeight: '16px', marginTop: 1 }}>Remaining balance due 45 days before departure</div>
+                  </div>
+                </div>
+              )}
+              <details className="s4-handoff-disclosure" style={{ marginTop: 16, borderTop: `1px solid ${WF.line}` }}>
+                <summary style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                  padding: '14px 0 0', cursor: 'pointer', listStyle: 'none', color: WF.ink
+                }}>
+                  <span>
+                    <span style={{ ...label, display: 'block' }}>Handoff</span>
+                    <span style={{ display: 'block', fontSize: 13, fontWeight: 700, marginTop: 2 }}>Agent checklist</span>
+                  </span>
+                  <span className="s4-handoff-chevron" aria-hidden="true" style={{
+                    width: 24, height: 24, display: 'grid', placeItems: 'center', flexShrink: 0,
+                    border: `1px solid ${WF.line}`, borderRadius: 6, color: WF.inkSoft,
+                    transition: 'transform .15s ease'
+                  }}>⌄</span>
+                </summary>
+                <div style={{ paddingTop: 10 }}>
+                  <p style={{ color: WF.inkSoft, fontSize: 11, lineHeight: 1.5, margin: 0 }}>Complete these steps before closing the guest conversation.</p>
+                  <ol style={{ listStyle: 'none', padding: 0, margin: '10px 0 0' }}>
+                    {[
+                      'Share the confirmation number with the guest.',
+                      'Review guest names and stateroom assignments.',
+                      q.remaining > 0 ? `Collect the remaining balance by ${s4BalanceDueLabel(sailing && sailing.depart)}.` : 'No further balance collection is required.',
+                    ].map((step, index) => (
+                      <li key={step} style={{
+                        display: 'flex', alignItems: 'flex-start', gap: 10,
+                        padding: '10px 0', borderTop: index ? `1px solid ${WF.lineSoft}` : 'none'
+                      }}>
+                        <span aria-hidden="true" style={{
+                          width: 20, height: 20, borderRadius: 5, background: WF.panel,
+                          border: `1px solid ${WF.controlLine}`, color: WF.inkSoft,
+                          display: 'grid', placeItems: 'center', flexShrink: 0, fontSize: 10, fontWeight: 700
+                        }}>{index + 1}</span>
+                        <span style={{ color: WF.inkSoft, fontSize: 12, lineHeight: 1.5 }}>{step}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              </details>
+            </section>
+          </aside>
+        </div>
+      </main>
+    </WFAppShell>
+  );
+}
+
 // ── Step 4 App ──
 function Step4App({ booking, update }) {
   // Bound to the router's booking — no local copy, no storage writes, no
@@ -1491,6 +1941,7 @@ function Step4App({ booking, update }) {
   // `suppAssignments`), but both commit on one Save.
   const [draftGuest, setDraftGuest] = React.useState(S4_EMPTY_GUEST_DRAFT);
   const [showBookingActions, setShowBookingActions] = React.useState(false);
+  const [confirmation, setConfirmation] = React.useState(null);
 
   // Which lens Order summary shows: the whole-booking ledger, or the same money
   // re-cut per stateroom. Local state — a view of the receipt, not booking data.
@@ -1726,31 +2177,119 @@ function Step4App({ booking, update }) {
       });
       return;
     }
-    alert('Booking submitted! (Demo only)');
+    setConfirmation({
+      code: s4ConfirmationCode(st),
+      confirmedAt: new Date().toISOString(),
+    });
   };
 
   // Restated under the guest list so the supplements number the agent just
   // eyeballed per-person matches the one in the order summary below.
   const suppCount = (q.suppLines || []).filter((ln) => !ln.inPkg).length;
 
+  const bookingActions = (
+    <div style={{ display: 'flex', alignItems: 'stretch', justifyContent: 'flex-end', gap: 8 }}>
+      <div style={{ position: 'relative', flexShrink: 0 }}>
+        <button
+          type="button"
+          onClick={() => setShowBookingActions((v) => !v)}
+          className="s4-btn s4-overflow"
+          aria-label="More booking actions"
+          aria-haspopup="menu"
+          aria-expanded={showBookingActions}
+          title="More booking actions"
+          style={{ width: 40, height: 40, padding: 0, borderRadius: 7, lineHeight: 1 }}>
+          <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <circle cx="3.5" cy="8" r="1.25" />
+            <circle cx="8" cy="8" r="1.25" />
+            <circle cx="12.5" cy="8" r="1.25" />
+          </svg>
+        </button>
+        {showBookingActions && (
+          <>
+            <div onClick={() => setShowBookingActions(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
+            <div
+              role="menu"
+              aria-label="Booking actions"
+              style={{
+                position: 'absolute', bottom: 'calc(100% + 8px)', right: 0, zIndex: 41,
+                width: 224, background: '#fff', border: `1px solid ${WF.line}`, borderRadius: 9,
+                boxShadow: '0 8px 24px rgba(15,23,42,0.14)', overflow: 'hidden',
+              }}>
+              <div style={{ padding: '12px 12px 8px' }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: WF.ink }}>Hold booking</div>
+                <div style={{ marginTop: 4, fontSize: 12, color: WF.inkSoft }}>Keep this reservation without confirming.</div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, padding: '4px 12px 12px' }}>
+                {['24h', '48h', '72h'].map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => { setSt({ holdDur: d }); setShowBookingActions(false); alert(`Booking held for ${d}. (Demo only)`); }}
+                    className="s4-btn s4-secondary"
+                    style={{ minHeight: 30, padding: '8px 8px', borderRadius: 6, fontSize: 12, fontWeight: 600 }}>
+                    {d}
+                  </button>
+                ))}
+              </div>
+              <div style={{ borderTop: `1px solid ${WF.line}` }}>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={discard}
+                  className="s4-btn s4-danger-tertiary"
+                  style={{ width: '100%', padding: '12px 12px', textAlign: 'left', fontSize: 12, fontWeight: 600 }}>
+                  Discard booking
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={confirmBooking}
+        disabled={q.status !== 'final'}
+        className="s4-btn s4-primary"
+        title={q.status !== 'final' ? 'Choose a sailing, cabin and farecode to confirm' : undefined}
+        style={{ minWidth: 320, minHeight: 40, padding: '12px 20px', fontSize: 14, fontWeight: 700, borderRadius: 8 }}>
+        {st.groupId ? 'Save booking to group' : 'Confirm booking'}
+      </button>
+    </div>
+  );
+
+  if (confirmation) {
+    return (
+      <S4BookingConfirmation
+        booking={st}
+        confirmation={confirmation}
+        onCreateAnother={() => setSt({ ...BOOKING_DEFAULTS, step: 1 }, { replace: true })}
+      />
+    );
+  }
+
   return (
     <WFAppShell
       activeGroup="bookings"
       active="create-booking"
       breadcrumb={['CRM', 'Bookings', 'Create', 'Review & Confirm']}
-      bottomBar={
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}>
+      contentPaddingTop={0}
+      bottomBar={bookingActions}
+      progressBar={
+        <div className="booking-progress-stack booking-progress-stack--expanded">
           <button
             type="button"
             onClick={() => handleBack(2)}
-            className="s4-btn s4-secondary"
             aria-label="Back to guest details"
-            style={{ minHeight: 40, padding: '8px 16px', fontSize: 14, fontWeight: 600, borderRadius: 8, whiteSpace: 'nowrap' }}>
+            className="booking-back-link">
+            <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m15 18-6-6 6-6" />
+            </svg>
             Back to guest details
           </button>
-        </div>
-      }
-      progressBar={<S4StepProgress onBack={handleBack} />}>
+          <S4StepProgress onBack={handleBack} />
+        </div>}>
 
       {/* No right rail on this step. The rail's recap duplicated what the cards
           below already say, and its own default was to sit collapsed here — the
@@ -1797,7 +2336,7 @@ function Step4App({ booking, update }) {
                 {[
                   { label: 'Destination', value: sailing ? `${sailing.region} · ${sailing.nights}N` : '—', sub: sailing ? sailing.ship : '—' },
                   { label: 'Departs', value: sailing ? sailing.depart : '—', sub: 'Port Tampa Bay' },
-                  { label: 'Arrival', value: sailing ? sailing.ret : '—', sub: 'Port Tampa Bay' },
+                  { label: 'Arrival', value: s4ReturnDateLabel(sailing), sub: 'Port Tampa Bay' },
                   { label: 'Farecode', value: fc ? (fc.refundable ? 'Refundable' : 'Non-refundable') : '—', sub: fcLabel },
                   { label: 'Source', value: st.source || '—', sub: 'Booking source' },
                 ].map((f, i) => (
@@ -2085,82 +2624,10 @@ function Step4App({ booking, update }) {
                   </div>
                 )}
 
-                {/* The final booking action belongs to the pricing decision
-                    surface on this step. Back navigation remains in the shared
-                    footer so it stays predictable without separating Confirm
-                    from the amount the agent is approving. */}
+                {/* Keep the approved amount visible in the commercial surface;
+                    the final action itself lives in the fixed bottom row. */}
                 <div style={{ marginTop: 16, paddingTop: 16, borderTop: S4_RULE }}>
                   <S4TotalsStats q={q} />
-
-                  <div style={{ display: 'flex', alignItems: 'stretch', gap: 8, marginTop: 12 }}>
-                    <button
-                      type="button"
-                      onClick={confirmBooking}
-                      disabled={q.status !== 'final'}
-                      className="s4-btn s4-primary"
-                      title={q.status !== 'final' ? 'Choose a sailing, cabin and farecode to confirm' : undefined}
-                      style={{ flex: 1, minHeight: 40, padding: '12px 16px', fontSize: 14, fontWeight: 700, borderRadius: 8 }}>
-                      {st.groupId ? 'Save booking to group' : 'Confirm booking'}
-                    </button>
-                    <div style={{ position: 'relative', flexShrink: 0 }}>
-                      <button
-                        type="button"
-                        onClick={() => setShowBookingActions((v) => !v)}
-                        className="s4-btn s4-overflow"
-                        aria-label="More booking actions"
-                        aria-haspopup="menu"
-                        aria-expanded={showBookingActions}
-                        title="More booking actions"
-                        style={{ width: 36, height: 40, padding: 0, borderRadius: 7, lineHeight: 1 }}>
-                        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                          <circle cx="3.5" cy="8" r="1.25" />
-                          <circle cx="8" cy="8" r="1.25" />
-                          <circle cx="12.5" cy="8" r="1.25" />
-                        </svg>
-                      </button>
-                      {showBookingActions && (
-                        <>
-                          <div onClick={() => setShowBookingActions(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
-                          <div
-                            role="menu"
-                            aria-label="Booking actions"
-                            style={{
-                              position: 'absolute', bottom: 'calc(100% + 8px)', right: 0, zIndex: 41,
-                              width: 224, background: '#fff', border: `1px solid ${WF.line}`, borderRadius: 9,
-                              boxShadow: '0 8px 24px rgba(15,23,42,0.14)', overflow: 'hidden',
-                            }}>
-                            <div style={{ padding: '12px 12px 8px' }}>
-                              <div style={{ fontSize: 12, fontWeight: 700, color: WF.ink }}>Hold booking</div>
-                              <div style={{ marginTop: 4, fontSize: 12, color: WF.inkSoft }}>Keep this reservation without confirming.</div>
-                            </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, padding: '4px 12px 12px' }}>
-                              {['24h', '48h', '72h'].map((d) => (
-                                <button
-                                  key={d}
-                                  type="button"
-                                  role="menuitem"
-                                  onClick={() => { setSt({ holdDur: d }); setShowBookingActions(false); alert(`Booking held for ${d}. (Demo only)`); }}
-                                  className="s4-btn s4-secondary"
-                                  style={{ minHeight: 30, padding: '8px 8px', borderRadius: 6, fontSize: 12, fontWeight: 600 }}>
-                                  {d}
-                                </button>
-                              ))}
-                            </div>
-                            <div style={{ borderTop: `1px solid ${WF.line}` }}>
-                              <button
-                                type="button"
-                                role="menuitem"
-                                onClick={discard}
-                                className="s4-btn s4-danger-tertiary"
-                                style={{ width: '100%', padding: '12px 12px', textAlign: 'left', fontSize: 12, fontWeight: 600 }}>
-                                Discard booking
-                              </button>
-                            </div>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </div>
                 </div>
               </div>
 
