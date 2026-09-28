@@ -364,10 +364,108 @@ function GroupSetupCard({ number, title, help, optional, children }) {
   );
 }
 
+function groupItineraryPortCode(portName) {
+  const codes = [
+    ['Port of Palm Beach', 'PBI'], ['Port Tampa Bay', 'TPA'], ['Port Miami', 'MIA'],
+    ['Nassau', 'NAS'], ['Freeport', 'FPO'], ['Bimini', 'BIM'], ['Key West', 'EYW'],
+    ['New Orleans', 'MSY'], ['Cozumel', 'CZM'], ['Progreso', 'PGO'], ['Ocho Rios', 'OCJ'],
+    ['Montego Bay', 'MBJ'], ['George Town', 'GCM'], ['Puerto Plata', 'POP'],
+    ['Amber Cove', 'ACB'], ['Cabo Rojo', 'CBR'], ['St. Thomas', 'STT'], ['San Juan', 'SJU'],
+    ['Grand Turk', 'GDT'], ['Philipsburg', 'SXM'], ['Oranjestad', 'AUA'], ['Kralendijk', 'BON'],
+    ['Willemstad', 'CUR'], ['Roatan', 'RTB'], ['Belize City', 'BZE'], ['At sea', 'SEA'],
+  ];
+  const match = codes.find(([name]) => String(portName || '').startsWith(name));
+  return match ? match[1] : '—';
+}
+
+function groupItineraryDate(departure, day) {
+  const date = new Date(`${departure} 12:00:00`);
+  if (Number.isNaN(date.getTime())) return `Day ${day}`;
+  date.setDate(date.getDate() + day - 1);
+  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(date);
+}
+
+function groupItineraryTime(value) {
+  if (!value || value === '—') return '—';
+  const [hourString, minute = '00'] = String(value).split(':');
+  const hour = Number(hourString);
+  if (!Number.isFinite(hour)) return value;
+  const period = hour >= 12 ? 'PM' : 'AM';
+  return `${hour % 12 || 12}:${minute} ${period}`;
+}
+
+function GroupSailingItinerary({ sailing, cruise }) {
+  if (!sailing || !sailing.ports || !sailing.ports.length) return null;
+  return (
+    <section aria-labelledby="group-itinerary-title" aria-live="polite" style={{
+      marginTop: 14, border: `1px solid ${WF.line}`, borderRadius: 8,
+      background: WF.panel, overflow: 'hidden',
+    }}>
+      <div style={{
+        padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+        background: WF.fill, borderBottom: `1px solid ${WF.lineSoft}`,
+      }}>
+        <div style={{ minWidth: 0 }}>
+          <div id="group-itinerary-title" style={{ color: WF.ink, fontSize: 12, lineHeight: '16px', fontWeight: 700 }}>
+            Detailed itinerary
+          </div>
+          <div style={{ marginTop: 2, color: WF.inkSoft, fontSize: 12, lineHeight: '16px' }}>
+            {(cruise && cruise.name) || `${sailing.nights}-Night sailing`} · {sailing.ship}
+          </div>
+        </div>
+        <span style={{ flex: '0 0 auto', color: WF.inkLabel, fontSize: 11, lineHeight: '16px', fontWeight: 700 }}>
+          {sailing.ports.length} days
+        </span>
+      </div>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', minWidth: 650, borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+          <thead>
+            <tr style={{ background: WF.panel }}>
+              {[
+                ['Date', '20%'], ['Port code', '13%'], ['Port', '33%'], ['Arrive', '17%'], ['Depart', '17%'],
+              ].map(([label, width]) => (
+                <th key={label} scope="col" style={{
+                  width, padding: '8px 12px', borderBottom: `1px solid ${WF.lineSoft}`,
+                  color: WF.inkLabel, fontSize: 10, lineHeight: '14px', fontWeight: 700,
+                  letterSpacing: '0.04em', textAlign: 'left', textTransform: 'uppercase',
+                }}>{label}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {sailing.ports.map((stop, index) => (
+              <tr key={`${stop.day}-${stop.port}`} style={{ background: stop.port === 'At sea' ? WF.fill : WF.panel }}>
+                <td style={{ padding: '9px 12px', borderTop: index ? `1px solid ${WF.lineSoft}` : 'none', color: WF.ink, fontSize: 12, fontWeight: 600 }}>
+                  <span style={{ display: 'block' }}>{groupItineraryDate(sailing.depart, stop.day)}</span>
+                  <span style={{ display: 'block', marginTop: 1, color: WF.inkFaint, fontSize: 10, lineHeight: '14px', fontWeight: 600 }}>Day {stop.day}</span>
+                </td>
+                <td className="s4-money" style={{ padding: '9px 12px', borderTop: index ? `1px solid ${WF.lineSoft}` : 'none', color: WF.inkSoft, fontSize: 11, fontWeight: 700 }}>
+                  {groupItineraryPortCode(stop.port)}
+                </td>
+                <td style={{ padding: '9px 12px', borderTop: index ? `1px solid ${WF.lineSoft}` : 'none', color: WF.ink, fontSize: 12, fontWeight: 600 }}>
+                  {stop.port}
+                </td>
+                <td style={{ padding: '9px 12px', borderTop: index ? `1px solid ${WF.lineSoft}` : 'none', color: WF.inkSoft, fontSize: 12 }}>
+                  {groupItineraryTime(stop.arr)}
+                </td>
+                <td style={{ padding: '9px 12px', borderTop: index ? `1px solid ${WF.lineSoft}` : 'none', color: WF.inkSoft, fontSize: 12 }}>
+                  {groupItineraryTime(stop.dep)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
 function GroupCruiseSelectors({ state, onUpdate }) {
   const inferredCruise = getGroupCruiseForSailing(state.selectedSailingCode || state.groupSailingCode);
   const cruiseId = state.groupCruiseId || (inferredCruise && inferredCruise.id) || '';
   const sailings = getGroupCruiseSailings(cruiseId);
+  const selectedSailing = getSailing(state.selectedSailingCode);
+  const selectedCruise = getGroupCruise(cruiseId);
 
   return (
     <div>
@@ -403,6 +501,7 @@ function GroupCruiseSelectors({ state, onUpdate }) {
           />
         </GroupField>
       </div>
+      {selectedSailing && <GroupSailingItinerary sailing={selectedSailing} cruise={selectedCruise} />}
     </div>
   );
 }
@@ -724,6 +823,36 @@ function GroupInfoItem({ label, value, meta, mono, style }) {
   );
 }
 
+function GroupContactIcon({ name, size = 17 }) {
+  const content = {
+    email: <><rect x="2.5" y="4" width="15" height="12" rx="2" /><path d="m3.5 5 6.5 5 6.5-5" /></>,
+    phone: <path d="M6.2 2.8 8 6.2 6.5 7.7a12.2 12.2 0 0 0 5.8 5.8L13.8 12l3.4 1.8-.4 3a2 2 0 0 1-2 1.7C7.5 17.8 2.2 12.5 1.5 5.2a2 2 0 0 1 1.7-2l3-.4Z" />,
+    location: <><path d="M10 18s5-4.4 5-9a5 5 0 1 0-10 0c0 4.6 5 9 5 9Z" /><circle cx="10" cy="9" r="1.75" /></>,
+  }[name] || <circle cx="10" cy="10" r="7" />;
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+      {content}
+    </svg>
+  );
+}
+
+function GroupContactDatum({ icon, label, value, mono = false }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, minWidth: 0 }}>
+      <span style={{
+        width: 28, height: 28, display: 'grid', placeItems: 'center', flexShrink: 0,
+        borderRadius: 7, background: WF.fill, border: `1px solid ${WF.lineSoft}`, color: WF.inkSoft
+      }}>
+        <GroupContactIcon name={icon} size={15} />
+      </span>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ color: WF.inkLabel, fontSize: 10, lineHeight: '14px', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>{label}</div>
+        <div style={{ marginTop: 2, color: WF.ink, fontSize: 12, lineHeight: '17px', fontWeight: 600, overflowWrap: 'anywhere', fontFamily: mono ? 'ui-monospace, "SF Mono", Menlo, monospace' : 'inherit' }}>{value || 'Not provided'}</div>
+      </div>
+    </div>
+  );
+}
+
 function WorkspacePanel({ title, action, children, style }) {
   return (
     <section style={{ background: WF.panel, border: `1px solid ${WF.line}`, borderRadius: 9, overflow: 'hidden', boxShadow: '0 1px 2px rgba(15,23,42,.05)', ...style }}>
@@ -757,10 +886,9 @@ function getGroupBookingRows(booking) {
 }
 
 function GroupOverview({ booking, update, onStart }) {
-  // Existing customers open with their master record visible. Agents can
-  // collapse it when they need more workspace, but critical profile data is
-  // never hidden by default.
-  const [showFullContact, setShowFullContact] = React.useState(true);
+  // Keep the linked master record collapsed initially so the primary contact
+  // summary stays compact. Agents can expand it when they need the full record.
+  const [showFullContact, setShowFullContact] = React.useState(false);
   const sailing = getSailing(booking.groupSailingCode || booking.selectedSailingCode);
   const cruise = getGroupCruise(booking.groupCruiseId) || getGroupCruiseForSailing(booking.groupSailingCode || booking.selectedSailingCode);
   const groupBookingRows = getGroupBookingRows(booking);
@@ -804,19 +932,18 @@ function GroupOverview({ booking, update, onStart }) {
                 </div>
               </div>
 
-              <div style={{ marginTop: 16, padding: 16, border: `1px solid ${WF.accentLine}`, borderRadius: 8, background: WF.accentTint }}>
-                <div style={{ fontSize: 12, color: WF.inkLabel, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>Cruise &amp; sailing</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.7fr) repeat(3, minmax(86px, .7fr))', gap: 0, marginTop: 12 }}>
-                  <div style={{ minWidth: 0, paddingRight: 16 }}>
+              <div aria-label="Cruise and sailing" style={{ marginTop: 14, padding: '11px 12px', border: `1px solid ${WF.accentLine}`, borderRadius: 8, background: WF.accentTint }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.7fr) repeat(3, minmax(80px, .7fr))', gap: 0, alignItems: 'center' }}>
+                  <div style={{ minWidth: 0, paddingRight: 12 }}>
                     <GroupInfoItem label="Sailing type" value={(cruise && cruise.label) || 'No cruise selected'} />
                   </div>
-                  <div style={{ minWidth: 0, padding: '0 16px', borderLeft: `1px solid ${WF.accentLine}` }}>
+                  <div style={{ minWidth: 0, padding: '0 12px', borderLeft: `1px solid ${WF.accentLine}` }}>
                     <GroupInfoItem label="Cruise name" value={sailing && sailing.ship} />
                   </div>
-                  <div style={{ minWidth: 0, padding: '0 16px', borderLeft: `1px solid ${WF.accentLine}` }}>
+                  <div style={{ minWidth: 0, padding: '0 12px', borderLeft: `1px solid ${WF.accentLine}` }}>
                     <GroupInfoItem label="Sailing date" value={sailing && sailing.depart} />
                   </div>
-                  <div style={{ minWidth: 0, paddingLeft: 16, borderLeft: `1px solid ${WF.accentLine}` }}>
+                  <div style={{ minWidth: 0, paddingLeft: 12, borderLeft: `1px solid ${WF.accentLine}` }}>
                     <GroupInfoItem label="Sailing code" value={sailing && sailing.code} mono />
                   </div>
                 </div>
@@ -891,51 +1018,60 @@ function GroupOverview({ booking, update, onStart }) {
               </span>
             }>
             <div style={{ padding: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div aria-hidden="true" style={{ flex: '0 0 auto', width: 42, height: 42, borderRadius: 10, display: 'grid', placeItems: 'center', background: WF.accentTint, border: `1px solid ${WF.accentLine}`, color: WF.accent, fontSize: 12, fontWeight: 700 }}>{contactInitials || '—'}</div>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 14, color: WF.ink, fontWeight: 700 }}>{contactName}</div>
-                  <div style={{ marginTop: 4, color: WF.inkSoft, fontSize: 12 }}>Primary group coordinator</div>
-                  {booking.groupContactCustomerId && <div style={{ marginTop: 4, color: WF.inkLabel, fontSize: 12, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace', fontWeight: 600 }}>{booking.groupContactCustomerId}</div>}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
+                  <div aria-hidden="true" style={{
+                    flex: '0 0 auto', width: 48, height: 48, borderRadius: 12, display: 'grid', placeItems: 'center',
+                    background: WF.accent, color: WF.accentText, boxShadow: '0 1px 2px rgba(15,23,42,.14)',
+                    fontSize: 13, fontWeight: 700, letterSpacing: '0.02em'
+                  }}>{contactInitials || '—'}</div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 16, lineHeight: '22px', color: WF.ink, fontWeight: 700, letterSpacing: '-0.01em' }}>{contactName}</div>
+                    <div style={{ marginTop: 2, color: WF.inkSoft, fontSize: 12, lineHeight: '17px' }}>Primary group coordinator</div>
+                    {booking.groupContactCustomerId && (
+                      <div style={{ marginTop: 5, display: 'inline-flex', padding: '2px 6px', borderRadius: 5, background: WF.fill, border: `1px solid ${WF.lineSoft}`, color: WF.inkLabel, fontSize: 11, fontFamily: 'ui-monospace, "SF Mono", Menlo, monospace', fontWeight: 600 }}>
+                        {booking.groupContactCustomerId}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8, marginTop: 16, paddingTop: 16, borderTop: `1px solid ${WF.lineSoft}` }}>
-                <div style={{ minWidth: 0, padding: 12, border: `1px solid ${WF.lineSoft}`, borderRadius: 7, background: WF.fill }}>
-                  <GroupInfoItem label="Email" value={booking.groupContactEmail || 'Not provided'} />
-                </div>
-                <div style={{ minWidth: 0, padding: 12, border: `1px solid ${WF.lineSoft}`, borderRadius: 7, background: WF.fill }}>
-                  <GroupInfoItem label="Phone" value={booking.groupContactPhone || 'Not provided'} />
-                </div>
-              </div>
-              {booking.groupContactCustomerId && (
-                <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${WF.lineSoft}` }}>
-                  {(contactLocation || hasWalletBalance) && (
-                    <div style={{ display: 'grid', gridTemplateColumns: contactLocation && hasWalletBalance ? 'minmax(0, 1.35fr) minmax(110px, .65fr)' : '1fr', gap: 8 }}>
-                      {contactLocation && (
-                        <div style={{ minWidth: 0, padding: 12, border: `1px solid ${WF.lineSoft}`, borderRadius: 7, background: WF.fill }}>
-                          <GroupInfoItem label="Location" value={contactLocation} />
-                        </div>
-                      )}
-                      {hasWalletBalance && (
-                        <div style={{ minWidth: 0, padding: 12, border: `1px solid ${WF.accentLine}`, borderRadius: 7, background: WF.accentTint }}>
-                          <GroupInfoItem label="Wallet balance" value={money(booking.groupContactWalletBalance)} mono />
-                        </div>
-                      )}
-                    </div>
-                  )}
-
+                {booking.groupContactCustomerId && (
                   <button
                     type="button"
                     aria-expanded={showFullContact}
                     onClick={() => setShowFullContact((open) => !open)}
-                    style={{ width: '100%', minHeight: 32, marginTop: 8, padding: '8px 8px', border: `1px solid ${WF.line}`, borderRadius: 6, background: WF.panel, color: WF.accent, fontFamily: 'inherit', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
-                    {showFullContact ? 'Hide customer details' : 'Show customer details'}
+                    style={{
+                      flex: '0 0 auto', minWidth: 108, padding: '7px 9px', border: `1px solid ${WF.line}`,
+                      borderRadius: 7, background: WF.fill, color: WF.accent, fontFamily: 'inherit', cursor: 'pointer', textAlign: 'left'
+                    }}>
+                    <span style={{ display: 'block', color: WF.inkLabel, fontSize: 10, lineHeight: '14px', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                      Customer details
+                    </span>
+                    <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6, marginTop: 1, fontSize: 11, lineHeight: '16px', fontWeight: 700 }}>
+                      {showFullContact ? 'Hide details' : 'View details'}
+                      <span aria-hidden="true" style={{ display: 'inline-block', transform: showFullContact ? 'rotate(180deg)' : 'none', transition: 'transform .14s ease' }}>⌄</span>
+                    </span>
                   </button>
+                )}
+              </div>
+              <div style={{
+                display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(140px, .7fr)', gap: 12,
+                marginTop: 18, padding: '14px 0', borderTop: `1px solid ${WF.lineSoft}`, borderBottom: `1px solid ${WF.lineSoft}`
+              }}>
+                <GroupContactDatum icon="email" label="Email" value={booking.groupContactEmail || 'Not provided'} />
+                <GroupContactDatum icon="phone" label="Phone" value={booking.groupContactPhone || 'Not provided'} />
+              </div>
+              {booking.groupContactCustomerId && (
+                <div>
+                  {contactLocation && (
+                    <div style={{ padding: '14px 0' }}>
+                      <GroupContactDatum icon="location" label="Location" value={contactLocation} />
+                    </div>
+                  )}
 
                   {showFullContact && (
-                    <div style={{ marginTop: 12, padding: 12, border: `1px solid ${WF.lineSoft}`, borderRadius: 7, background: WF.fill }}>
-                      <div style={{ fontSize: 12, color: WF.inkLabel, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase' }}>Customer master details</div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '12px 16px', marginTop: 12 }}>
+                    <div style={{ padding: 12, borderTop: `1px solid ${WF.lineSoft}`, borderRadius: 8, background: WF.fill }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '12px 16px' }}>
                         {fullCustomerFields.map(([label, value]) => <GroupInfoItem key={label} label={label} value={value} mono={label === 'Wallet ID'} />)}
                         {hasWalletBalance && <GroupInfoItem label="Current wallet balance" value={money(booking.groupContactWalletBalance)} mono />}
                       </div>
