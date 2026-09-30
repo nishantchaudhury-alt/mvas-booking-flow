@@ -12,16 +12,49 @@ const S2_TEAL_TINT = WF.accentTint;
 // the moment itineraries changed; the day-by-day now comes from the
 // same `ports` array the route label and detail tabs read.
 // ──────────────────────────────────────────────────────────────────
+function itineraryDate(departure, day) {
+  const date = new Date(`${departure} 12:00:00`);
+  if (Number.isNaN(date.getTime())) return `Day ${day}`;
+  date.setDate(date.getDate() + day - 1);
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+  }).format(date);
+}
+
+function itineraryTime(value) {
+  if (!value || value === '—') return '—';
+  const [hourString, minute = '00'] = String(value).split(':');
+  const hour = Number(hourString);
+  if (!Number.isFinite(hour)) return value;
+  return `${hour % 12 || 12}:${minute} ${hour >= 12 ? 'PM' : 'AM'}`;
+}
+
 function itineraryOf(sailingCode) {
-  const s = getSailing(sailingCode);
-  if (!s || !s.ports || !s.ports.length) return [];
-  const lastDay = s.ports[s.ports.length - 1].day;
-  return s.ports.map((p) => {
-    const short = p.port.split(',')[0];
-    if (p.day === 1) return { day: 1, port: `Depart ${short}`, type: 'depart', icon: '⚓', description: `Board and set sail from ${p.port} at ${p.dep}.` };
-    if (p.day === lastDay) return { day: p.day, port: `Return to ${short}`, type: 'return', icon: '⚓', description: `Arrive back in ${p.port} at ${p.arr}. Disembarkation follows breakfast.` };
-    if (p.port === 'At sea') return { day: p.day, port: 'At Sea', type: 'sea', icon: '〰️', description: 'Full day at sea — dining, entertainment and ship activities.' };
-    return { day: p.day, port: p.port, type: 'port', icon: '🏝️', description: `Arrive ${p.arr} · Depart ${p.dep}` };
+  const sailing = getSailing(sailingCode);
+  if (!sailing || !sailing.ports || !sailing.ports.length) return [];
+  const lastDay = sailing.ports[sailing.ports.length - 1].day;
+  return sailing.ports.map((stop) => {
+    const isDeparture = stop.day === 1;
+    const isReturn = stop.day === lastDay;
+    const isSeaDay = stop.port === 'At sea';
+    const type = isDeparture ? 'departure' : isReturn ? 'return' : isSeaDay ? 'sea' : 'port';
+    const status = isDeparture ? 'Embarkation' : isReturn ? 'Return' : isSeaDay ? 'Sea day' : 'Port day';
+    const timingLabel = isDeparture ? 'Departure' : isReturn ? 'Arrival' : isSeaDay ? 'Schedule' : 'Port hours';
+    const timing = isDeparture
+      ? itineraryTime(stop.dep)
+      : isReturn
+        ? itineraryTime(stop.arr)
+        : isSeaDay
+          ? 'Cruising'
+          : `${itineraryTime(stop.arr)} – ${itineraryTime(stop.dep)}`;
+    return {
+      ...stop,
+      type,
+      status,
+      timingLabel,
+      timing,
+      date: itineraryDate(sailing.depart, stop.day),
+    };
   });
 }
 
@@ -29,32 +62,192 @@ function itineraryOf(sailingCode) {
 // Itinerary action + dial-up dropdown panel
 // ──────────────────────────────────────────────────────────────────
 function CruiseItineraryButton({ sailingCode, open, onToggle, onClose, fitContainer = false }) {
+  const sailing = getSailing(sailingCode);
   const itinerary = itineraryOf(sailingCode);
-  const ref = React.useRef(null);
+  const triggerRef = React.useRef(null);
+  const dialogRef = React.useRef(null);
+  const closeRef = React.useRef(null);
+  const dialogId = `sailing-itinerary-${String(sailingCode || 'unknown').replace(/[^a-zA-Z0-9_-]/g, '')}`;
+  const itineraryProduct = sailing ? getGroupCruiseForSailing(sailing.code) : null;
+  const destinationStops = itinerary.filter((day) => day.type === 'port');
+  const seaDays = itinerary.filter((day) => day.type === 'sea').length;
+  const voyageStops = itineraryProduct && itineraryProduct.portSummary
+    ? itineraryProduct.portSummary.replace(/ · /g, ' & ')
+    : destinationStops.map((day) => day.port.split(',')[0]).join(' & ');
+  const voyageTitle = sailing ? `${sailing.nights}N ${voyageStops || sailing.region}` : 'Sailing itinerary';
+  const firstDay = itinerary[0];
+  const lastDay = itinerary[itinerary.length - 1];
 
   React.useEffect(() => {
     if (!open) return;
-    const onDocClick = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) onClose();
-    };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.requestAnimationFrame(() => closeRef.current && closeRef.current.focus());
     const onKeyDown = (e) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+      if (e.key !== 'Tab' || !dialogRef.current) return;
+      const focusable = Array.from(dialogRef.current.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))
+        .filter((element) => !element.disabled && element.getAttribute('aria-hidden') !== 'true');
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
-    document.addEventListener('mousedown', onDocClick);
     document.addEventListener('keydown', onKeyDown);
     return () => {
-      document.removeEventListener('mousedown', onDocClick);
       document.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = previousOverflow;
+      window.requestAnimationFrame(() => triggerRef.current && triggerRef.current.focus());
     };
   }, [open, onClose]);
 
+  const dialog = open && sailing && ReactDOM.createPortal(
+    <div
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1000,
+        display: 'grid', placeItems: 'center', padding: 20,
+        background: 'rgba(15,23,42,.52)',
+      }}>
+      <section
+        ref={dialogRef}
+        id={dialogId}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={`${dialogId}-title`}
+        aria-describedby={`${dialogId}-subtitle`}
+        onMouseDown={(event) => event.stopPropagation()}
+        style={{
+          width: 'min(720px, 100%)', maxHeight: 'calc(100vh - 40px)',
+          display: 'flex', flexDirection: 'column', overflow: 'hidden',
+          border: `1px solid ${WF.line}`, borderRadius: 10,
+          background: WF.panel, boxShadow: '0 24px 64px rgba(15,23,42,.28)',
+        }}>
+        <header style={{
+          padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
+          borderBottom: `1px solid ${WF.line}`, background: WF.panel,
+        }}>
+          <div style={{ minWidth: 0 }}>
+            <h2 id={`${dialogId}-title`} style={{ margin: 0, color: WF.ink, fontSize: 16, lineHeight: '24px', fontWeight: 700 }}>
+              Full itinerary
+            </h2>
+            <div id={`${dialogId}-subtitle`} style={{ marginTop: 4, color: WF.inkSoft, fontSize: 12, lineHeight: '16px' }}>
+              {sailing.ship} · {sailing.nights}-night sailing
+            </div>
+          </div>
+          <button
+            ref={closeRef}
+            type="button"
+            aria-label="Close itinerary"
+            onClick={onClose}
+            style={{
+              width: 40, height: 40, flex: '0 0 auto', borderRadius: 20,
+              border: `1px solid ${WF.controlLine}`, background: WF.panel,
+              color: WF.ink, fontFamily: 'inherit', fontSize: 20, lineHeight: 1, cursor: 'pointer',
+              display: 'grid', placeItems: 'center',
+            }}>×</button>
+        </header>
+
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: 20, background: WF.fill }}>
+          <section aria-label="Voyage overview" style={{
+            border: `1px solid ${WF.line}`, borderRadius: 8, overflow: 'hidden',
+            background: WF.panel, boxShadow: '0 1px 2px rgba(15,23,42,.06)',
+          }}>
+            <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, borderBottom: `1px solid ${WF.lineSoft}` }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ color: WF.inkLabel, fontSize: 12, lineHeight: '16px', fontWeight: 700, letterSpacing: '.04em', textTransform: 'uppercase' }}>Voyage</div>
+                <div style={{ marginTop: 4, color: WF.ink, fontSize: 16, lineHeight: '24px', fontWeight: 700 }}>{voyageTitle}</div>
+              </div>
+              <span style={{ flex: '0 0 auto', padding: '8px 12px', borderRadius: 99, border: `1px solid ${WF.accentLine}`, background: WF.accentTint, color: WF.accent, fontSize: 12, lineHeight: '16px', fontWeight: 700 }}>
+                {sailing.nights} nights
+              </span>
+            </div>
+            <div style={{ padding: 16, display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 100px minmax(0, 1fr)', gap: 16, alignItems: 'center' }}>
+              <div>
+                <div style={{ color: WF.inkLabel, fontSize: 12, lineHeight: '16px', fontWeight: 700, letterSpacing: '.04em', textTransform: 'uppercase' }}>Departure</div>
+                <div style={{ marginTop: 4, color: WF.ink, fontSize: 14, lineHeight: '20px', fontWeight: 700 }}>{firstDay && firstDay.date}</div>
+                <div style={{ marginTop: 4, color: WF.inkSoft, fontSize: 12, lineHeight: '16px' }}>{firstDay && firstDay.port}</div>
+              </div>
+              <div aria-hidden="true" style={{ display: 'flex', alignItems: 'center', gap: 8, color: WF.inkFaint }}>
+                <span style={{ height: 1, flex: 1, background: WF.line }} />
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M2 7h9M8 4l3 3-3 3" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span style={{ height: 1, flex: 1, background: WF.line }} />
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ color: WF.inkLabel, fontSize: 12, lineHeight: '16px', fontWeight: 700, letterSpacing: '.04em', textTransform: 'uppercase' }}>Return</div>
+                <div style={{ marginTop: 4, color: WF.ink, fontSize: 14, lineHeight: '20px', fontWeight: 700 }}>{lastDay && lastDay.date}</div>
+                <div style={{ marginTop: 4, color: WF.inkSoft, fontSize: 12, lineHeight: '16px' }}>{lastDay && lastDay.port}</div>
+              </div>
+            </div>
+          </section>
+
+          <section aria-labelledby={`${dialogId}-schedule-title`} style={{ marginTop: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, marginBottom: 12 }}>
+              <div>
+                <h3 id={`${dialogId}-schedule-title`} style={{ margin: 0, color: WF.ink, fontSize: 16, lineHeight: '24px', fontWeight: 700 }}>Day-by-day schedule</h3>
+                <div style={{ marginTop: 4, color: WF.inkSoft, fontSize: 12, lineHeight: '16px' }}>
+                  {destinationStops.length} port {destinationStops.length === 1 ? 'day' : 'days'} · {seaDays} sea {seaDays === 1 ? 'day' : 'days'} · All times local
+                </div>
+              </div>
+              <span style={{ flex: '0 0 auto', padding: '4px 8px', borderRadius: 99, border: `1px solid ${WF.line}`, background: WF.panel, color: WF.inkSoft, fontSize: 12, lineHeight: '16px', fontWeight: 700 }}>
+                {itinerary.length} days
+              </span>
+            </div>
+
+            <div style={{ display: 'grid', gap: 8 }}>
+              {itinerary.map((day) => (
+                <article key={day.day} style={{
+                  minHeight: 80, display: 'grid', gridTemplateColumns: '96px minmax(0, 1fr) 150px',
+                  alignItems: 'stretch', border: `1px solid ${WF.line}`, borderRadius: 8,
+                  background: WF.panel, overflow: 'hidden', boxShadow: '0 1px 2px rgba(15,23,42,.04)',
+                }}>
+                  <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'center', background: day.type === 'departure' || day.type === 'return' ? WF.accentTint : WF.fill, borderRight: `1px solid ${WF.lineSoft}` }}>
+                    <div style={{ color: WF.inkLabel, fontSize: 12, lineHeight: '16px', fontWeight: 700, letterSpacing: '.04em', textTransform: 'uppercase' }}>Day {day.day}</div>
+                    <div style={{ marginTop: 4, color: WF.inkSoft, fontSize: 12, lineHeight: '16px' }}>{day.date}</div>
+                  </div>
+                  <div style={{ minWidth: 0, padding: '12px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                    <span style={{ alignSelf: 'flex-start', padding: '4px 8px', borderRadius: 99, border: `1px solid ${day.type === 'departure' || day.type === 'return' ? WF.accentLine : WF.line}`, background: day.type === 'departure' || day.type === 'return' ? WF.accentTint : WF.fill, color: WF.inkSoft, fontSize: 12, lineHeight: '16px', fontWeight: 700 }}>
+                      {day.status}
+                    </span>
+                    <div style={{ marginTop: 4, color: WF.ink, fontSize: 12, lineHeight: '16px', fontWeight: 700 }}>{day.port}</div>
+                  </div>
+                  <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'right', borderLeft: `1px solid ${WF.lineSoft}` }}>
+                    <div style={{ color: WF.inkLabel, fontSize: 12, lineHeight: '16px', fontWeight: 700, letterSpacing: '.04em', textTransform: 'uppercase' }}>{day.timingLabel}</div>
+                    <div className="s4-money" style={{ marginTop: 4, color: WF.ink, fontSize: 12, lineHeight: '16px', fontWeight: 700 }}>{day.timing}</div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        </div>
+      </section>
+    </div>,
+    document.body,
+  );
+
   return (
-    <div ref={ref} style={{ position: 'relative', flexShrink: 0, width: fitContainer ? '100%' : 'auto' }}>
+    <div style={{ position: 'relative', flexShrink: 0, width: fitContainer ? '100%' : 'auto' }}>
       <button
+        ref={triggerRef}
         type="button"
         onClick={onToggle}
         aria-expanded={open}
         aria-haspopup="dialog"
+        aria-controls={open ? dialogId : undefined}
         style={{
           display: 'inline-flex', alignItems: 'center', justifyContent: fitContainer ? 'center' : 'flex-start', gap: 8,
           background: '#fff', border: `1px solid ${WF.line}`,
@@ -70,31 +263,7 @@ function CruiseItineraryButton({ sailingCode, open, onToggle, onClose, fitContai
         </svg>
         View itinerary
       </button>
-
-      {open && (
-        <div style={{
-          position: 'absolute', top: 'calc(100% + 8px)', left: fitContainer ? 0 : 'auto', right: 0, zIndex: 40,
-          width: fitContainer ? 'auto' : 340, maxHeight: 380, overflowY: 'auto',
-          background: '#fff', border: `1px solid ${WF.line}`, borderRadius: 10,
-          boxShadow: '0 12px 32px rgba(15,23,42,0.16)', padding: 12
-        }} role="dialog" aria-label="Sailing itinerary">
-          <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.04em', color: WF.inkLabel, textTransform: 'uppercase', marginBottom: 12, padding: '0 4px' }}>
-            Sailing itinerary
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {itinerary.map((day) => (
-              <div key={day.day} style={{ padding: '12px 12px', borderRadius: 6, border: `1.5px solid ${WF.line}`, background: WF.panel }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: WF.ink, marginBottom: 4 }}>
-                  Day {day.day}: {day.port}
-                </div>
-                <div style={{ fontSize: 12, color: WF.inkSoft, lineHeight: '16px' }}>
-                  {day.description}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {dialog}
     </div>
   );
 }
@@ -214,8 +383,8 @@ function SailingDetailTabs({ activeTab, onTabChange, s, children }) {
         })}
       </div>
       {/* Deliberately unstyled: each tab panel sizes to its own content and the
-          page scrolls. Nothing here may clip — the itinerary popover opens
-          upward out of this subtree. */}
+          page scrolls. Nothing here may clip; the itinerary renders in a
+          document-level dialog portal outside this subtree. */}
       <div>
         {children}
       </div>
