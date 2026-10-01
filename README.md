@@ -49,6 +49,27 @@ http://127.0.0.1:8123/Unified%20Booking%20Flow%20Final.html
 
 Internet access is required for Inter, React 18.3.1, ReactDOM 18.3.1, and Babel Standalone 7.29.0, which are loaded from CDNs.
 
+## Deploy to Vercel
+
+The repository includes `vercel.json`, which serves the booking prototype at
+the deployment root (`/`) without a build step. Internal design notes and
+portable-component handoff files are excluded through `.vercelignore`.
+
+Authenticate once, then deploy the repository root to production:
+
+```sh
+npx vercel@latest login
+npx vercel@latest --prod
+```
+
+For a non-production preview, omit `--prod` from the second command. Vercel
+stores the local project link in `.vercel/`; that directory is gitignored.
+
+Production is also deployed automatically by
+`.github/workflows/vercel-production.yml` whenever a commit is pushed to
+`main`. The repository must provide the `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and
+`VERCEL_PROJECT_ID` GitHub Actions secrets for that workflow.
+
 ## Project structure
 
 | Path | Purpose |

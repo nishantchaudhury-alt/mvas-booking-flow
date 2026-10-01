@@ -1453,8 +1453,13 @@ function SailingCard({ s, update, sailing, expanded, onToggle, resultRow = false
         {/* Col 5: booking action */}
         <div className="sailing-result__action" aria-hidden="true" style={{
           minHeight: 32, display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          padding: '4px 8px', borderRadius: 6, border: `1px solid ${resultRow ? WF.line : selectedHere ? WF.accentLine : WF.line}`,
-          background: '#FFFFFF', color: WF.ink, fontSize: 12, lineHeight: '16px', fontWeight: 600,
+          padding: '4px 12px', borderRadius: 6,
+          border: `1px solid ${expanded ? WF.line : WF.accent}`,
+          background: expanded ? WF.panel : WF.accent,
+          color: expanded ? WF.ink : WF.accentText,
+          boxShadow: expanded ? 'none' : '0 1px 2px rgba(15,23,42,.12)',
+          fontSize: 12, lineHeight: '16px', fontWeight: 700,
+          transition: 'background-color .15s, border-color .15s, color .15s, box-shadow .15s',
         }}>
           <span>{expanded ? 'Close' : 'Book'}</span>
         </div>

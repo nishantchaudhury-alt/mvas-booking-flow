@@ -1,0 +1,11 @@
+.agents/
+.codex/
+.git/
+
+*.md
+design-system/AUDIT.md
+design-system/MASTER.md
+design-system/index.html
+
+AssignStateroom.portable.jsx
+SupplementCatalog.portable.jsx
